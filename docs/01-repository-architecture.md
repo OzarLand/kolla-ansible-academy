@@ -22,7 +22,7 @@ actually touch the hosts. The other documents build on the vocabulary defined he
 | `ansible/nova.yml` | Imported by `site.yml:710` | Nova is split into 10 plays (see [05](05-nova-deep-dive.md)) |
 | `ansible/kolla-host.yml` + `roles/baremetal` | `bootstrap-servers` | Installs Docker and changes the host OS. Can restart the Docker daemon |
 | `ansible/destroy.yml`, `prune-images.yml`, `mariadb_backup.yml`, `mariadb_recovery.yml`, `post-deploy.yml`, `certificates.yml`, `bifrost.yml` | Single-purpose playbooks | See [09](09-practical-command-reference.md) |
-| `ansible/roles/` | 85 roles: 68 service roles, 17 helper or utility roles | §4 and §5 |
+| `ansible/roles/` | 85 roles: 68 with a `common` meta-dependency (service roles); 17 without — the helper or utility roles plus `memcached` and `multipathd` | §4 and §5 |
 | `ansible/group_vars/all.yml` | 1,130 lines of defaults (every `enable_*`, ports, transport URLs, Docker options) | Lowest-priority defaults. `globals.yml` overrides them |
 | `ansible/inventory/{all-in-one,multinode}` | Example inventories that define about 200 groups | Group membership drives where every container runs |
 | `ansible/library/` | Custom modules: `kolla_docker`, `kolla_toolbox`, `kolla_container_facts`, `bslurp` | The only code that talks to Docker (§6) |

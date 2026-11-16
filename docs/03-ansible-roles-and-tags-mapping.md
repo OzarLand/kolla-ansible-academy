@@ -27,7 +27,8 @@ How tags actually select work in Kolla-Ansible Ussuri, and what each important t
 | **Tags inside roles** | `common/tasks/main.yml:3,9` (`tags: common`). `nova/tasks/stop.yml:7` (`tags: nova`). `service-rabbitmq/tasks/main.yml:43` (`tags: [service-rabbitmq]`) | – |
 | **Other playbooks** | `kolla-host.yml:10` (`baremetal`), `mariadb_backup.yml:6`, `mariadb_recovery.yml:6` (`mariadb`), `bifrost.yml:6` (`bifrost`) | – |
 
-The full per-play tag list is generated in [annex/generated-inventory.md §1](../annex/generated-inventory.md). The
+The full per-play tag list is generated in [annex/generated-inventory.md §1](../annex/generated-inventory.md). Per-service
+cards (tags, task flow, handlers, node types) are in [annex/service-cards.md](../annex/service-cards.md). The
 output of `ansible-playbook --list-tags` against the real `site.yml` is in
 [annex/lab/list-tags-site.txt](../annex/lab/list-tags-site.txt). Per play it shows the *task tags* after inheritance;
 note that **`common` appears in almost every play**.

@@ -12,7 +12,8 @@ This document maps **what depends on what**, and keeps four kinds of dependency 
 Kolla-Ansible **never declares inter-service dependencies** explicitly. Role meta lists only `common`. Every
 dependency below is implicit: play order in `site.yml`, a variable, a template, or a `delegate_to`.
 
-Per-role detail with line references is in the fact sheets
+A compact card per service (role, play, tags, task flow, templates, handlers, key variables, node types) is in
+[annex/service-cards.md](../annex/service-cards.md). Per-role detail with line references is in the fact sheets
 ([A](../annex/factsheets/A-infra-lb-ovn.md), [B](../annex/factsheets/B-mariadb-rabbitmq-keystone.md),
 [C](../annex/factsheets/C-glance-placement-cinder-horizon-heat.md),
 [D](../annex/factsheets/D-barbican-octavia-swift-manila-compute-roles.md),
