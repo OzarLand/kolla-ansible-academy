@@ -393,3 +393,139 @@ All runs execute the **unmodified** `ussuri-eol` `site.yml` with Ansible 2.9.27 
 | containers created | – |
 | one-shot containers (name×runs) | – |
 
+## `sc-deploy-10`
+
+*Scale: fresh `deploy`, 10 computes (forks 20)*
+
+| Metric | Value |
+|---|---|
+| rc / lab wall time | 0 / 266 s |
+| hosts touched (excl. localhost) | 17 |
+| task results ok / skipped / failed | 1684 / 1351 / 0 |
+| task results per compute host | 141–146 |
+| `setup` (fact) module executions | 18 |
+| images actually downloaded | 214 |
+| containers RESTARTED (name×hosts) | mariadb×1 |
+| containers RECREATED | mariadb×1 |
+| containers created | chrony×17; cinder_api×3; cinder_scheduler×3; cinder_volume×1; cron×17; fluentd×17; glance_api×1; haproxy×2; heat_api×3; heat_api_cfn×3; heat_engine×3; horizon×3; iscsid×11; keepalived×2; keystone×3; keystone_fernet×3; keystone_ssh×3; kolla_toolbox×17; mariadb×2; mariadb_clustercheck×3; memcached×3; neutron_dhcp_agent×2; neutron_l3_agent×2; neutron_metadata_agent×2; neutron_openvswitch_agent×12; neutron_server×3; nova_api×3; nova_compute×10; nova_conductor×3; nova_libvirt×10; nova_novncproxy×3; nova_scheduler×3; nova_ssh×10; openvswitch_db×12; openvswitch_vswitchd×12; placement_api×3; rabbitmq×3 |
+| one-shot containers (name×runs) | bootstrap_cinder×1; bootstrap_glance×1; bootstrap_heat×1; bootstrap_keystone×1; bootstrap_keystone_fernet×1; bootstrap_mariadb×1; bootstrap_neutron×1; bootstrap_placement×1; create_cell_nova×1; nova_api_bootstrap×2; nova_api_map_cell0×1; nova_cell_bootstrap×1; nova_list_cells×2; rabbitmq_bootstrap×3 |
+
+## `sc-deploy-30`
+
+*Scale: fresh `deploy`, 30 computes (forks 20)*
+
+| Metric | Value |
+|---|---|
+| rc / lab wall time | 0 / 457 s |
+| hosts touched (excl. localhost) | 37 |
+| task results ok / skipped / failed | 3284 / 2571 / 0 |
+| task results per compute host | 141–146 |
+| `setup` (fact) module executions | 38 |
+| images actually downloaded | 434 |
+| containers RESTARTED (name×hosts) | mariadb×1 |
+| containers RECREATED | mariadb×1 |
+| containers created | chrony×37; cinder_api×3; cinder_scheduler×3; cinder_volume×1; cron×37; fluentd×37; glance_api×1; haproxy×2; heat_api×3; heat_api_cfn×3; heat_engine×3; horizon×3; iscsid×31; keepalived×2; keystone×3; keystone_fernet×3; keystone_ssh×3; kolla_toolbox×37; mariadb×2; mariadb_clustercheck×3; memcached×3; neutron_dhcp_agent×2; neutron_l3_agent×2; neutron_metadata_agent×2; neutron_openvswitch_agent×32; neutron_server×3; nova_api×3; nova_compute×30; nova_conductor×3; nova_libvirt×30; nova_novncproxy×3; nova_scheduler×3; nova_ssh×30; openvswitch_db×32; openvswitch_vswitchd×32; placement_api×3; rabbitmq×3 |
+| one-shot containers (name×runs) | bootstrap_cinder×1; bootstrap_glance×1; bootstrap_heat×1; bootstrap_keystone×1; bootstrap_keystone_fernet×1; bootstrap_mariadb×1; bootstrap_neutron×1; bootstrap_placement×1; create_cell_nova×1; nova_api_bootstrap×2; nova_api_map_cell0×1; nova_cell_bootstrap×1; nova_list_cells×2; rabbitmq_bootstrap×3 |
+
+## `sc-reconf-nova-10`
+
+*Scale: `-t nova reconfigure`, no change, 10 computes (forks 20)*
+
+| Metric | Value |
+|---|---|
+| rc / lab wall time | 0 / 86 s |
+| hosts touched (excl. localhost) | 17 |
+| task results ok / skipped / failed | 500 / 428 / 0 |
+| task results per compute host | 56–65 |
+| `setup` (fact) module executions | 18 |
+| images actually downloaded | 0 |
+| containers RESTARTED (name×hosts) | – |
+| containers RECREATED | – |
+| containers created | – |
+| one-shot containers (name×runs) | nova_api_bootstrap×1; nova_api_map_cell0×1; nova_cell_bootstrap×1; nova_list_cells×2 |
+
+## `sc-reconf-nova-30`
+
+*Scale: `-t nova reconfigure`, no change, 30 computes (forks 20)*
+
+| Metric | Value |
+|---|---|
+| rc / lab wall time | 0 / 161 s |
+| hosts touched (excl. localhost) | 37 |
+| task results ok / skipped / failed | 1160 / 888 / 0 |
+| task results per compute host | 56–65 |
+| `setup` (fact) module executions | 38 |
+| images actually downloaded | 0 |
+| containers RESTARTED (name×hosts) | – |
+| containers RECREATED | – |
+| containers created | – |
+| one-shot containers (name×runs) | nova_api_bootstrap×1; nova_api_map_cell0×1; nova_cell_bootstrap×1; nova_list_cells×2 |
+
+## `sc-reconf-nova-30-computeconf`
+
+*Scale: `-t nova reconfigure` after nova-compute override, 30 computes (forks 20)*
+
+| Metric | Value |
+|---|---|
+| rc / lab wall time | 0 / 177 s |
+| hosts touched (excl. localhost) | 37 |
+| task results ok / skipped / failed | 1280 / 889 / 0 |
+| task results per compute host | 60–69 |
+| `setup` (fact) module executions | 38 |
+| images actually downloaded | 0 |
+| containers RESTARTED (name×hosts) | nova_compute×30; nova_libvirt×30; nova_ssh×30 |
+| containers RECREATED | – |
+| containers created | – |
+| one-shot containers (name×runs) | nova_api_bootstrap×1; nova_api_map_cell0×1; nova_cell_bootstrap×1; nova_list_cells×2 |
+
+## `sc-reconf-nova-30-forks5`
+
+*Scale: `-t nova reconfigure`, no change, 30 computes, forks 5*
+
+| Metric | Value |
+|---|---|
+| rc / lab wall time | 0 / 164 s |
+| hosts touched (excl. localhost) | 37 |
+| task results ok / skipped / failed | 1160 / 888 / 0 |
+| task results per compute host | 56–65 |
+| `setup` (fact) module executions | 38 |
+| images actually downloaded | 0 |
+| containers RESTARTED (name×hosts) | – |
+| containers RECREATED | – |
+| containers created | – |
+| one-shot containers (name×runs) | nova_api_bootstrap×1; nova_api_map_cell0×1; nova_cell_bootstrap×1; nova_list_cells×2 |
+
+## `sc-reconf-nova-30-forks50`
+
+*Scale: `-t nova reconfigure`, no change, 30 computes, forks 50*
+
+| Metric | Value |
+|---|---|
+| rc / lab wall time | 0 / 163 s |
+| hosts touched (excl. localhost) | 37 |
+| task results ok / skipped / failed | 1160 / 888 / 0 |
+| task results per compute host | 56–65 |
+| `setup` (fact) module executions | 38 |
+| images actually downloaded | 0 |
+| containers RESTARTED (name×hosts) | – |
+| containers RECREATED | – |
+| containers created | – |
+| one-shot containers (name×runs) | nova_api_bootstrap×1; nova_api_map_cell0×1; nova_cell_bootstrap×1; nova_list_cells×2 |
+
+## `sc-reconf-nova-30-limit1`
+
+*Scale: `-t nova reconfigure --limit compute001`, no change, 30 computes*
+
+| Metric | Value |
+|---|---|
+| rc / lab wall time | 0 / 25 s |
+| hosts touched (excl. localhost) | 1 |
+| task results ok / skipped / failed | 43 / 23 / 0 |
+| task results per compute host | 66–66 |
+| `setup` (fact) module executions | 38 |
+| images actually downloaded | 0 |
+| containers RESTARTED (name×hosts) | – |
+| containers RECREATED | – |
+| containers created | – |
+| one-shot containers (name×runs) | nova_list_cells×1 |
+

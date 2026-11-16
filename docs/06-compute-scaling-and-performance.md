@@ -187,7 +187,54 @@ Two independent multipliers apply:
 
 ## 6. Measured scaling in the lab
 
-*(Filled from `annex/lab` scale runs; see the table below.)*
+Unmodified `site.yml`, Ansible 2.9.27, simulated hosts with stub modules, a local connection (no SSH) and a 4-vCPU
+deploy host. Fixed parts of every run: 3 controllers, 2 network nodes, 1 storage node, 1 monitoring node. Runs and
+method: [annex/lab/README.md](../annex/lab/README.md), [results](../annex/lab/results.md).
+
+| Run | Computes | forks | Task results (fleet) | per compute | `compare_container` execs (fleet) | Restarts/recreates | nova-cell play (lab s) | Total (lab s) |
+|---|---|---|---|---|---|---|---|---|
+| `t0-deploy` | 3 | 20 | 2,048 | 143 | 137 | 2 | 18 | 179 |
+| `sc-deploy-10` | 10 | 20 | 3,035 | 142 | 214 | 2 | 39 | 266 |
+| `sc-deploy-30` | 30 | 20 | 5,855 | 141 | 434 | 2 | 105 | 457 |
+| `s01` `-t nova reconfigure` (no change) | 3 | 20 | 536 | 59 | 39 | 0 | 21 | 46 |
+| `sc-reconf-nova-10` (no change) | 10 | 20 | 928 | 57 | 81 | 0 | 57 | 86 |
+| `sc-reconf-nova-30` (no change) | 30 | 20 | 2,048 | 56 | 201 | 0 | 130 | 161 |
+| `sc-reconf-nova-30-forks5` | 30 | 5 | 2,048 | 56 | 201 | 0 | 134 | 164 |
+| `sc-reconf-nova-30-forks50` | 30 | 50 | 2,048 | 56 | 201 | 0 | 132 | 163 |
+| `sc-reconf-nova-30-computeconf` (nova-compute override) | 30 | 20 | 2,169 | 60 | 201 | **90** (30 × nova_compute + nova_libvirt + nova_ssh) | 147 | 177 |
+| `sc-reconf-nova-30-limit1` (`--limit compute001`) | 30 | 20 | 66 | 66 | 6 | 0 | 17 | 25 |
+
+What the measurements show:
+
+1. **Per-compute work is constant and fleet work is linear.**
+   - Deploy: ≈141–143 task results per compute at 3, 10 and 30 computes. Fleet totals grow by exactly ≈141 per
+     added compute (2,048 → 3,035 → 5,855).
+   - `-t nova`: ≈56–59 per compute, with fleet totals growing by ≈56 per compute.
+   - The number of `compare_container` execs (one `docker exec kolla_set_configs --check` each) grows by 11 per
+     compute for a deploy and 6 per compute for `-t nova`.
+2. **The compute-wide plays dominate as C grows.**
+   - The nova-cell play went from 21 s to 130 s of lab time (3 → 30 computes) for a no-change `-t nova` run. That is
+     45% → 81% of the run.
+   - In a full deploy, the plays touching computes (chrony + common, nova-cell, openvswitch, neutron) take a growing
+     share as well.
+3. **forks did not matter in this lab, which shows the deploy host's CPU as a bottleneck.**
+   - The 30-compute run took 164 s with forks 5, 161 s with forks 20 and 163 s with forks 50. With a local connection
+     there is no network latency to overlap, so the 4 vCPUs are saturated by Ansible workers: module packaging
+     (AnsiballZ), templating of `nova.conf.j2` and the per-host `group_by` loop.
+   - In production the per-invocation latency is dominated by SSH and remote execution. Forks then do overlap
+     latency, *until* the deploy host's CPU saturates in the same way.
+   - Size the deploy host (cores) together with forks. [NEEDS-LAB Q7 for production numbers]
+4. **A small change restarts the fleet in one step.** With one nova-compute-only override on 30 computes, 90
+   container restarts were issued (`nova_compute`, `nova_libvirt` and `nova_ssh` on every compute). The 30
+   `nova_libvirt` restarts were all issued within **2.3 s** of each other, in one handler step (two waves of
+   forks=20).
+5. **`--limit` bounds the restarts, but fact gathering stays O(inventory).**
+   - With `--limit compute001` on the 30-compute inventory, compute001 executed **38 `setup` calls sequentially**:
+     its own plus one delegated call per inventory host. That took 5.5 s in the lab (≈0.15 s per call locally),
+     against 1.6 s for 11 hosts in the 3-compute inventory.
+   - The delegated `discover_hosts`/`list_cells` work ran on control01.
+   - With SSH, multiply the delegated count by the real per-host `setup` time; at 500 computes it is ≈510 sequential
+     fact gatherings before any work starts.
 
 ---
 
