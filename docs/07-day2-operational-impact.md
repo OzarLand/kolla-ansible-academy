@@ -42,8 +42,8 @@ sequenceDiagram
   Note over CT: Play 3 nova role — register (keystone) · config · check · flush
   CT->>CT: restart super-conductor/scheduler/api if drift (all controllers at once)
   Note over CT,CP: Play 4 nova-cell — common on computes · config-host · config · check · flush
+  CT->>CT: restart conductor/novncproxy if drift (all controllers at once)
   CP->>CP: restart nova_ssh → nova_libvirt (→ SASL user) → nova_compute if drift (all computes at once)
-  CT->>CT: restart conductor/novncproxy if drift
   CP->>C1: wait for compute registration · discover_hosts (delegated)
   Note over CT: Play 5 — kill -HUP nova_scheduler (always)
   Note over CT,CP: Plays 6-10 — skipped (upgrade only)
@@ -62,9 +62,9 @@ sequenceDiagram
 
 ### A.3 Are all compute nodes affected? Does nova-compute restart on every compute?
 
-- **Tasks:** yes. The nova-cell play targets the whole `compute` group (`nova.yml:117-135`). Every compute runs about
-  33 tasks even when nothing changes (about 69 remote module calls) [LAB s01, profile in
-  [06](06-compute-scaling-and-performance.md)].
+- **Tasks:** yes. The nova-cell play targets the whole `compute` group (`nova.yml:117-135`). Every compute produces
+  56–65 task results even when nothing changes (33–42 of them executed, about 46–53 remote module invocations)
+  [LAB s01, profile in [06](06-compute-scaling-and-performance.md)].
 - **Restarts:** only where drift is detected. But most Nova-related changes are global (02 §5, 05 §2.3), so in
   practice either *no* compute restarts or *all* computes restart. They restart in the same handler step unless
   `ANSIBLE_SERIAL`/`kolla_serial` is set or `--limit` is used.
@@ -110,8 +110,14 @@ sequenceDiagram
 2. the neutron play on `neutron-server`, every agent group, **every compute** and `manila-share` (`site.yml:761-780`).
 
 Per host the steps are: `common` (first play for the host under this tag), register (run_once), config-host
-(`ip6_tables` module; sysctl on L3 hosts), config, check-containers, flush. The Neutron DB bootstrap runs **only on
-`deploy`** (`roles/neutron/tasks/bootstrap_service.yml:21-22`).
+(`ip6_tables` module; sysctl on L3 hosts), config, check-containers, bootstrap, flush. The bootstrap step always runs
+the Neutron DB and user/grant tasks (`mysql_db`/`mysql_user` via kolla_toolbox, run_once, delegated to
+neutron-server[0], skipped only with `use_preconfigured_databases`, `roles/neutron/tasks/bootstrap.yml:2-34`)
+[LAB s05: ok on control01], so MariaDB must be reachable.
+The `bootstrap_neutron` DB-sync container is skipped on reconfigure only because `neutron_enable_rolling_upgrade`
+defaults to `yes` (`roles/neutron/defaults/main.yml:411`). With it set to `no`, the DB sync also runs on every
+reconfigure (`roles/neutron/tasks/bootstrap_service.yml:21-22`). With `enable_neutron_sfc`, the SFC bootstrap container
+runs on every reconfigure regardless (`bootstrap_service.yml:24-46`).
 
 ### B.2 What restarts [LAB]
 
@@ -260,10 +266,10 @@ Even with a narrow tag, the code guarantees that the run also touches:
 | **HAProxy frontends of the service, on all haproxy hosts**, and a HAProxy restart if the rendered frontend changed | haproxy play includes `<svc>/loadbalancer.yml` under the same tag; `haproxy-config` is `tags: always`; handlers ignore tags | `site.yml:126-392`; fact sheet A §1.9; [LAB s01: 14 tasks on each network node for `-t nova`] |
 | **`common` on every host of the service play** (fluentd/cron/toolbox config + container check, restarts if drift) | meta dependency inherits the tag; first-play rule | [LAB s01, s07] |
 | **Keystone registration** (service, endpoints, user, role) | `register.yml` in `deploy.yml`/`reconfigure.yml` | `service-ks-register` |
-| **DB creation/grants and DB schema sync** for most services | `bootstrap.yml` imported by `deploy.yml` | [LAB t1: 11 one-shot container runs on a no-change redeploy — 8 DB-sync bootstraps + map_cell0 + 2× list_cells] |
+| **DB creation/grants and DB schema sync** for most services (Neutron's DB sync: `deploy` only by default, §B.1) | `bootstrap.yml` imported by `deploy.yml` | [LAB t1: 11 one-shot container runs on a no-change redeploy — 8 DB-sync bootstraps + map_cell0 + 2× list_cells] |
 | **RabbitMQ user/vhost** (nova-cell and others) | `service-rabbitmq` | `nova-cell/tasks/rabbitmq.yml` |
 | **Global MariaDB variable toggle** (`-t glance`) | `log_bin_trust_function_creators` 1→0 | fact sheet C §1 |
-| **Fernet key redistribution** (`-t keystone`) | `distribute_fernet.yml` | fact sheet B §8 |
+| **Fernet key redistribution** (`-t keystone`) | `distribute_fernet.yml` | fact sheet B §3.6 (re-run on reconfigure: §3.7) |
 | **Actions on hosts outside `--limit`** | `delegate_to` to `groups[...][0]`: Neutron DB bootstrap on neutron-server[0], cell list/discovery on conductor[0], RabbitMQ user creation on rabbitmq[0] | [LAB s17: `bootstrap_neutron`, `nova_list_cells`, `discover_hosts` ran on control01 during `deploy --limit compute004`] |
 | **SIGHUP to every nova-scheduler** (`-t nova`/`nova-api`) | refresh play | `nova.yml:140-156` |
 
@@ -271,8 +277,9 @@ What a service tag does **not** do: it never touches MariaDB, RabbitMQ or memcac
 never touches OVS (unless `-t openvswitch`). Under `-t haproxy` or a no-tag run, HAProxy and keepalived *containers*
 are also checked; a service tag touches only its frontend file.
 
-[LAB s19] `-t haproxy reconfigure` on an unchanged cloud: `common` + haproxy role + all 49 frontend includes on the 2
-haproxy hosts, and no restart.
+[LAB s19] `-t haproxy reconfigure` on an unchanged cloud: `common` + haproxy role on the 2 haproxy hosts. All 49
+frontend `include_role` tasks were evaluated; only the 12 for enabled services rendered their frontends (the other 37
+were skipped by `when: enable_<svc>`). Nothing restarted.
 
 ---
 
@@ -286,7 +293,7 @@ haproxy hosts, and no restart.
 - **Restarted on both network nodes:** all neutron agents; haproxy (backend lists changed).
 - **Why:** `rpc_transport_url` lists every RabbitMQ host, and the haproxy backends list every API host.
 - **Plus, in reality:** RabbitMQ and Galera cluster joins, which need their own plays (`-t rabbitmq`, `-t mariadb`).
-  Galera membership changes restart all DB nodes (`galera.cnf` lists all nodes, fact sheet B §5).
+  Galera membership changes restart all DB nodes (`galera.cnf` lists all nodes, fact sheet B §1.4 and §1.8 item 11).
 
 **Takeaway:** controller membership changes are fleet-wide restart events for every messaging consumer. Schedule them
 as such, and batch the compute side.
@@ -341,7 +348,9 @@ Caveats:
 | One extra controller | changes the transport URL in every messaging service everywhere | s12 |
 | A server-side ML2 option | also merged into every OVS agent config | s05 |
 | Rebuilt image of one service | its siblings on the same host restart too | s09c |
-| Any `-t <svc>` | runs common, haproxy include, Keystone registration and DB sync, even with no change | s01, t1 |
+| Any OpenStack API service `-t <svc>` | runs common, the service's haproxy include and Keystone registration even with no change; the DB sync runs on every `deploy` and, for most services, on every reconfigure (Neutron: `deploy` only by default). Infrastructure tags such as `-t haproxy` run no Keystone registration or DB sync | s01, s05, s19, t1 |
 
-And independently of restarts, **every run pays the per-host task cost**: about 33 tasks per compute for `-t nova`
-with no change, about 145 for a full deploy. See [06](06-compute-scaling-and-performance.md).
+And independently of restarts, **every run pays the per-host task cost**. Per compute, a no-change `-t nova` run
+produces about 56–65 task results (33–42 executed, i.e. not skipped). A full deploy produces about 141–146 the first
+time (80–85 executed); a no-change full deploy or reconfigure produces about 127–132 (66–71 executed). See
+[06](06-compute-scaling-and-performance.md).

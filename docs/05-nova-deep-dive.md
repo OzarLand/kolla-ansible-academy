@@ -9,20 +9,20 @@ coupling (Glance, Neutron, Placement, Cinder, Keystone, RabbitMQ, MariaDB) and t
 
 | Component | Container | Role | Inventory group (default) | Placement variable | Notable container flags | Evidence |
 |---|---|---|---|---|---|---|
-| nova-api (+ metadata API) | `nova_api` | `nova` | `nova-api` → `nova` → `control` | `group: nova-api` | **privileged**, `/lib/modules` | `roles/nova/defaults/main.yml:2-43` |
-| nova-scheduler | `nova_scheduler` | `nova` | `nova-scheduler` | `group` | – | `:44-50` |
-| nova-super-conductor | `nova_super_conductor` | `nova` | `nova-super-conductor` | `enabled: enable_cells` (default `no`) | – | `:51-57` |
+| nova-api (+ metadata API) | `nova_api` | `nova` | `nova-api` → `nova` → `control` | `group: nova-api` | **privileged**, `/lib/modules` | `roles/nova/defaults/main.yml:3-41` |
+| nova-scheduler | `nova_scheduler` | `nova` | `nova-scheduler` | `group` | – | `:42-48` |
+| nova-super-conductor | `nova_super_conductor` | `nova` | `nova-super-conductor` | `enabled: enable_cells` (default `no`) | – | `:49-55` |
 | nova-conductor (cell) | `nova_conductor` | `nova-cell` | `nova-conductor` | `group: nova_cell_conductor_group` | – | `roles/nova-cell/defaults/main.yml:40-46` |
 | nova-novncproxy | `nova_novncproxy` | `nova-cell` | `nova-novncproxy` | `enabled: nova_console == 'novnc'` | – | `:19-25` |
 | nova-spicehtml5proxy | `nova_spicehtml5proxy` | `nova-cell` | `nova-spicehtml5proxy` | `nova_console == 'spice'` | – | `:26-32` |
 | nova-serialproxy | `nova_serialproxy` | `nova-cell` | `nova-serialproxy` | `enable_nova_serialconsole_proxy` | – | `:33-39` |
-| nova-compute | `nova_compute` | `nova-cell` | `compute` | `group: nova_cell_compute_group` | **privileged**, **`ipc_mode: host`**, `/dev`, `/run:shared`, `/lib/modules`, `iscsi_info` (if iscsid), `nova_compute` volume `/var/lib/nova`, `libvirtd` volume | `:47-56` |
-| nova-libvirt | `nova_libvirt` | `nova-cell` | `compute` | `enabled: nova_compute_virt_type in ['kvm','qemu']` | **privileged**, **`pid_mode: host`**, `/dev`, `/run:shared`, **`/sys/fs/cgroup` (rw)**, `libvirtd:/var/lib/libvirt`, `nova_libvirt_qemu:/etc/libvirt/qemu`, instance datadir | `:3-11`, volumes `:210-223` |
+| nova-compute | `nova_compute` | `nova-cell` | `compute` | `group: nova_cell_compute_group` | **privileged**, **`ipc_mode: host`**, `/dev`, `/run:shared`, `/lib/modules`, `iscsi_info` (if iscsid), `nova_compute` volume `/var/lib/nova`, `libvirtd` volume | `:47-57` |
+| nova-libvirt | `nova_libvirt` | `nova-cell` | `compute` | `enabled: nova_compute_virt_type in ['kvm','qemu']` | **privileged**, **`pid_mode: host`**, `/dev`, `/run:shared`, **`/sys/fs/cgroup` (rw)**, `libvirtd:/var/lib/libvirt`, `nova_libvirt_qemu:/etc/libvirt/qemu`, instance datadir | `:3-11`, volumes `:237-250` |
 | nova-ssh | `nova_ssh` | `nova-cell` | `compute` | `enable_nova_ssh` (default yes) | sshd on `migration_interface_address:8022` | `:12-18`; `templates/sshd_config.j2:1-2` |
-| nova-compute-ironic | `nova_compute_ironic` | `nova-cell` | `nova-compute-ironic` | `enable_ironic` and cell match | – | `:57-63` |
+| nova-compute-ironic | `nova_compute_ironic` | `nova-cell` | `nova-compute-ironic` | `enable_ironic` and cell match | – | `:58-64` |
 
 Cells: `nova_cell_name` is empty by default (a single cell named `''`, the pre-Train layout). For multi-cell, every
-`nova_cell_*_group` variable points at a per-cell group (`roles/nova-cell/defaults/main.yml:81-123`). `enable_cells`
+`nova_cell_*_group` variable points at a per-cell group (`roles/nova-cell/defaults/main.yml:87-126`). `enable_cells`
 then deploys `nova_super_conductor` at the API level.
 
 ---
@@ -41,7 +41,7 @@ What must work **while Kolla runs** the nova plays:
 | Docker registry (only if the image is absent) | bootstrap and service containers | `kolla_docker.start_container` pulls if absent | fail |
 | **Running `nova_conductor` on `groups[nova_cell_conductor_group][0]`** | `discover_hosts` uses `docker exec nova_conductor` | `roles/nova-cell/tasks/discover_computes.yml:14-21` | discovery fails (`any_errors_fatal`) |
 | **Running `kolla_toolbox` on that conductor** + Keystone + nova-api | `openstack compute service list` to wait for compute registration | `roles/nova-cell/tasks/wait_discover_computes.yml:8-42` | 20 retries × 10 s, then fail only the hosts that did not register |
-| Facts of all RabbitMQ, memcached and haproxy hosts | transport URLs, memcache lists, haproxy backends | `group_vars/all.yml:206,216` | templating error. This is why `gather-facts.yml` gathers facts for all hosts even with `--limit` |
+| Facts of all RabbitMQ, memcached and haproxy hosts | transport URLs, memcache lists, haproxy backends | `group_vars/all.yml:206,216`; `roles/nova-cell/defaults/main.yml:174-175` | templating error. This is why `gather-facts.yml` gathers facts for all hosts even with `--limit` |
 
 ### 2.2 Runtime dependencies (what Nova needs to *operate*)
 
@@ -76,7 +76,7 @@ flowchart LR
 | Nova component | Requires at runtime | Evidence (template) |
 |---|---|---|
 | nova-api | MariaDB (`nova_api` and `nova_cell0`), RabbitMQ, Keystone (authtoken + memcached), Placement, Glance, Neutron, Cinder | `roles/nova/templates/nova.conf.j2:30,60-61,67,80,97-105,110-136,169` |
-| nova-scheduler | MariaDB (`nova_api`), RabbitMQ, Placement. Filters: `AvailabilityZone`, `Compute`, `ComputeCapabilities`, `ImageProperties` (+ server-group filters) | `nova.conf.j2:32-39`. `discover_hosts_in_cells_interval = -1` (`:166`): **the scheduler never discovers hosts by itself** |
+| nova-scheduler | MariaDB (`nova_api`), RabbitMQ, Placement. Filters: Kolla leaves `[filter_scheduler] enabled_filters` unset by default, so Nova's upstream Ussuri default applies (`AvailabilityZone`, `Compute`, `ComputeCapabilities`, `ImageProperties`, `ServerGroupAntiAffinity`, `ServerGroupAffinity`) | `nova.conf.j2:32-40` overrides `enabled_filters` only when `enable_blazar` (adds `BlazarFilter`) or `enable_nova_fake` is set; both default to `no`. `discover_hosts_in_cells_interval = -1` (`:166`): **the scheduler never discovers hosts by itself** |
 | nova-conductor (cell) | MariaDB (cell DB, and the API DB because `nova_cell_conductor_has_api_database: yes`), RabbitMQ | `roles/nova-cell/templates/nova.conf.j2:142-157` |
 | nova-compute | RabbitMQ (**no DB access**: the `[database]` section is excluded for `nova-compute*`), Keystone, Placement, Glance, Neutron, Cinder, local libvirt, local OVS | `nova-cell/templates/nova.conf.j2:42,105-139,142,203-213`; libvirt `connection_uri` in `nova.conf.d/libvirt.conf.j2:1-7` |
 | nova-libvirt | `/dev/kvm` (udev rule `99-kolla-kvm.rules`), the `br_netfilter` module, Ceph (if `nova_backend: rbd`: `ceph.conf`, secret XML/base64 in `nova-libvirt/secrets`) | `nova-cell/tasks/config-host.yml`, `external_ceph.yml` |
@@ -89,28 +89,32 @@ These change `nova.conf` on **every compute**. The result is a restart of `nova_
 
 | Input | Template line | Why it is "global" |
 |---|---|---|
-| RabbitMQ group membership, user, password, port | `transport_url` (`nova-cell/templates/nova.conf.j2:42,184`) | `rpc_transport_url` lists all rabbitmq hosts (`group_vars/all.yml:206`) |
+| RabbitMQ group membership, user, password, port | `transport_url` (`nova-cell/templates/nova.conf.j2:42,184`) | `nova_cell_rpc_transport_url` / `nova_cell_notify_transport_url` list every host of `nova_cell_rpc_group_name`, default `om_rpc_group` = `rabbitmq` (`roles/nova-cell/defaults/main.yml:156-175`). Within Nova, the global `rpc_transport_url` (`group_vars/all.yml:206`) is used only by the API-level nova role, so overriding it does not change the compute `nova.conf` |
 | `enable_ceilometer`, `enable_searchlight`, `enable_designate`, `enable_neutron_infoblox_ipam_agent` | `[notifications]` / notification driver (`:34-40,215-225`) | global flags |
-| `enable_watcher`, `enable_cinder`, `enable_osprofiler`, `enable_barbican` | `:37,111,226,234` | global flags [LAB s07: enabling Barbican restarted all nova containers] |
-| Glance, Neutron, Placement, Keystone endpoints and service passwords (`placement_keystone_password`, `neutron_keystone_password`, `cinder_keystone_password`, `nova_keystone_password`, `metadata_secret`) | `[glance]`, `[neutron]`, `[placement]`, `[cinder]` | `passwords.yml` and VIP/FQDN settings |
+| `enable_watcher`, `enable_cinder`, `enable_osprofiler`, `enable_barbican` | `:37,111,226,234` | global flags [LAB s07: enabling Barbican restarted all nova containers, and also `cron`, `fluentd` and `kolla_toolbox` on all 6 nova hosts, because `common` is a meta dependency of nova and nova-cell and re-rendered `td-agent.conf` and the cron logrotate config] |
+| Glance, Neutron, Placement, Keystone endpoints and service passwords (`placement_keystone_password`, `neutron_keystone_password`, `cinder_keystone_password`, `metadata_secret`) | `[glance]`, `[neutron]`, `[placement]`, `[cinder]` (`:121,126,138,207`) | `passwords.yml` and VIP/FQDN settings |
 | `nova_console`, `enable_nova_serialconsole_proxy`, `kolla_external_fqdn`, `public_protocol` | `[vnc]`/`[spice]`/`[serial_console]` (`:48-88`) | console URLs embed the external FQDN |
 | `libvirt_tls`, `libvirt_enable_sasl`, `migration_interface`, `nova_backend`, Ceph settings | `nova.conf.d/libvirt.conf.j2`, `libvirtd.conf.j2`, `qemu.conf.j2` | change the libvirt **and** compute containers |
 | Operator overrides | `/etc/kolla/config/global.conf`, `nova.conf`, `nova/nova-compute.conf`, `nova/<host>/nova.conf` | merge order in `nova-cell/tasks/config.yml:63-75` |
 
-Inputs that do **not** reach compute hosts: the memcached membership (no memcache settings in the nova-cell
-template) and MariaDB settings (no `[database]` on computes).
+Inputs that do **not** reach the nova containers on compute hosts: the memcached membership (no memcache settings
+in the nova-cell template; it does reach computes through `neutron.conf` of the Neutron agents and `ceilometer.conf`),
+MariaDB settings (no `[database]` on computes) and `nova_keystone_password`. Among the nova templates, the latter
+appears only in `[keystone_authtoken]` of the API-level template (`roles/nova/templates/nova.conf.j2:124`), rendered for `nova_api`,
+`nova_scheduler` and `nova_super_conductor`, so rotating it restarts no nova container on the computes. It does
+reach computes through the `[nova]` section of the Neutron agents' `neutron.conf` (`roles/neutron/templates/neutron.conf.j2:85`).
 
 ### 2.4 Operational dependencies (what restarts what)
 
 | Trigger | Restarted on computes | Restarted on controllers | Evidence |
 |---|---|---|---|
 | Any change of `nova-compute`'s `nova.conf` / `config.json` / image | `nova_compute` **+ `nova_libvirt` + `nova_ssh`** (loop-notify), then "Create libvirt SASL user" | – | [LAB s03] |
-| Change of `/etc/kolla/config/nova.conf` or a global flag | all three on every compute | nova_api, nova_scheduler, nova_conductor, nova_novncproxy (+ super conductor if `enable_cells`) | [LAB s02, s07] |
+| Change of `/etc/kolla/config/nova.conf` or a global flag | all three on every compute; a global `enable_*` flag that changes the `common` role's fluentd/logrotate config also restarts `cron`, `fluentd`, `kolla_toolbox` | nova_api, nova_scheduler, nova_conductor, nova_novncproxy (+ super conductor if `enable_cells`); same `common` restarts for such a flag | [LAB s02, s07]: the plain `nova.conf` override (s02) restarted only nova containers; `enable_barbican` (s07) also restarted `cron`, `fluentd`, `kolla_toolbox` on all 6 nova hosts (`common` is a meta dependency, `roles/nova/meta/main.yml:3`, `roles/nova-cell/meta/main.yml:3`) |
 | Scheduler-only override | – | `nova_scheduler` **+ `nova_api`** (loop-notify) | [LAB s04] |
 | New image for nova-compute (after `pull`) | `nova_compute` recreated, `nova_libvirt` + `nova_ssh` restarted | – | [LAB s09c] |
 | Any `deploy`/`reconfigure` with `nova` or `nova-api` tag, even with no change | – | `nova_scheduler` receives `SIGHUP` (cell-cache refresh) | `roles/nova/tasks/refresh_scheduler_cell_cache.yml:10` [LAB s01] |
 | Libvirt TLS certificate change | `nova_libvirt` + `nova_compute` (+ `nova_ssh` by loop-notify) | – | `nova-cell/tasks/config-libvirt-tls.yml` |
-| Ceph keyring / `ceph.conf` / secret change | `nova_compute`, `nova_libvirt` | – | `nova-cell/tasks/external_ceph.yml` |
+| Ceph keyring / `ceph.conf` / secret change | `nova_compute` **+ `nova_libvirt` + `nova_ssh`**, then "Create libvirt SASL user". The files are listed in the `config.json` of nova-compute or nova-libvirt, so "Check nova-cell containers" finds `kolla_set_configs --check` drift and loop-notifies all three. Exception: the cinder keyring file is not in nova-compute's `config.json`, and its key reaches libvirt only through the cinder secret in `nova-libvirt/secrets`. A key change therefore still restarts all three; an edit that leaves the key unchanged restarts only `nova_compute` (direct notify) | – | `nova-cell/tasks/external_ceph.yml`, `check-containers.yml:2-20`, `templates/nova-compute.json.j2`, `nova-libvirt.json.j2` (same mechanism as [LAB s03]) |
 
 ---
 
@@ -169,7 +173,7 @@ Ordered by necessity [CODE + upstream Nova behaviour, marked HYPOTHESIS where up
 
 Facts [CODE]:
 
-- **`pid_mode: host`, privileged, `/sys/fs/cgroup` mounted read-write** (`roles/nova-cell/defaults/main.yml:3-11,210-223`).
+- **`pid_mode: host`, privileged, `/sys/fs/cgroup` mounted read-write** (`roles/nova-cell/defaults/main.yml:3-11,237-250`).
   QEMU processes are started by libvirtd *inside* this container.
 - **Persistent state lives on named volumes.** The `libvirtd` volume holds `/var/lib/libvirt` and the
   `nova_libvirt_qemu` volume holds domain XML in `/etc/libvirt/qemu`. Instance disks sit in
@@ -183,8 +187,12 @@ Facts [CODE]:
 - **Effective stop timeout is 10 s** (01 §6). libvirtd gets SIGKILL after 10 s.
 - **Libvirt is restarted before nova-compute.** In the handler order `nova-libvirt` comes before `nova-compute`, so
   during the window nova-compute is still running against a libvirtd that is going away.
-- **Kolla ships, but does not install, a guest shutdown helper.** `tools/kolla-libvirt-guests.service` (with
-  `virt-guest-shutdown.target`) is for host shutdown; no playbook references it.
+- **Kolla ships, but does not install by default, a guest shutdown helper.** `tools/kolla-libvirt-guests.service`
+  (with `virt-guest-shutdown.target`) is for host shutdown. The optional standalone playbook
+  `tools/setup-compute-libvirt.yml` (hosts: `compute`) copies both units to `/usr/lib/systemd/system` and enables and
+  starts them, but no kolla-ansible action (deploy, reconfigure, upgrade, ...) runs it, and `setup.cfg` `data_files`
+  leaves all three files out of a pip install. The units exist on a compute only if the operator runs that playbook
+  by hand from a source checkout.
 
 What happens to running VMs is **not provable by static analysis** [NEEDS-LAB]:
 
@@ -218,7 +226,7 @@ nova-compute restart [HYPOTHESIS, upstream Nova]:
 
 | Function | Mechanism in Ussuri Kolla | Dependency |
 |---|---|---|
-| Live migration | libvirt `qemu+tcp://<migration_interface_address>/system` (or `qemu+tls://<migration_hostname>` with `libvirt_tls`), SASL auth by default (`libvirt_enable_sasl: true`) | `nova_libvirt` on **both** source and destination computes, the `migration_interface` network, matching SASL credentials, and with TLS, hostnames resolvable on every compute (`/etc/hosts` from `bootstrap-servers`, fact sheet E §5) |
+| Live migration | libvirt `qemu+tcp://<migration_interface_address>/system` (or `qemu+tls://<migration_hostname>` with `libvirt_tls`), SASL auth by default (`libvirt_enable_sasl: true`) | `nova_libvirt` on **both** source and destination computes, the `migration_interface` network, matching SASL credentials, and with TLS, hostnames resolvable on every compute (`/etc/hosts` from `bootstrap-servers`, fact sheet E §3) |
 | Cold migration / resize | `nova_ssh` sshd on port 8022, with keys from `passwords.yml` (`nova_ssh_key`) | `nova_ssh` on both hosts and a shared instance datadir layout |
 | VNC console | `nova_novncproxy` (controllers) → compute `server_proxyclient_address` | `api_interface` reachable from the proxy hosts. Public URL is built from `kolla_external_fqdn` |
 | Scheduling | `nova_scheduler` + Placement + host mappings | discovery must have run for new computes |
@@ -238,7 +246,7 @@ Impact of a Kolla run on these:
 | Item | Behaviour | Evidence |
 |---|---|---|
 | `nova-status upgrade check` | Runs on `nova-api[0]`. The play fails if rc ∉ {0,1} | `roles/nova/tasks/upgrade.yml:2-16` |
-| `nova_safety_upgrade: yes` | Stops all API-level nova services first. Handlers skip restarts during upgrade; the reload plays start them again | `upgrade.yml:18-28`; handlers `when: kolla_action != "upgrade" or not nova_safety_upgrade` |
+| `nova_safety_upgrade: yes` | Stops `nova_api`, `nova_scheduler` and `nova_super_conductor`, and on the cell hosts `nova_conductor`, `nova_novncproxy`, `nova_spicehtml5proxy` and `nova_serialproxy`, before the upgrade. `nova_compute`, `nova_compute_ironic`, `nova_libvirt` and `nova_ssh` keep running. Handlers skip restarts of the stopped services during upgrade; the reload plays start them again. Until then the API, the cell conductors and the consoles are all down | `roles/nova/tasks/upgrade.yml:18-28`; `roles/nova-cell/tasks/upgrade.yml:2-14`; handlers `when: kolla_action != "upgrade" or not nova_safety_upgrade` (`nova-cell/handlers/main.yml:17,34,51,68`) |
 | Rolling upgrade | `config` → `check-containers` → `flush_handlers`. Restarts happen per batch only if `ANSIBLE_SERIAL` is set. The TODO in `rolling_upgrade.yml:7-10` admits they are not serialised | `roles/nova/tasks/rolling_upgrade.yml` |
 | RPC version pin removal | After upgrade, the reload plays restart conductors → computes → API (`recreate_or_restart`), after waiting `nova_compute_startup_delay` (30 s) for computes to report versions | `nova.yml:158-225`; `nova-cell/handlers/main.yml:187-196` |
 | Online data migrations | After all cells are upgraded | `nova.yml:227-272` |

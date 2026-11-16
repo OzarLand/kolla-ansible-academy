@@ -18,7 +18,7 @@ There is **no dependency resolution** in Kolla-Ansible Ussuri. Order comes from 
 | Role meta dependency on `common` | `common` runs *before* the first role a host meets | `roles/*/meta/main.yml`, `roles/common/tasks/main.yml:1-10` |
 | Task order inside a role | Fixed sequence: register → config(-host) → check-containers → bootstrap → flush handlers (§3) | `roles/*/tasks/deploy.yml` |
 | Handler flush points | Restarts happen at `meta: flush_handlers` (end of most `deploy.yml`) or at the end of the play. haproxy deliberately defers to the end of its play | e.g. `roles/nova/tasks/deploy.yml:8-9`; haproxy `deploy.yml:8-11` |
-| `serial` / `kolla_serial` | Splits a play into batches; each batch completes the whole play, handlers included, before the next starts | `serial: '{{ kolla_serial\|default("0") }}'` on all plays except mariadb/rabbitmq |
+| `serial` / `kolla_serial` | Splits a play into batches; each batch completes the whole play, handlers included, before the next starts | `serial: '{{ kolla_serial\|default("0") }}'` on every service play except mariadb, rabbitmq and outward rabbitmq (no `serial` key) and cyborg, which reads `serial: '{{ serial\|default("0") }}'` (`site.yml:1028`), so `kolla_serial` never batches it. The group_by, CentOS-check and prechecks plays have no `serial` key either |
 
 Conditions only *remove* work, never reorder it:
 
@@ -131,7 +131,8 @@ sequenceDiagram
 ```
 
 On a 3-compute lab deployment, a compute host executes about 145 task results, of which about 61 are skips, and
-runs 14 handlers. A controller executes about 444 [LAB t0-deploy summary,
+runs 14 handlers. The first controller (control01, which runs the `run_once` and delegated bootstrap tasks) executes
+about 444; the other two controllers execute about 332 each [LAB t0-deploy summary,
 [annex/lab/results.md](../annex/lab/results.md)].
 
 **Ordering consequence:** on a fresh compute, `nova_compute` is started (and its registration awaited) *before*
@@ -149,7 +150,7 @@ flowchart TB
     O2 --> O2b["post-config: system-id; br-ex + external interface on network nodes"]
     O2b --> O3["ovs-dpdk play (instead of openvswitch when enable_ovs_dpdk)"]
     O3 --> O4["ovn play (if neutron_plugin_agent=ovn): NB/SB DB, northd, ovn-controller + chassis registration"]
-    O4 --> O5["neutron play: register → config-host → config → check → bootstrap (deploy only) → flush"]
+    O4 --> O5["neutron play: register → config-host → config → check → bootstrap (DB/user always, DB-sync container on deploy or when rolling upgrade is disabled) → flush"]
     O5 --> O6["kuryr (if enabled)"]
   end
   subgraph Within["Inside the neutron play (all hosts in parallel)"]
@@ -167,7 +168,7 @@ deployed after the server has been verified. The RPC layer tolerates the agents 
 
 ## 3. Inside a role: the standard `deploy` sequence
 
-Typical `deploy.yml` (Nova shown; Neutron adds `config-host` and a deploy-only bootstrap):
+Typical `deploy.yml` (Nova shown; Neutron adds `config-host`, and by default skips its DB-sync container on reconfigure):
 
 | Step | Typical task file | Scope | Runs on `reconfigure`? |
 |---|---|---|---|
@@ -175,7 +176,7 @@ Typical `deploy.yml` (Nova shown; Neutron adds `config-host` and a deploy-only b
 | 2. Host configuration | `config-host.yml` (sysctl, modules, udev) | per host | yes |
 | 3. Config generation | `config.yml` (dirs, `config.json`, INI merges, policy, certs) | per host × per service × per file | yes |
 | 4. Container check | `check-containers.yml` (`compare_container` + `kolla_set_configs --check`) | per host × per container | yes |
-| 5. Bootstrap | `bootstrap.yml` (DB, user, grants) + `bootstrap_service.yml` (one-shot container: DB sync) | `run_once` / first host of the group | **yes** for most roles (Neutron: deploy only) |
+| 5. Bootstrap | `bootstrap.yml` (DB, user, grants) + `bootstrap_service.yml` (one-shot container: DB sync) | `run_once` / first host of the group | **yes** for most roles (Neutron: DB/user/grants yes. The `bootstrap_neutron` DB-sync container only when `neutron_enable_rolling_upgrade` is false, default `yes`, `roles/neutron/tasks/bootstrap_service.yml:21-22`) |
 | 6. Flush handlers | `meta: flush_handlers` | notified hosts, in handler definition order | yes |
 | 7. Post steps | e.g. openvswitch `post-config.yml`, nova-cell discovery | varies | yes |
 
@@ -233,7 +234,7 @@ gantt
 - **`run_once` tasks run once per batch** (03 §2.5). Examples: DB sync, Keystone registration, compute discovery
   (`wait_discover_computes.yml` runs for `all_computes_in_batch[0]`).
 - **mariadb and rabbitmq always run all hosts in one batch** (no `serial` key). Their handlers implement the rolling
-  restart themselves (fact sheet B).
+  restart themselves (fact sheet B). cyborg is not batched by `kolla_serial` either: its play reads `serial` instead.
 - **`kolla_serial` must be set through the environment.** It reaches only `reconfigure` and `upgrade` through the
   wrapper (`ANSIBLE_SERIAL`). For `deploy`, pass `-e kolla_serial=N` yourself (for `deploy` it is not overridden).
 
@@ -243,12 +244,12 @@ gantt
 
 | Aspect | Initial `deploy` (empty hosts) | `reconfigure` on a running cloud |
 |---|---|---|
-| Containers | All `create+start` [LAB t0: 34 container types] | Restart (config) or recreate (image or params) **only if** drift is detected; otherwise none [LAB t1: 0 restarts] |
+| Containers | All `create+start` [LAB t0: 37 container types, 136 `create+start` instances. Exception: mariadb on the bootstrap host control01 runs through `bootstrap_mariadb`, then is started, recreated and restarted by its handlers] | Restart (config) or recreate (image or params) **only if** drift is detected; otherwise none [LAB t1: 0 restarts] |
 | One-shot containers | DB bootstrap for every service, MariaDB and RabbitMQ bootstrap, fernet key generation, cell creation | DB sync containers **still run** for keystone, glance, cinder, placement, nova (×4), heat, plus barbican, octavia and others [LAB t1: 8 DB-sync bootstraps (keystone, glance, cinder, placement, neutron, heat, nova API, nova cell) + map_cell0 + 2× list_cells; s18 (`reconfigure`): the same minus neutron]. MariaDB/RabbitMQ bootstrap are not re-run |
 | Handler order effects | Every handler fires | Only notified handlers fire, but loop-notify widens them to all containers of the role on that host (03 §2.4) |
-| Neutron bootstrap | runs | skipped (`neutron_enable_rolling_upgrade: yes`) |
+| Neutron DB sync (`bootstrap_neutron`) | runs | skipped by default (`neutron_enable_rolling_upgrade: yes`). The DB/user/grant tasks still run |
 | Nova cell | `create_cell` | `update_cell` only if the transport URL or DB URL changed (`roles/nova-cell/tasks/create_cells.yml:31-55`) |
-| Fernet keys | generated | **re-distributed** from the first running keystone_fernet node to the others (fact sheet B §8) |
+| Fernet keys | generated | **re-distributed** from the first running keystone_fernet node to the others (fact sheet B §3.6, task flow in §3.3) |
 | MariaDB | Galera bootstrap on the first host | cluster lookup; rolling restart waves if config changed |
 | Duration drivers | image pulls, first container starts | per-task SSH overhead across all hosts, `compare_container` exec per container (see [06](06-compute-scaling-and-performance.md)) |
 
@@ -274,4 +275,4 @@ Handlers create ordering that is not visible in task files:
    haproxy role's `Restart haproxy container`. This is why the haproxy play includes the haproxy role even for
    `-t <svc>`.
 5. **The MariaDB restart is itself a sequence of handler-driven waves** (`index % 4`), with port and WSREP waits
-   between waves (fact sheet B §2).
+   between waves (fact sheet B §1.5).
