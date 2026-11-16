@@ -27,6 +27,14 @@ DESC = {
  's17-add-compute004-limit': 'compute004 added, `deploy --limit compute004`',
  's18-reconfigure-all-nochange': '`reconfigure`, no tag, nothing changed',
  's19-reconf-haproxy-nochange': '`-t haproxy reconfigure`, nothing changed',
+ 'sc-deploy-10': 'Scale: fresh `deploy`, 10 computes (forks 20)',
+ 'sc-reconf-nova-10': 'Scale: `-t nova reconfigure`, no change, 10 computes (forks 20)',
+ 'sc-deploy-30': 'Scale: fresh `deploy`, 30 computes (forks 20)',
+ 'sc-reconf-nova-30': 'Scale: `-t nova reconfigure`, no change, 30 computes (forks 20)',
+ 'sc-reconf-nova-30-computeconf': 'Scale: `-t nova reconfigure` after nova-compute override, 30 computes (forks 20)',
+ 'sc-reconf-nova-30-forks5': 'Scale: `-t nova reconfigure`, no change, 30 computes, forks 5',
+ 'sc-reconf-nova-30-forks50': 'Scale: `-t nova reconfigure`, no change, 30 computes, forks 50',
+ 'sc-reconf-nova-30-limit1': 'Scale: `-t nova reconfigure --limit compute001`, no change, 30 computes',
 }
 def load(run):
     d = ROOT + run

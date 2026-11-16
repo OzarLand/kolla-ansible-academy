@@ -23,7 +23,7 @@ How tags actually select work in Kolla-Ansible Ussuri, and what each important t
 | **Play-level tags** | `haproxy` play: `tags: [haproxy]` (`site.yml:132-133`). All 10 plays of `nova.yml`, e.g. `tags: [nova, nova-cell, nova-cell-deploy, nova-cell-upgrade]` (`nova.yml:127-131`) | every task of the play, including role dependencies (`common`) and statically imported roles |
 | **Role-level tags** in `roles:` | `- { role: neutron, tags: neutron, when: … }` (`site.yml:777-780`). memcached has `tags: [memcache, memcached]` (`:489`) | every task of the role, **including its meta dependency `common`** |
 | **Task-level tags on `include_role`** | haproxy block: `include_role: {name: nova, tasks_from: loadbalancer}` with `tags: [nova, nova-api]` (`site.yml:293-299`) | the include statement only; see §2.3 |
-| **`tags: always`** | gather-facts and group_by plays (`gather-facts.yml:21,50`, `site.yml:95`). `import_role: haproxy-config` in **every** `loadbalancer.yml` (52 files). `congress/tasks/register.yml:8` | runs regardless of `--tags`, unless the enclosing dynamic include is skipped |
+| **`tags: always`** | gather-facts and group_by plays (`gather-facts.yml:21,50`, `site.yml:95`). `import_role: haproxy-config` in **every** one of the 49 `loadbalancer.yml` files (plus nova-cell's `proxy_loadbalancer.yml` and `cell_proxy_loadbalancer.yml`). `congress/tasks/register.yml:8` | runs regardless of `--tags`, unless the enclosing dynamic include is skipped |
 | **Tags inside roles** | `common/tasks/main.yml:3,9` (`tags: common`). `nova/tasks/stop.yml:7` (`tags: nova`). `service-rabbitmq/tasks/main.yml:43` (`tags: [service-rabbitmq]`) | – |
 | **Other playbooks** | `kolla-host.yml:10` (`baremetal`), `mariadb_backup.yml:6`, `mariadb_recovery.yml:6` (`mariadb`), `bifrost.yml:6` (`bifrost`) | – |
 
@@ -101,6 +101,13 @@ irrelevant to Ussuri. It was not tested here.
 With `kolla_serial` > 0, a `run_once` task runs once **per batch**, not once per play. This applies to bootstrap
 containers, Keystone registration and DB creation. It is not harmful for idempotent steps, but it multiplies the
 number of DB-sync containers and Keystone API calls (fact sheet C, cross-cutting table).
+
+Confirmed [LAB s16, `kolla_serial=1`]:
+
+- `nova_api_bootstrap` ran 3 times, once per controller batch, and each time on that batch's host.
+- `map_cell0` ran 3 times.
+- The compute registration wait plus `list_cells` ran once per compute batch.
+- Nova containers restarted strictly one host at a time.
 
 ### 2.6 `--list-tasks` is not usable for Kolla [LAB]
 

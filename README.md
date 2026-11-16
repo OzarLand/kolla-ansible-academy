@@ -58,6 +58,20 @@ Annexes:
 10. **`--list-tasks` cannot predict a run.** Use `genconfig` plus `kolla_set_configs --check`, staging, or the lab
     approach (docs/09 §1).
 
+## Where the final-objective questions are answered
+
+| Question | Short answer | Details |
+|---|---|---|
+| If I execute a specific tag, exactly what happens? | The tagged plays run on all their hosts. The haproxy frontend of that service is re-rendered. `common` runs on every host of the play. Keystone registration and DB-sync containers run. Handlers restart drifted containers, plus their role siblings | docs/03 §3, docs/07 §E, annex/service-cards.md |
+| Which OpenStack components are affected? | The tagged service, plus HAProxy (only if its frontend changed), plus fluentd/cron/kolla_toolbox (if `common` drifted) | docs/07 §E |
+| Which compute nodes will receive changes? | Every compute in the play's host patterns (`nova`, `nova-cell`, `neutron`, `openvswitch`, `chrony`, `iscsi`, …) runs the tasks. Restarts happen where drift exists, usually all or none, because inputs are global | docs/06 §2, docs/07 §A.3 |
+| Will containers restart or be recreated? | Restart (stop 10 s → start) on config drift. Recreate on image or parameter change. Never on no-change runs. Siblings in the same role restart too | docs/01 §4.3, docs/03 §2.4 |
+| Can running VMs be impacted? | Directly through `nova_libvirt` restarts (frequent, via loop-notify) and OVS/vswitchd or L3-agent restarts. VM survival across a libvirt restart needs a lab check | docs/05 §5, docs/08 R1/R6/R7, docs/10 Q1–Q4 |
+| What is the execution order? | `site.yml` play order (no dependency resolver); within a role: register → config → check → bootstrap → flush | docs/04 |
+| Which tasks can take hours with hundreds of computes? | Per-compute chains (~69–150 remote invocations per compute per run) multiplied by ⌈C/forks⌉ waves, serial fact gathering under `--limit`, image pulls (11 per compute), per-batch waits under `serial` | docs/06 §3–4 |
+| Why does a small change generate a large workload? | Global inputs are rendered into per-host files; loop-notify; every run re-executes the full per-host chain | docs/06 §5, docs/07 §I |
+| How can I minimise the operational impact? | `genconfig` + diff + `deploy-containers --limit` batches; narrow tags with `--skip-tags haproxy`; `ANSIBLE_SERIAL`; pre-pull; fact caching and pipelining; avoid global drift | docs/08 §3, docs/09 §2, docs/06 §8 |
+
 ## Method
 
 | Phase | What was done |
