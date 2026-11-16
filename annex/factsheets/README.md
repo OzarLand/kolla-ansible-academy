@@ -30,6 +30,21 @@ parameter that is not `None` overrides `common_options`, and `graceful_timeout` 
 running the real module code
 ([../lab/kolla_docker_params.out](../lab/kolla_docker_params.out)). Sheet C states it correctly.
 
+**Erratum (sheet A, "There is no reload path anywhere in scope").** This holds for the handler path: every
+handler stops and starts or recreates its container, and `kolla_docker` has no reload action. Outside the handlers,
+Kolla sends one signal: on every `deploy`/`reconfigure`, the "Refresh nova scheduler cell cache" play sends `SIGHUP` to
+`nova_scheduler` (`ansible/nova.yml:140-156`, `roles/nova/tasks/refresh_scheduler_cell_cache.yml:10`).
+
+**Erratum (sheet B §3.10, memcached counts).** In `ussuri-eol`, **35** roles have `memcache_secret_key` in their
+templates, not 34, and **37** (not 36) have `memcache_servers`/`memcached_servers`. The memcached *host list* is
+embedded by **38** roles:
+- 37 loop over `groups['memcached']` in their templates (this includes horizon, whose `CACHES.LOCATION` uses the
+  loop);
+- monasca builds the list in `monasca_memcached_servers` (`roles/monasca/defaults/main.yml:127`).
+
+The list includes `neutron.conf`, which the neutron agents on compute hosts also read, so a memcached membership
+change reaches computes.
+
 **Context the sheets do not repeat.** The sheets were written before the lab showed that Ansible 2.9 notifies the
 handlers of *every* executed loop item when any item changes. Wherever a sheet says "restarts container X if its
 config changed", read it as "restarts **all containers of that role on that host** if any of them changed" (see

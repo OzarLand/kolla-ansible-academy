@@ -15,7 +15,7 @@ level.
 | 01 | [Repository Architecture](docs/01-repository-architecture.md) | How a CLI command becomes an `ansible-playbook` run; site.yml anatomy; role skeleton; `kolla_docker`; config overrides; inventory |
 | 02 | [OpenStack Component Dependencies](docs/02-openstack-component-dependencies.md) | Installation, configuration, runtime and operational dependencies of infra and control-plane services |
 | 03 | [Ansible Roles and Tags Mapping](docs/03-ansible-roles-and-tags-mapping.md) | What each tag executes, on which hosts, with which handlers, and why tag names mislead |
-| 04 | [Deployment Execution Flow](docs/04-deployment-execution-flow.md) | Play order, intra-role order, handler flush points, batching; 5 Mermaid diagrams |
+| 04 | [Deployment Execution Flow](docs/04-deployment-execution-flow.md) | Play order, intra-role order, handler flush points, batching; 5 Mermaid flow diagrams plus a batching Gantt chart |
 | 05 | [Nova Deep Dive](docs/05-nova-deep-dive.md) | Nova roles, plays, cells, discovery, dependencies, libvirt restart semantics |
 | 06 | [Compute Scaling and Performance](docs/06-compute-scaling-and-performance.md) | What grows with compute count; measured task counts; model for 10–500 computes; optimisations |
 | 07 | [Day-2 Operational Impact](docs/07-day2-operational-impact.md) | Scenarios A–I (reconfigure Nova/Neutron/common, images, service tags, membership changes, adding computes) |
