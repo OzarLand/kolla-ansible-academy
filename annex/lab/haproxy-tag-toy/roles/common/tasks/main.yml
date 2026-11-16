@@ -1,0 +1,6 @@
+- debug: msg="COMMON main ran"
+  tags: common
+  when: not common_run
+- set_fact: common_run=True
+  tags: common
+  when: not common_run

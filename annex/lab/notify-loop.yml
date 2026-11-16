@@ -1,0 +1,22 @@
+# Minimal reproduction of Ansible 2.9 loop-notify semantics used by every
+# Kolla-Ansible check-containers / config task ("notify: Restart {{ item.key }} container").
+- hosts: localhost
+  gather_facts: false
+  vars:
+    services:
+      nova-libvirt: {changed: false}
+      nova-ssh: {changed: false}
+      nova-compute: {changed: true}     # only this item reports "changed"
+      nova-novncproxy: {changed: false, skip: true}
+  tasks:
+    - name: Check containers (loop, one item changed)
+      debug: msg="checking {{ item.key }}"
+      changed_when: item.value.changed
+      when: not (item.value.skip | default(false))
+      with_dict: "{{ services }}"
+      notify: "Restart {{ item.key }} container"
+  handlers:
+    - {name: Restart nova-libvirt container, debug: msg="RESTART nova_libvirt"}
+    - {name: Restart nova-ssh container, debug: msg="RESTART nova_ssh"}
+    - {name: Restart nova-compute container, debug: msg="RESTART nova_compute"}
+    - {name: Restart nova-novncproxy container, debug: msg="RESTART nova_novncproxy"}

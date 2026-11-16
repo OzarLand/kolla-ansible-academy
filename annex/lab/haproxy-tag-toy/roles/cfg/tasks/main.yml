@@ -1,0 +1,4 @@
+- name: "Copying over {{ project_name }} haproxy config"
+  debug: msg="CFG rendered for {{ project_name }}"
+  changed_when: true
+  notify: Restart haproxy container

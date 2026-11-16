@@ -1,0 +1,8 @@
+# same shape as kolla-ansible ussuri-eol roles/common/tasks/main.yml
+- include_tasks: "{{ kolla_action }}.yml"
+  tags: common
+  when: not common_run
+- name: Registering common role has run
+  set_fact: {common_run: true}
+  tags: common
+  when: not common_run

@@ -1,0 +1,12 @@
+- name: Restart haproxy container
+  debug: msg="HANDLER Restart haproxy container"
+  changed_when: true
+  notify: Waiting for haproxy to start
+- name: Restart keepalived container
+  debug: msg="HANDLER Restart keepalived container"
+  changed_when: true
+  notify: Waiting for virtual IP to appear
+- name: Waiting for haproxy to start
+  debug: msg="HANDLER Waiting for haproxy"
+- name: Waiting for virtual IP to appear
+  debug: msg="HANDLER Waiting for VIP"

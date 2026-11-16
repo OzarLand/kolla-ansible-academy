@@ -1,0 +1,5 @@
+graceful_timeout  common_options='60'           -> effective=10
+client_timeout    common_options='300'          -> effective=120
+restart_policy    common_options='unless-stopped' -> effective='unless-stopped'
+restart_retries   common_options='10'           -> effective=10
+environment       common_options={'KOLLA_CONFIG_STRATEGY': 'COPY_ALWAYS'} -> effective={'KOLLA_CONFIG_STRATEGY': 'COPY_ALWAYS'}

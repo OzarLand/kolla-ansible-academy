@@ -1,0 +1,20 @@
+- name: Apply role haproxy
+  gather_facts: false
+  hosts: haproxy
+  serial: '{{ kolla_serial|default("0") }}'
+  tags:
+    - haproxy
+  roles:
+    - { role: hap, when: true }
+  tasks:
+    - block:
+        - include_role:
+            name: svca
+            tasks_from: loadbalancer
+          tags: svca
+        - include_role:
+            name: svcb
+            tasks_from: loadbalancer
+          tags: svcb
+      when:
+        - kolla_action in ['deploy', 'reconfigure', 'upgrade', 'config']

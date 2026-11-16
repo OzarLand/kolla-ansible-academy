@@ -1,0 +1,2 @@
+- name: SERVICE task inside included file
+  debug: msg="service work done"
