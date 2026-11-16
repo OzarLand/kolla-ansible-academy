@@ -45,6 +45,12 @@ embedded by **38** roles:
 The list includes `neutron.conf`, which the neutron agents on compute hosts also read, so a memcached membership
 change reaches computes.
 
+**Erratum (sheet A, "`tags: always` on the `import_role: haproxy-config` in every `loadbalancer.yml`").** This holds
+for 48 of the 49 `loadbalancer.yml` files. `roles/nova-cell/tasks/loadbalancer.yml` does not import `haproxy-config`
+itself. It reaches it through a chain: `import_tasks: proxy_loadbalancer.yml`, then `include_tasks:
+cell_proxy_loadbalancer.yml`, then `import_role: haproxy-config`, with `tags: always` at every level. The effect is the
+same.
+
 **Context the sheets do not repeat.** The sheets were written before the lab showed that Ansible 2.9 notifies the
 handlers of *every* executed loop item when any item changes. Wherever a sheet says "restarts container X if its
 config changed", read it as "restarts **all containers of that role on that host** if any of them changed" (see

@@ -299,7 +299,7 @@ Total container definitions: 195
 
 ## 3. Role task structure, handlers and helper-role usage
 
-Columns: **reconf→deploy** = `tasks/reconfigure.yml` only imports `deploy.yml`; **bootstrap in deploy** = `deploy.yml` imports/includes `bootstrap*.yml`; **ks-register / rabbitmq** = imports `service-ks-register` / `service-rabbitmq`; **run_once** = number of tasks with `run_once`; **handlers** = handler names.
+Columns: **reconf→deploy** = `tasks/reconfigure.yml` only imports `deploy.yml` ("yes (include)" when it only includes it dynamically); **bootstrap in deploy** = `deploy.yml` imports/includes `bootstrap*.yml`; **ks-register / rabbitmq** = imports `service-ks-register` / `service-rabbitmq`; **run_once** = number of tasks with `run_once`; **handlers** = handler names.
 
 | Role | task files | reconf→deploy | bootstrap in deploy | ks-register | rabbitmq | merge_configs | run_once | Handlers |
 |---|---|---|---|---|---|---|---|---|
@@ -315,7 +315,7 @@ Columns: **reconf→deploy** = `tasks/reconfigure.yml` only imports `deploy.yml`
 | cloudkitty | 17 | yes | yes | yes |  | 1 | 7 | Restart cloudkitty-api container; Restart cloudkitty-processor container |
 | collectd | 11 | yes |  |  |  | 0 | 0 | Restart collectd container |
 | common | 13 | yes | yes |  |  | 0 | 4 | Restart fluentd container; Restart kolla-toolbox container; Initializing toolbox container using normal user; Restart cron container |
-| congress | 17 | no | yes | yes |  | 1 | 4 | Restart congress-api container; Restart congress-policy-engine container; Restart congress-datasource container |
+| congress | 17 | yes (include) | yes | yes |  | 1 | 4 | Restart congress-api container; Restart congress-policy-engine container; Restart congress-datasource container |
 | cyborg | 17 | yes | yes | yes |  | 2 | 4 | Restart cyborg-api container; Restart cyborg-conductor container; Restart cyborg-agent container |
 | designate | 19 | yes | yes | yes |  | 1 | 5 | Restart designate-backend-bind9 container; Restart designate-api container; Restart designate-central container; Restart designate-producer container; Restart designate-mdns container; Restart designate-worker container; Restart designate-sink container |
 | destroy | 7 | - |  |  |  | 0 | 0 |  |
@@ -345,13 +345,13 @@ Columns: **reconf→deploy** = `tasks/reconfigure.yml` only imports `deploy.yml`
 | mistral | 17 | yes | yes | yes |  | 1 | 4 | Restart mistral-api container; Restart mistral-engine container; Restart mistral-event-engine container; Restart mistral-executor container |
 | module-load | 1 | - |  |  |  | 0 | 0 |  |
 | monasca | 17 | yes | yes | yes |  | 4 | 14 | Restart monasca-api container; Restart monasca-log-transformer container; Restart monasca-log-persister container; Restart monasca-log-metrics container; Restart monasca-thresh container; Resubmitting monasca-thresh topology; Restart monasca-notification container; Restart monasca-persister container; Restart monasca-agent-collector container; Restart monasca-agent-forwarder container; Restart monasca-agent-statsd container; Restart first monasca-grafana container; Waiting for monasca-grafana to start on first node; Restart remaining monasca-grafana containers |
-| mongodb | 14 | no | yes |  |  | 0 | 3 | Restart mongodb container; Waiting for the mongodb startup; Checking current replication status; Bootstrap cluster |
+| mongodb | 14 | yes (include) | yes |  |  | 0 | 3 | Restart mongodb container; Waiting for the mongodb startup; Checking current replication status; Bootstrap cluster |
 | multipathd | 12 | yes |  |  |  | 0 | 0 | Restart multipathd container |
 | murano | 18 | yes | yes | yes |  | 1 | 8 | Restart murano-api container; Restart murano-engine container |
 | neutron | 21 | yes | yes | yes |  | 18 | 11 | Restart neutron-server container; Restart neutron-openvswitch-agent container; Restart neutron-openvswitch-agent-xenapi container; Restart fake neutron-openvswitch-agent container; Restart neutron-linuxbridge-agent container; Restart neutron-dhcp-agent container; Restart neutron-l3-agent container; Restart neutron-sriov-agent container; Restart neutron-metadata-agent container; Restart neutron-ovn-metadata-agent container; Restart neutron-bgp-dragent container; Restart neutron-infoblox-ipam-agent container; Restart neutron-metering-agent container; Restart ironic-neutron-agent container |
 | nova | 25 | yes |  | yes |  | 2 | 9 | Restart nova-super-conductor container; Restart nova-scheduler container; Restart nova-api container |
 | nova-cell | 33 | yes | yes |  | yes | 3 | 5 | Restart nova-conductor container; Restart nova-novncproxy container; Restart nova-spicehtml5proxy container; Restart nova-serialproxy container; Restart nova-ssh container; Restart nova-libvirt container; Create libvirt SASL user; Restart nova-compute container; Restart nova-compute-ironic container; Restart nova-compute-fake containers; Wait for nova-compute services to update service versions |
-| nova-hyperv | 10 | no |  |  |  | 0 | 0 | Restart nova-compute; Restart neutron-hyperv-agent; Restart FreeRDP-WebConnect |
+| nova-hyperv | 10 | yes (include) |  |  |  | 0 | 0 | Restart nova-compute; Restart neutron-hyperv-agent; Restart FreeRDP-WebConnect |
 | octavia | 16 | yes | yes | yes |  | 1 | 7 | Restart octavia-api container; Restart octavia-health-manager container; Restart octavia-housekeeping container; Restart octavia-worker container |
 | openvswitch | 13 | yes |  |  |  | 0 | 0 | Restart openvswitch-db-server container; Waiting for openvswitch_db service to be ready; Restart openvswitch-vswitchd container |
 | ovn | 12 | yes | yes |  |  | 0 | 0 | Restart ovn-nb-db container; Restart ovn-sb-db container; Wait for ovn-nb-db; Wait for ovn-sb-db; Restart ovn-northd container; Restart ovn-controller container |
@@ -389,86 +389,86 @@ Columns: **reconf→deploy** = `tasks/reconfigure.yml` only imports `deploy.yml`
 | zookeeper | 11 | yes |  |  |  | 1 | 0 | Restart zookeeper container |
 | zun | 17 | yes | yes | yes |  | 1 | 5 | Restart zun-api container; Restart zun-wsproxy container; Restart zun-compute container; Restart zun-cni-daemon container; Copy loopback binary from zun-cni-daemon container to host |
 
-## 4. Templates that embed host lists of other groups
+## 4. Templates that reference inventory groups
 
-A file listed here changes on **every host that renders it** when the referenced group gains or loses a member.
+**Host list** = the template loops over the group (`for ... in groups[...]`), so the rendered file changes on **every host that renders it** when the group gains or loses a member. **Other reference** = membership test (`inventory_hostname in groups[...]`), first-member lookup (`groups[...][0]`) or length check; such a file changes only where the test result or the referenced member changes.
 
-| Template | Groups referenced |
-|---|---|
-| `ansible/roles/aodh/templates/aodh.conf.j2` | memcached |
-| `ansible/roles/barbican/templates/barbican.conf.j2` | memcached |
-| `ansible/roles/blazar/templates/blazar.conf.j2` | memcached |
-| `ansible/roles/ceilometer/templates/ceilometer.conf.j2` | memcached |
-| `ansible/roles/certificates/templates/openssl-kolla-backend.cnf.j2` | tls-backend |
-| `ansible/roles/chrony/templates/chrony.conf.j2` | chrony-server |
-| `ansible/roles/cinder/templates/cinder.conf.j2` | etcd, glance-api, memcached |
-| `ansible/roles/cloudkitty/templates/cloudkitty.conf.j2` | memcached |
-| `ansible/roles/common/templates/conf/output/00-local.conf.j2` | haproxy, swift-account-server, swift-container-server, swift-object-server, swift-proxy-server |
-| `ansible/roles/common/templates/fluentd.json.j2` | haproxy, swift-account-server, swift-container-server, swift-object-server, swift-proxy-server |
-| `ansible/roles/congress/templates/congress.conf.j2` | memcached |
-| `ansible/roles/cyborg/templates/cyborg.conf.j2` | memcached |
-| `ansible/roles/designate/templates/designate.conf.j2` | memcached |
-| `ansible/roles/designate/templates/named.conf.j2` | designate-worker |
-| `ansible/roles/designate/templates/pools.yaml.j2` | designate-backend-bind9, designate-mdns |
-| `ansible/roles/elasticsearch/templates/elasticsearch-curator.yml.j2` | elasticsearch |
-| `ansible/roles/elasticsearch/templates/elasticsearch.yml.j2` | elasticsearch |
-| `ansible/roles/freezer/templates/freezer.conf.j2` | memcached |
-| `ansible/roles/glance/templates/glance-api.conf.j2` | memcached |
-| `ansible/roles/gnocchi/templates/gnocchi.conf.j2` | memcached |
-| `ansible/roles/haproxy-config/templates/haproxy_single_service_listen.cfg.j2` | host_group |
-| `ansible/roles/haproxy-config/templates/haproxy_single_service_split.cfg.j2` | host_group |
-| `ansible/roles/haproxy/templates/keepalived.conf.j2` | haproxy |
-| `ansible/roles/heat/templates/heat.conf.j2` | memcached |
-| `ansible/roles/horizon/templates/local_settings.j2` | memcached |
-| `ansible/roles/ironic/templates/ironic-inspector.conf.j2` | memcached |
-| `ansible/roles/ironic/templates/ironic-ipxe.json.j2` | ironic-inspector |
-| `ansible/roles/ironic/templates/ironic-pxe.json.j2` | ironic-inspector |
-| `ansible/roles/ironic/templates/ironic.conf.j2` | memcached |
-| `ansible/roles/karbor/templates/karbor.conf.j2` | memcached |
-| `ansible/roles/keystone/templates/fernet-push.sh.j2` | keystone |
-| `ansible/roles/keystone/templates/keystone.conf.j2` | memcached |
-| `ansible/roles/magnum/templates/magnum.conf.j2` | memcached |
-| `ansible/roles/manila/templates/manila-share.conf.j2` | memcached |
-| `ansible/roles/manila/templates/manila.conf.j2` | memcached |
-| `ansible/roles/mariadb/templates/galera.cnf.j2` | mariadb |
-| `ansible/roles/masakari/templates/masakari.conf.j2` | memcached |
-| `ansible/roles/mistral/templates/mistral.conf.j2` | memcached |
-| `ansible/roles/mongodb/templates/bootstrap_cluster.js.j2` | mongodb |
-| `ansible/roles/murano/templates/murano.conf.j2` | memcached |
-| `ansible/roles/neutron/templates/l3_agent.ini.j2` | network |
-| `ansible/roles/neutron/templates/linuxbridge_agent.ini.j2` | compute, network |
-| `ansible/roles/neutron/templates/neutron.conf.j2` | memcached |
-| `ansible/roles/neutron/templates/openvswitch_agent.ini.j2` | compute, network |
-| `ansible/roles/nova-cell/templates/nova.conf.j2` | nova_cell_compute_group |
-| `ansible/roles/nova-hyperv/templates/wsgate.ini.j2` | hyperv |
-| `ansible/roles/nova/templates/nova.conf.j2` | glance-api, memcached |
-| `ansible/roles/octavia/templates/octavia.conf.j2` | memcached, octavia-health-manager |
-| `ansible/roles/ovn/templates/ovn-nb-db.json.j2` | ovn-nb-db |
-| `ansible/roles/ovn/templates/ovn-sb-db.json.j2` | ovn-sb-db |
-| `ansible/roles/panko/templates/panko.conf.j2` | memcached |
-| `ansible/roles/placement/templates/placement.conf.j2` | memcached |
-| `ansible/roles/prometheus/templates/prometheus-alertmanager.json.j2` | prometheus-alertmanager |
-| `ansible/roles/prometheus/templates/prometheus.yml.j2` | prometheus, prometheus-alertmanager, prometheus-cadvisor, prometheus-elasticsearch-exporter, prometheus-haproxy-exporter, prometheus-memcached-exporter, prometheus-mysqld-exporter, prometheus-node-exporter, rabbitmq |
-| `ansible/roles/qinling/templates/qinling.conf.j2` | memcached |
-| `ansible/roles/rabbitmq/templates/rabbitmq.conf.j2` | role_rabbitmq_groups |
-| `ansible/roles/redis/templates/redis-sentinel.conf.j2` | redis |
-| `ansible/roles/redis/templates/redis.conf.j2` | redis |
-| `ansible/roles/sahara/templates/sahara.conf.j2` | memcached |
-| `ansible/roles/searchlight/templates/searchlight.conf.j2` | memcached |
-| `ansible/roles/senlin/templates/senlin.conf.j2` | memcached |
-| `ansible/roles/skydive/templates/skydive-agent.conf.j2` | etcd, skydive-analyzer |
-| `ansible/roles/skydive/templates/skydive-analyzer.conf.j2` | etcd, skydive-agent, skydive-analyzer |
-| `ansible/roles/solum/templates/solum.conf.j2` | memcached |
-| `ansible/roles/storm/templates/storm.yml.j2` | zookeeper |
-| `ansible/roles/swift/templates/proxy-server.conf.j2` | memcached |
-| `ansible/roles/swift/templates/rsyncd.conf.j2` | swift-account-server, swift-container-server, swift-object-server |
-| `ansible/roles/tacker/templates/tacker.conf.j2` | memcached |
-| `ansible/roles/telegraf/templates/telegraf.conf.j2` | chrony, collectd, elasticsearch, haproxy, influxdb, kafka, mariadb, memcached, outward-rabbitmq, rabbitmq, redis, zookeeper |
-| `ansible/roles/vitrage/templates/vitrage.conf.j2` | memcached |
-| `ansible/roles/watcher/templates/watcher.conf.j2` | memcached |
-| `ansible/roles/zookeeper/templates/myid.j2` | zookeeper |
-| `ansible/roles/zookeeper/templates/zookeeper.cfg.j2` | zookeeper |
-| `ansible/roles/zun/templates/zun.conf.j2` | compute, memcached |
+| Template | Host list (loops) | Other reference |
+|---|---|---|
+| `ansible/roles/aodh/templates/aodh.conf.j2` | memcached |  |
+| `ansible/roles/barbican/templates/barbican.conf.j2` | memcached |  |
+| `ansible/roles/blazar/templates/blazar.conf.j2` | memcached |  |
+| `ansible/roles/ceilometer/templates/ceilometer.conf.j2` | memcached |  |
+| `ansible/roles/certificates/templates/openssl-kolla-backend.cnf.j2` | tls-backend |  |
+| `ansible/roles/chrony/templates/chrony.conf.j2` |  | chrony-server |
+| `ansible/roles/cinder/templates/cinder.conf.j2` | memcached | etcd, glance-api |
+| `ansible/roles/cloudkitty/templates/cloudkitty.conf.j2` | memcached |  |
+| `ansible/roles/common/templates/conf/output/00-local.conf.j2` |  | haproxy, swift-account-server, swift-container-server, swift-object-server, swift-proxy-server |
+| `ansible/roles/common/templates/fluentd.json.j2` |  | haproxy, swift-account-server, swift-container-server, swift-object-server, swift-proxy-server |
+| `ansible/roles/congress/templates/congress.conf.j2` | memcached |  |
+| `ansible/roles/cyborg/templates/cyborg.conf.j2` | memcached |  |
+| `ansible/roles/designate/templates/designate.conf.j2` | memcached |  |
+| `ansible/roles/designate/templates/named.conf.j2` | designate-worker |  |
+| `ansible/roles/designate/templates/pools.yaml.j2` | designate-backend-bind9, designate-mdns |  |
+| `ansible/roles/elasticsearch/templates/elasticsearch-curator.yml.j2` | elasticsearch |  |
+| `ansible/roles/elasticsearch/templates/elasticsearch.yml.j2` | elasticsearch | elasticsearch |
+| `ansible/roles/freezer/templates/freezer.conf.j2` | memcached |  |
+| `ansible/roles/glance/templates/glance-api.conf.j2` | memcached |  |
+| `ansible/roles/gnocchi/templates/gnocchi.conf.j2` | memcached |  |
+| `ansible/roles/haproxy-config/templates/haproxy_single_service_listen.cfg.j2` | host_group |  |
+| `ansible/roles/haproxy-config/templates/haproxy_single_service_split.cfg.j2` | host_group |  |
+| `ansible/roles/haproxy/templates/keepalived.conf.j2` | haproxy | haproxy |
+| `ansible/roles/heat/templates/heat.conf.j2` | memcached |  |
+| `ansible/roles/horizon/templates/local_settings.j2` | memcached | memcached |
+| `ansible/roles/ironic/templates/ironic-inspector.conf.j2` | memcached |  |
+| `ansible/roles/ironic/templates/ironic-ipxe.json.j2` |  | ironic-inspector |
+| `ansible/roles/ironic/templates/ironic-pxe.json.j2` |  | ironic-inspector |
+| `ansible/roles/ironic/templates/ironic.conf.j2` | memcached |  |
+| `ansible/roles/karbor/templates/karbor.conf.j2` | memcached |  |
+| `ansible/roles/keystone/templates/fernet-push.sh.j2` | keystone |  |
+| `ansible/roles/keystone/templates/keystone.conf.j2` | memcached |  |
+| `ansible/roles/magnum/templates/magnum.conf.j2` | memcached |  |
+| `ansible/roles/manila/templates/manila-share.conf.j2` | memcached |  |
+| `ansible/roles/manila/templates/manila.conf.j2` | memcached |  |
+| `ansible/roles/mariadb/templates/galera.cnf.j2` | mariadb | mariadb |
+| `ansible/roles/masakari/templates/masakari.conf.j2` | memcached |  |
+| `ansible/roles/mistral/templates/mistral.conf.j2` | memcached |  |
+| `ansible/roles/mongodb/templates/bootstrap_cluster.js.j2` | mongodb |  |
+| `ansible/roles/murano/templates/murano.conf.j2` | memcached |  |
+| `ansible/roles/neutron/templates/l3_agent.ini.j2` |  | network |
+| `ansible/roles/neutron/templates/linuxbridge_agent.ini.j2` |  | compute, network |
+| `ansible/roles/neutron/templates/neutron.conf.j2` | memcached |  |
+| `ansible/roles/neutron/templates/openvswitch_agent.ini.j2` |  | compute, network |
+| `ansible/roles/nova-cell/templates/nova.conf.j2` |  | nova_cell_compute_group |
+| `ansible/roles/nova-hyperv/templates/wsgate.ini.j2` | hyperv |  |
+| `ansible/roles/nova/templates/nova.conf.j2` | memcached | glance-api |
+| `ansible/roles/octavia/templates/octavia.conf.j2` | memcached, octavia-health-manager |  |
+| `ansible/roles/ovn/templates/ovn-nb-db.json.j2` |  | ovn-nb-db |
+| `ansible/roles/ovn/templates/ovn-sb-db.json.j2` |  | ovn-sb-db |
+| `ansible/roles/panko/templates/panko.conf.j2` | memcached |  |
+| `ansible/roles/placement/templates/placement.conf.j2` | memcached |  |
+| `ansible/roles/prometheus/templates/prometheus-alertmanager.json.j2` | prometheus-alertmanager | prometheus-alertmanager |
+| `ansible/roles/prometheus/templates/prometheus.yml.j2` | prometheus, prometheus-alertmanager, prometheus-cadvisor, prometheus-elasticsearch-exporter, prometheus-haproxy-exporter, prometheus-memcached-exporter, prometheus-mysqld-exporter, prometheus-node-exporter, rabbitmq |  |
+| `ansible/roles/qinling/templates/qinling.conf.j2` | memcached |  |
+| `ansible/roles/rabbitmq/templates/rabbitmq.conf.j2` | role_rabbitmq_groups |  |
+| `ansible/roles/redis/templates/redis-sentinel.conf.j2` |  | redis |
+| `ansible/roles/redis/templates/redis.conf.j2` |  | redis |
+| `ansible/roles/sahara/templates/sahara.conf.j2` | memcached |  |
+| `ansible/roles/searchlight/templates/searchlight.conf.j2` | memcached |  |
+| `ansible/roles/senlin/templates/senlin.conf.j2` | memcached |  |
+| `ansible/roles/skydive/templates/skydive-agent.conf.j2` | etcd, skydive-analyzer |  |
+| `ansible/roles/skydive/templates/skydive-analyzer.conf.j2` | etcd, skydive-agent, skydive-analyzer | skydive-agent |
+| `ansible/roles/solum/templates/solum.conf.j2` | memcached |  |
+| `ansible/roles/storm/templates/storm.yml.j2` | zookeeper |  |
+| `ansible/roles/swift/templates/proxy-server.conf.j2` | memcached |  |
+| `ansible/roles/swift/templates/rsyncd.conf.j2` |  | swift-account-server, swift-container-server, swift-object-server |
+| `ansible/roles/tacker/templates/tacker.conf.j2` | memcached |  |
+| `ansible/roles/telegraf/templates/telegraf.conf.j2` | influxdb | chrony, collectd, elasticsearch, haproxy, influxdb, kafka, mariadb, memcached, outward-rabbitmq, rabbitmq, redis, zookeeper |
+| `ansible/roles/vitrage/templates/vitrage.conf.j2` | memcached |  |
+| `ansible/roles/watcher/templates/watcher.conf.j2` | memcached |  |
+| `ansible/roles/zookeeper/templates/myid.j2` | zookeeper |  |
+| `ansible/roles/zookeeper/templates/zookeeper.cfg.j2` | zookeeper |  |
+| `ansible/roles/zun/templates/zun.conf.j2` | memcached | compute |
 
 Note: in addition, `rpc_transport_url` / `notify_transport_url` (`ansible/group_vars/all.yml`) loop over `groups[om_rpc_group]` (= `rabbitmq`) and are rendered into every OpenStack service configuration that uses messaging.
 

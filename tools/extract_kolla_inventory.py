@@ -138,7 +138,7 @@ def walk(tasks, acc):
 
 
 w('## 3. Role task structure, handlers and helper-role usage\n')
-w('Columns: **reconf→deploy** = `tasks/reconfigure.yml` only imports `deploy.yml`; **bootstrap in deploy** = `deploy.yml` imports/includes `bootstrap*.yml`; **ks-register / rabbitmq** = imports `service-ks-register` / `service-rabbitmq`; **run_once** = number of tasks with `run_once`; **handlers** = handler names.\n')
+w('Columns: **reconf→deploy** = `tasks/reconfigure.yml` only imports `deploy.yml` (\"yes (include)\" when it only includes it dynamically); **bootstrap in deploy** = `deploy.yml` imports/includes `bootstrap*.yml`; **ks-register / rabbitmq** = imports `service-ks-register` / `service-rabbitmq`; **run_once** = number of tasks with `run_once`; **handlers** = handler names.\n')
 w('| Role | task files | reconf→deploy | bootstrap in deploy | ks-register | rabbitmq | merge_configs | run_once | Handlers |')
 w('|---|---|---|---|---|---|---|---|---|')
 for rd in sorted(glob.glob(os.path.join(A, 'roles', '*'))):
@@ -150,7 +150,11 @@ for rd in sorted(glob.glob(os.path.join(A, 'roles', '*'))):
         p = os.path.join(rd, 'tasks', f)
         return open(p).read() if os.path.exists(p) else ''
     reconf = read('reconfigure.yml')
-    reconf_deploy = 'yes' if re.search(r'import_tasks:\s*deploy\.yml', reconf) and reconf.count('import_tasks') == 1 else ('-' if not reconf else 'no')
+    m = re.search(r'(import|include)_tasks:\s*["\']?deploy\.yml', reconf)
+    n_inc = len(re.findall(r'(import|include)_tasks:', reconf))
+    reconf_deploy = ('-' if not reconf else
+                     'yes' if m and n_inc == 1 and m.group(1) == 'import' else
+                     'yes (include)' if m and n_inc == 1 else 'no')
     dep = read('deploy.yml')
     boot = 'yes' if re.search(r'(import|include)_tasks:\s*bootstrap', dep) else ''
     alltxt = ''.join(read(f) for f in tfiles)
@@ -167,18 +171,27 @@ for rd in sorted(glob.glob(os.path.join(A, 'roles', '*'))):
         role, len(tfiles), reconf_deploy, boot, ks, rmq, mc, ro, esc('; '.join(map(str, hn)))))
 
 # ---------------------------------------------------------------- templates looping over groups
-w('\n## 4. Templates that embed host lists of other groups\n')
-w('A file listed here changes on **every host that renders it** when the referenced group gains or loses a member.\n')
-w('| Template | Groups referenced |')
-w('|---|---|')
+w('\n## 4. Templates that reference inventory groups\n')
+w('**Host list** = the template loops over the group (`for ... in groups[...]`), so the rendered file changes on '
+  '**every host that renders it** when the group gains or loses a member. **Other reference** = membership test '
+  '(`inventory_hostname in groups[...]`), first-member lookup (`groups[...][0]`) or length check; such a file changes '
+  'only where the test result or the referenced member changes.\n')
+w('| Template | Host list (loops) | Other reference |')
+w('|---|---|---|')
 pat = re.compile(r"groups\[['\"]?([A-Za-z0-9_\-]+)['\"]?\]")
+loop_pat = re.compile(r"for\s+\w+\s+in\s+groups\[['\"]?([A-Za-z0-9_\-]+)['\"]?\]")
 for t in sorted(glob.glob(os.path.join(A, 'roles', '*', 'templates', '**', '*.j2'), recursive=True)):
     txt = open(t).read()
-    if 'for host in groups' not in txt and 'groups[' not in txt:
+    if 'groups[' not in txt:
         continue
-    gs = sorted(set(pat.findall(txt)))
+    gs = set(pat.findall(txt))
+    loops = set(loop_pat.findall(txt))
+    other = set()
+    for m in pat.finditer(txt):
+        if not re.search(r"for\s+\w+\s+in\s+$", txt[max(0, m.start() - 40):m.start()]):
+            other.add(m.group(1))
     if gs:
-        w('| `%s` | %s |' % (os.path.relpath(t, SRC), ', '.join(gs)))
+        w('| `%s` | %s | %s |' % (os.path.relpath(t, SRC), ', '.join(sorted(loops)), ', '.join(sorted(other))))
 w('\nNote: in addition, `rpc_transport_url` / `notify_transport_url` (`ansible/group_vars/all.yml`) loop over `groups[om_rpc_group]` (= `rabbitmq`) and are rendered into every OpenStack service configuration that uses messaging.\n')
 
 open(OUT, 'w').write('\n'.join(out) + '\n')
