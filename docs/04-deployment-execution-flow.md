@@ -68,8 +68,11 @@ Notable order facts [CODE]:
   `service-ks-register` targets the admin endpoint through the VIP.
 - **Placement, Glance and Cinder come before Nova.** Neutron comes *after* Nova (see §2.5).
 - **Barbican comes after Nova, Cinder and Glance**, even though they can be configured to use it as a key manager.
-  [HYPOTHESIS] On a first deploy with `enable_barbican`, Nova and Cinder start configured with a `[barbican]` section
-  before Barbican exists. This is harmless until encrypted volumes are used.
+  With `enable_barbican`, Nova and Cinder render a `[barbican]` section (`roles/nova/templates/nova.conf.j2:200-203`,
+  `roles/nova-cell/templates/nova.conf.j2:234-237`, `roles/cinder/templates/cinder.conf.j2:198-201`), and their
+  plays run before the barbican play (`site.yml:683,710,995`). On a first deploy they therefore start configured
+  with a `[barbican]` section before Barbican exists. [NOT AVAILABLE] Whether this has any effect before encrypted
+  volumes are used.
 - **Octavia is near the end.** Its amphora resources (image, flavor, network, security group, keypair, certificates)
   are not created by Kolla in Ussuri; they are manual (fact sheet D).
 
@@ -102,7 +105,10 @@ Details and Nova runtime dependencies: [05](05-nova-deep-dive.md).
 
 ### 2.4 Compute node deployment (what one compute host experiences)
 
-Observed sequence on `compute001` during a full `deploy` in the lab [LAB t0-deploy, trace]:
+Sequence on one compute host during a full `deploy`, with the default enable flags and the `multinode` inventory
+groups (`iscsi` only with `enable_iscsid`) [CODE: play order `site.yml:114-124,512-522,710-721,761-780`; task and
+handler order in each role's `tasks/deploy.yml` and `handlers/main.yml`; `common` once per host,
+`roles/common/tasks/main.yml:1-10`]:
 
 ```mermaid
 sequenceDiagram
@@ -130,15 +136,14 @@ sequenceDiagram
   D->>C: handler: Restart neutron-openvswitch-agent
 ```
 
-On a 3-compute lab deployment, a compute host executes about 145 task results, of which about 61 are skips, and
-runs 14 handlers. The first controller (control01, which runs the `run_once` and delegated bootstrap tasks) executes
-about 444; the other two controllers execute about 332 each [LAB t0-deploy summary,
-[annex/lab/results.md](../annex/lab/results.md)].
+[NOT AVAILABLE] How many task results, skips and handlers a compute host or a controller produces in a full
+`deploy`: that depends on the inventory, the enable flags and the `when:` conditions met at run time. The first
+controller also runs the `run_once` and delegated bootstrap tasks (e.g. `roles/nova/tasks/map_cell0.yml:22-23`).
 
 **Ordering consequence:** on a fresh compute, `nova_compute` is started (and its registration awaited) *before*
-`openvswitch` and `neutron_openvswitch_agent` exist on that host. Instances cannot be scheduled there successfully
-until the later plays finish. On a running cloud this matters when you add computes with `--limit` (see
-[07](07-day2-operational-impact.md) §G).
+`openvswitch` and `neutron_openvswitch_agent` exist on that host. [NOT AVAILABLE] Whether instances can be scheduled
+there successfully before the later plays finish (05 §3 item 6). On a running cloud this ordering matters when you
+add computes with `--limit` (see [07](07-day2-operational-impact.md) §G).
 
 ### 2.5 Networking components
 
@@ -162,7 +167,8 @@ flowchart TB
 ```
 
 The neutron play deploys the server and *all* agents in a single play and a single handler flush. Agents are not
-deployed after the server has been verified. The RPC layer tolerates the agents starting first.
+deployed after the server has been verified. [NOT AVAILABLE] Whether the RPC layer tolerates the agents starting
+first.
 
 ---
 
@@ -208,17 +214,16 @@ Order caveats:
 The combination **`genconfig` → (review the diff) → `deploy-containers --limit <batch>`** is the only built-in way to
 separate "write the config" from "apply it", and to apply in controlled batches. It works because
 `compare_container` detects drift in the files listed in each `config.json`'s `config_files` (content, mode, owner)
-through `kolla_set_configs --check` [CODE `kolla_docker.py:543-578`, kolla `docker/base/set_configs.py:160-235,407-410`;
-LAB s14 → s15]. Changes confined to `config.json` itself (`command`, `permissions`; e.g. every memcached setting,
-`roles/memcached/templates/memcached.json.j2:2-3`) are NOT detected. `deploy-containers` therefore does not apply them
-after `genconfig`, and a later `deploy`/`reconfigure` does not either: the config tasks that notify the restart, the
-`config.json` template task included (memcached's only one, `roles/memcached/tasks/config.yml:13-26`), are then
-unchanged. Such changes take effect only at the next restart for another reason. An `optional` file that newly appears,
-and whose destination does not exist in the container yet, makes the check exit 2 and the task fail, unless an entry
-listed before it already differs (then exit 1 and a restart that copies the file) [CODE kolla
-`docker/base/set_configs.py:162-167,407-410,430-432`, `kolla_docker.py:575-578`]. The lab stub hashes the whole config
-directory, `config.json` included, so it cannot show either case. See [07](07-day2-operational-impact.md) §H and
-[annex/kolla-images.md §3](../annex/kolla-images.md).
+through `kolla_set_configs --check` [CODE `kolla_docker.py:543-578`, kolla
+`docker/base/set_configs.py:160-235,407-410`]. Changes confined to `config.json` itself (`command`, `permissions`;
+e.g. every memcached setting, `roles/memcached/templates/memcached.json.j2:2-3`) are NOT detected. `deploy-containers`
+therefore does not apply them after `genconfig`, and a later `deploy`/`reconfigure` does not either: the config tasks
+that notify the restart, the `config.json` template task included (memcached's only one,
+`roles/memcached/tasks/config.yml:13-26`), are then unchanged. Such changes take effect only at the next restart for
+another reason. An `optional` file that newly appears, and whose destination does not exist in the container yet,
+makes the check exit 2 and the task fail, unless an entry listed before it already differs (then exit 1 and a restart
+that copies the file) [CODE kolla `docker/base/set_configs.py:162-167,407-410,430-432`, `kolla_docker.py:575-578`].
+See [07](07-day2-operational-impact.md) §H and [annex/kolla-images.md §3](../annex/kolla-images.md).
 
 ---
 
@@ -255,8 +260,8 @@ gantt
 
 | Aspect | Initial `deploy` (empty hosts) | `reconfigure` on a running cloud |
 |---|---|---|
-| Containers | All `create+start` [LAB t0: 37 container types, 136 `create+start` instances. Exception: mariadb on the bootstrap host control01 runs through `bootstrap_mariadb`, then is started, recreated and restarted by its handlers] | Restart (config) or recreate (image or params) **only if** drift is detected; otherwise none [LAB t1: 0 restarts] |
-| One-shot containers | DB bootstrap for every service, MariaDB and RabbitMQ bootstrap, fernet key generation, cell creation | DB sync containers **still run** for keystone, glance, cinder, placement, nova (API and cell DB sync, plus map_cell0 and list_cells ×2), heat, plus barbican, octavia and others [LAB t1: 8 DB-sync bootstraps (keystone, glance, cinder, placement, neutron, heat, nova API, nova cell) + map_cell0 + 2× list_cells; s18 (`reconfigure`): the same minus neutron]. MariaDB/RabbitMQ bootstrap are not re-run |
+| Containers | All `create+start`: the container check finds no container, and the restart handler then starts a new one [CODE `kolla_docker.py:326-332,781-791`]. Exception: on the bootstrap host (`groups['mariadb'][0]`), mariadb runs first as the one-shot `bootstrap_mariadb`, then its handlers start it with `--wsrep-new-cluster` and run `recreate_or_restart_container` on it (`roles/mariadb/tasks/bootstrap.yml:4-7`, `bootstrap_cluster.yml:2-23`, `roles/mariadb/handlers/main.yml:2-20,89-91`, `tasks/restart_services.yml:2-13`). [NOT AVAILABLE] Container counts, which depend on the inventory and the enable flags | Restart (config) or recreate (image or params) **only if** drift is detected; otherwise none [CODE `kolla_docker.py:326-332,781-803`] |
+| One-shot containers | DB bootstrap for every service, MariaDB and RabbitMQ bootstrap, fernet key generation, cell creation | DB sync containers **still run** for keystone, glance, cinder, placement, nova (API and cell DB sync, plus map_cell0 and list_cells ×2), heat, plus barbican, octavia and others [CODE: in these roles `reconfigure.yml` imports `deploy.yml` and the bootstrap containers have no `kolla_action` guard, e.g. `roles/keystone/tasks/bootstrap_service.yml:32-49`; nova: `nova.yml:45-51,81-87`, `roles/nova/tasks/map_cell0.yml:2-23`, `list_cells` from `roles/nova-cell/tasks/create_cells.yml:2` and `discover_computes.yml:5`]. MariaDB/RabbitMQ bootstrap are not re-run |
 | Handler order effects | Every handler fires | Only notified handlers fire, but loop-notify widens them to all containers of the role on that host (03 §2.4) |
 | Neutron DB sync (`bootstrap_neutron`) | runs | skipped by default (`neutron_enable_rolling_upgrade: yes`). The DB/user/grant tasks still run |
 | Nova cell | `create_cell` | `update_cell` only if the transport URL or DB URL changed (`roles/nova-cell/tasks/create_cells.yml:31-55`) |
@@ -273,9 +278,11 @@ Handlers create ordering that is not visible in task files:
 1. **Within a role, restart order = handler definition order, not notification order.**
    - nova-cell restarts `nova_ssh` → `nova_libvirt` (→ SASL user) → `nova_compute` (`roles/nova-cell/handlers/main.yml`).
    - openvswitch restarts `openvswitch_db` → waits → `openvswitch_vswitchd`.
-   - [LAB t0 trace above.]
-2. **Handlers of a play run on all notified hosts in parallel.** With `serial: 0`, every compute restarts
-   `nova_compute` (and, through loop-notify, `nova_libvirt`) in the same step.
+   - [CODE] Ansible 2.9.27 runs the notified handlers in the order of the play's handler list
+     (`lib/ansible/plugins/strategy/__init__.py:979-985`).
+2. **Handlers of a play run on all notified hosts in parallel** (ansible 2.9.27
+   `lib/ansible/plugins/strategy/__init__.py:1019-1035`). With `serial: 0`, every compute restarts `nova_compute`
+   (and, through loop-notify, `nova_libvirt`) in the same step.
 3. **Handler chains:**
    - Restart nova-libvirt → Create libvirt SASL user.
    - Restart openvswitch-db → Waiting for openvswitch_db.

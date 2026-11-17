@@ -8,14 +8,11 @@ Supported Ansible: 2.8–2.9 (`tools/kolla-ansible:58-59`).
 
 How the evidence was gathered:
 - **Code reading.** Every claim cites `path:line`.
-- **Toy reproduction (Ansible 2.9.27, local, no Kolla, no network).** I rebuilt the *shape* of the haproxy play: a play-level
-  `tags: haproxy`, a role with a `common` meta-dependency, a `block` of `include_role … tasks_from: loadbalancer` each
-  tagged with the service name, and inside each one an `import_role: haproxy-config` with `tags: always`. I used it to
-  confirm tag inheritance, handler filtering and handler ordering. The files are in
-  `/tmp/claude-0/-home-user-kolla-ansible-day2/0f94a3d8-faad-5ead-a2f1-d2af8be54fca/scratchpad/lab-tags/`.
-  It is evidence about Ansible's semantics, not about real container behaviour.
-- **Labels.** `HYPOTHESIS` marks an inference that is not directly in the code. `NEEDS-LAB` marks something that needs a
-  real deployment to confirm.
+- **Ansible semantics.** Tag inheritance, handler order and serial batches cite the Ansible 2.9.27 source as
+  ansible 2.9.27 `lib/ansible/<path>:N`. Ansible's own parse of `site.yml` is in
+  [annex/listings/list-tags-site.txt](../listings/list-tags-site.txt).
+- **Labels.** A claim with a `path:line` citation is a FACT read from the sources. `NOT AVAILABLE` marks what the
+  sources do not establish, for example timings and runtime outcomes.
 
 Common mechanics that apply to every role below (all verified in code):
 - **All containers use host networking.** `kolla_docker` always uses host networking: `build_host_config` sets
@@ -37,10 +34,15 @@ Common mechanics that apply to every role below (all verified in code):
   (`tools/kolla-ansible:236`).
 - **Handlers fire in definition order across all hosts of the batch in lockstep** (linear strategy).
   - With the default serial 0, a handler restarts that container on **every host of the play at the same time**.
-  - The toy confirmed this, including that a handler notified by another handler runs later in the same flush.
+  - Ansible walks the play's handler list in order. It queues each notified handler on every notified host, then waits
+    for all results before the next handler (ansible 2.9.27 `lib/ansible/plugins/strategy/__init__.py:979-987`,
+    `:1019-1035`). A notify sent by a handler is recorded while its results are processed (`:617-632`, `:785`;
+    `lib/ansible/playbook/handler.py:47-51`), so a handler defined later and notified that way runs in the same flush.
 - **Handlers are not tag-filtered in Ansible 2.9.**
-  - Toy: under `-t svca`, the handler `Restart haproxy container` still ran, although it only carries the inherited
-    play tag `haproxy`.
+  - Tags filter only the play's compiled task blocks and dynamically included blocks (ansible 2.9.27
+    `lib/ansible/executor/play_iterator.py:186-189`, `lib/ansible/plugins/strategy/linear.py:371`). `run_handlers`
+    has no tag check (`lib/ansible/plugins/strategy/__init__.py:972-987`). So under `-t <service>` the handler
+    `Restart haproxy container` still runs, although it only carries the inherited play tag `haproxy`.
 
 ---
 
@@ -157,7 +159,7 @@ Inside the container:
     external VIP (34-38). `auth_type PASS` (39-42). `track_script check_alive` (43-45).
   - `keepalived_virtual_router_id: "51"` (`group_vars/all.yml:186`). `keepalived_traffic_mode: "multicast"` (`defaults/main.yml:38`).
 
-### 1.5 Handlers (`ansible/roles/haproxy/handlers/main.yml`). Definition order = run order (confirmed by toy)
+### 1.5 Handlers (`ansible/roles/haproxy/handlers/main.yml`). Definition order = run order (see common mechanics)
 
 1. **`Restart haproxy container`** (2-20).
    - `kolla_docker: recreate_or_restart_container`.
@@ -172,7 +174,9 @@ Inside the container:
 Other properties:
 - There is no `run_once`, `delegate_to`, `listen`, rolling or serial logic inside the handlers.
 - Restarts are parallel across all haproxy hosts unless `ANSIBLE_SERIAL`/`kolla_serial` is set.
-  - Toy with `kolla_serial=1`: one restart plus wait per host, batch by batch.
+  - With `kolla_serial=1`, Ansible runs the whole play, handler flushes included, once per one-host batch: one
+    restart plus wait per host, batch by batch (ansible 2.9.27 `lib/ansible/executor/playbook_executor.py:161-169`,
+    `:276-285`; flush points `lib/ansible/playbook/play.py:276-281`).
 - No other role notifies these handlers. The only external notifier is `ansible/roles/haproxy-config/tasks/main.yml:21`
   (grep over `ansible/roles`).
 
@@ -199,27 +203,26 @@ None.
     SIGKILL after 10 s at the latest, see the stop-timeout erratum in the [README](README.md), then docker start).
     That includes a change in any one service's `services.d/<svc>.cfg`, a cert, haproxy.cfg or haproxy_run.sh.
   - With the default `serial 0`, all haproxy hosts restart in the same handler step. Result: every API, MariaDB
-    (through the VIP, `group_vars/all.yml:105`), RabbitMQ management, etc. sees dropped connections.
-  - HYPOTHESIS: the outage is a few seconds per run. `haproxy_run.sh` does not `exec` haproxy
-    (`haproxy_run.sh.j2:7-9`), so the SIGTERM of `docker stop`, which dumb-init forwards only to its direct child,
-    reaches bash, not haproxy ([annex/kolla-images.md §2.6](../kolla-images.md)). haproxy is killed when the container
-    stops, at the latest by the SIGKILL after 10 s, and established connections are cut. NEEDS-LAB to measure.
-- **(B) A haproxy restart can cause VIP failover or a VIP outage.**
+    (through the VIP, `group_vars/all.yml:105`), RabbitMQ management, etc. is served by a haproxy that is restarting.
+  - NOT AVAILABLE: how long the outage lasts per run, and whether established connections are cut. From the code:
+    `haproxy_run.sh` does not `exec` haproxy (`haproxy_run.sh.j2:7-9`), so dumb-init's child is bash, not haproxy
+    ([annex/kolla-images.md §2.6](../kolla-images.md)). Whether haproxy itself gets the SIGTERM of `docker stop` is
+    NOT AVAILABLE; a container still running after 10 s is stopped with SIGKILL.
+- **(B) Whether a haproxy restart causes VIP failover or a VIP outage is NOT AVAILABLE.**
   - keepalived tracks `check_alive` with `interval 2 fall 2 rise 10` (`keepalived.conf.j2:1-6`).
-  - HYPOTHESIS: if haproxy is down for about 4 s or more on the VIP holder, keepalived goes to FAULT and drops the VIP.
-    The backups are restarting haproxy at the same time (serial 0), so after recovery each node needs about 20 s
-    (`rise 10` × 2 s) before it may hold the VIP again. That means a possible VIP outage of about 20 s even though the
-    "Waiting for haproxy" handler succeeds quickly.
-  - Because of `nopreempt` (line 10) the VIP may also end up on a different node.
+  - NOT AVAILABLE: whether keepalived goes to FAULT and drops the VIP while haproxy is down on the VIP holder, and how
+    long the VIP is then absent. The backups restart haproxy in the same handler step (serial 0). The "Waiting for
+    haproxy" handler checks `api_interface_address`, not the VIP (`handlers/main.yml:42-45`).
+  - `nopreempt` is set (line 10). Which node holds the VIP afterwards is NOT AVAILABLE.
   - The check itself is known: the image's `/check_alive.sh` only asks the haproxy stats socket for `show info`
     (kolla `docker/keepalived/check_alive.sh:6`), so it fails as soon as haproxy stops answering on the socket. The
-    FAULT and `rise` timing is upstream keepalived behaviour. NEEDS-LAB: the timing and keepalived's initial script
+    FAULT and `rise` timing is upstream keepalived behaviour. NOT AVAILABLE: the timing and keepalived's initial script
     state.
 - **(C) keepalived priority depends on inventory order.**
   - `priority = index in groups['haproxy'] + 1` (`keepalived.conf.j2:13`).
   - Inserting, removing or re-ordering a haproxy host changes `keepalived.conf` on every host after it in the list. In
-    unicast mode it changes on all hosts (peer list, 18-25). Each changed host restarts keepalived (in parallel), which
-    can move or flap the VIP.
+    unicast mode it changes on all hosts (peer list, 18-25). Each changed host restarts keepalived (in parallel).
+    Whether that moves or flaps the VIP is NOT AVAILABLE.
 - **(D) Stale frontends are never removed.**
   - Nothing in the tree deletes files in `services.d` (grep: no `state: absent` in `roles/haproxy*`).
   - If a service is disabled (`enable_X: no`), its `include_role` is skipped (`when: enable_X`). The old
@@ -227,8 +230,9 @@ None.
   - The same is true for removed custom `node_custom_config/haproxy/services.d/*.cfg` files.
   - BUG/oddity (code fact).
 - **(E) `-t haproxy` also runs `common` on haproxy hosts.**
-  - common is a meta dependency, and its tasks inherit the play tag `haproxy`. The toy confirmed this: under
-    `-t haproxy` "COMMON main ran".
+  - common is a meta dependency, and its tasks inherit the play tag `haproxy` (ansible 2.9.27
+    `lib/ansible/playbook/block.py:351-358`). Ansible's own parse lists `common` among the haproxy play's task tags
+    ([annex/listings/list-tags-site.txt](../listings/list-tags-site.txt), play #7).
   - So `kolla-ansible -t haproxy reconfigure` also reconfigures fluentd, cron and kolla-toolbox on the haproxy hosts
     (guarded only by `common_run`).
 - **(F) Upgrade "Stopping all slave keepalived containers"** (`upgrade.yml:6-17`):
@@ -248,13 +252,14 @@ None.
     missing (`ignore_missing` defaults to False, `kolla_docker.py:871-881,1012`).
     - With `enable_keepalived: no` (external LB, `releasenotes/notes/allow-disabling-keepalived-…yaml`) the VIP is on
       no haproxy host. The task therefore runs everywhere and should fail with "No such container: keepalived to stop".
-    - The same applies to a haproxy host added without a keepalived container. NEEDS-LAB.
+    - The same applies to a haproxy host added without a keepalived container. The end-to-end upgrade outcome is
+      NOT AVAILABLE.
   - **Likely BUG 2.** It indexes `ansible_facts[api_interface]` with the raw interface name. Ansible converts `-` to `_`
-    in fact names (`ansible/module_utils/facts/namespace.py:41` in 2.9.27), whereas Kolla's own `kolla_address` filter
-    does the conversion (`kolla_ansible/kolla_address.py:88`).
-    - An `api_interface` like `br-mgmt` should therefore make `upgrade` fail here.
+    in fact names (ansible 2.9.27 `lib/ansible/module_utils/facts/namespace.py:41`), whereas Kolla's own
+    `kolla_address` filter does the conversion (`kolla_ansible/kolla_address.py:88`).
+    - So an `api_interface` like `br-mgmt` is not a key of `ansible_facts` under that name.
     - The same pattern appears in `precheck.yml:86` (`ansible_facts[kolla_external_vip_interface]['active']`).
-    - HYPOTHESIS / NEEDS-LAB.
+    - NOT AVAILABLE: whether `upgrade` (or that precheck) then fails at run time.
 - **(G) Things that run on every deploy, reconfigure and upgrade:**
   - sysctl + modprobe (config-host).
   - About 12 template/copy tasks.
@@ -267,7 +272,7 @@ None.
 - **(H) Non-local bind is needed.**
   - `ip_nonlocal_bind=1` is set only when `set_sysctl` is true (`config-host.yml:17-19`). Backup nodes bind VIP
     addresses (`haproxy_main.cfg.j2:50`, every frontend).
-  - HYPOTHESIS: with `set_sysctl: no` and no manual sysctl, haproxy fails to start on non-VIP nodes.
+  - NOT AVAILABLE: whether haproxy starts on non-VIP nodes with `set_sysctl: no` and no manual sysctl.
 - **(I) VRRP router id collisions.** `keepalived_virtual_router_id` defaults to `51` with multicast. Two Kolla clouds on
   the same L2 segment collide unless it is changed (`group_vars/all.yml:186`, `defaults/main.yml:38`).
 
@@ -275,12 +280,16 @@ None.
 
 How the tags combine (the mechanics):
 1. **Play tag.** It is inherited by everything statically in the play: the role tasks, the `block`, and each
-   `include_role` statement. A role task ends up with tags `{haproxy}`, and common's tasks with `{common, haproxy}`.
+   `include_role` statement. A role task ends up with tags `{haproxy}`, and common's tasks with `{common, haproxy}`
+   (`ansible/roles/common/tasks/main.yml:2-3`). `tags` is an extending attribute that collects the role, dependency
+   chain and play values (ansible 2.9.27 `lib/ansible/playbook/taggable.py:31`,
+   `lib/ansible/playbook/block.py:329-358`).
 2. **Include tags.** The `include_role` statement for keystone has tags `{keystone, haproxy}`.
 3. **Dynamic include boundary.** `include_role` is *dynamic*. Ansible 2.9 does not pass the include's own tags to the
    included tasks: when the parent is not `statically_loaded`, `Task._get_parent_attribute` skips to the grandparent
-   (`site-packages/ansible/playbook/task.py:466-472` in the venv). So the tasks inside `keystone/tasks/loadbalancer.yml`
-   would only carry `{haproxy}`, and would be filtered out under `-t keystone`.
+   (ansible 2.9.27 `lib/ansible/playbook/task.py:466-472`; the same for blocks, `lib/ansible/playbook/block.py:309-314`;
+   an include is not statically loaded, `lib/ansible/playbook/task_include.py:56`). So the tasks inside
+   `keystone/tasks/loadbalancer.yml` would only carry `{haproxy}`, and would be filtered out under `-t keystone`.
 4. **The `tags: always` workaround.** Kolla works around this with `tags: always` on the
    `import_role: haproxy-config` in every `loadbalancer.yml`, e.g. `ansible/roles/keystone/tasks/loadbalancer.yml:2-7`:
    ```yaml
@@ -293,9 +302,10 @@ How the tags combine (the mechanics):
    ```
    The same applies to `nova-cell` (`ansible/roles/nova-cell/tasks/loadbalancer.yml:55,91,127`,
    `proxy_loadbalancer.yml:19`, `cell_proxy_loadbalancer.yml:12`).
-5. **Handlers ignore tags.** They run whenever they are notified.
+5. **Handlers ignore tags.** They run whenever they are notified (see common mechanics).
 
-**`kolla-ansible -t keystone reconfigure`.** Toy run: `-t svca` (an exact analogue).
+**`kolla-ansible -t keystone reconfigure`.** From the rules above and the tag test in ansible 2.9.27
+`lib/ansible/playbook/taggable.py:66-76` (`always` always matches):
 - haproxy role tasks are **skipped**. They are tagged only `haproxy`. That covers config-host, config.yml (haproxy.cfg,
   keepalived.conf, pems, haproxy_run.sh, custom services.d), check-containers, and the `common` dependency.
 - Exactly **one** `include_role` runs: keystone's (`site.yml:229-233`). It is skipped if `enable_keystone` is false.
@@ -304,20 +314,21 @@ How the tags combine (the mechanics):
   that have a `haproxy:` dict and are enabled are rendered.
 - If and only if that file changed, `Restart haproxy container` runs at the end of the haproxy play. It runs on all
   haproxy hosts in parallel (serial 0), then `Waiting for haproxy to start`.
-  - **keepalived is not restarted**, because nothing notifies it. The VIP can still move because of (B), a HYPOTHESIS.
+  - **keepalived is not restarted**, because nothing notifies it. Whether the VIP still moves because of (B) is
+    NOT AVAILABLE.
 - The restart re-reads **all** `services.d/*` files.
   - Any drift left in `/etc/kolla/haproxy/` by earlier runs (e.g. a previous `genconfig`, or stale files) goes live too.
   - Other services' `.cfg` files are **not re-rendered**. If another service's backend list changed (say, a new
     controller), it is not updated by `-t keystone`.
 - Cert rotation for the VIP needs `-t haproxy`. The pem copy is a haproxy role task.
-- `--skip-tags haproxy` skips the whole play, including all per-service includes (toy:
-  `-t svca --skip-tags haproxy` ran nothing).
+- `--skip-tags haproxy` skips the whole play, including all per-service includes: each one carries the inherited
+  play tag, and a task with a skipped tag does not run (ansible 2.9.27 `lib/ansible/playbook/taggable.py:78-87`).
 - Tag aliases:
   - `-t nova` hits both nova and nova-cell (296-306).
   - `-t memcache` (alias tag of the memcached play, `site.yml:489`) does **not** hit memcached's include, which is
     tagged only `memcached` (262).
 
-**`kolla-ansible -t haproxy reconfigure`.** Toy run: `-t haproxy`.
+**`kolla-ansible -t haproxy reconfigure`.**
 - `common` runs on the haproxy hosts (when `common_run` is false). Then the haproxy role runs `reconfigure.yml` →
   `deploy.yml`: config-host, config.yml (all files in 1.4), check-containers.
 - **All 49** `include_role` statements match, through the inherited play tag. Every enabled service's `services.d/*.cfg`
@@ -386,7 +397,8 @@ restart per run, at the end of the haproxy play (the fix for LP#1864810/LP#18752
 It has none of its own. It notifies `Restart haproxy container`, defined in the haproxy role. The handler is resolvable
 because the haproxy role is in the same play.
 
-`include_role` also *appends the included role's handlers* to the play (`playbook/role_include.py:110-114` in 2.9.27).
+`include_role` also *appends the included role's handlers* to the play (ansible 2.9.27
+`lib/ansible/playbook/role_include.py:110-114`).
 They are never notified here, so this is harmless.
 
 ### 2.4 Notable
@@ -398,8 +410,8 @@ They are never notified here, so this is harmless.
   (`hostvars[host].ansible_facts.hostname`, listen template line 74).
 - **Precedence.** Variables come from the service role's defaults, evaluated on the haproxy host. Inventory or
   group_vars overrides of service variables therefore apply when set for the haproxy hosts or for `all`.
-  - HYPOTHESIS: per-host overrides set only on backend hosts are not seen by haproxy-config, except where the code
-    explicitly uses `hostvars[groups[…][0]]` (nova-cell).
+  - NOT AVAILABLE: whether per-host overrides set only on backend hosts are seen by haproxy-config, outside the places
+    where the code explicitly uses `hostvars[groups[…][0]]` (nova-cell).
 
 ---
 
@@ -465,8 +477,8 @@ None.
 ### 3.8 Operationally notable
 - **A restart wipes all caches at once.** All memcached instances restart simultaneously (serial 0), so every cache is
   wiped at the same time.
-  - HYPOTHESIS: Horizon users are logged out (cache session backend). Keystone and keystonemiddleware token-validation
-    caches go cold, giving a load spike on Keystone and the DB.
+  - NOT AVAILABLE: whether Horizon users are logged out (cache session backend), and whether the cold Keystone and
+    keystonemiddleware token-validation caches give a load spike on Keystone and the DB.
   - Triggers are rare: a change of `api_interface_address`, port, memory or connection limit, or an image change on
     upgrade.
 - **Adding or removing a memcached host is expensive.** It changes the `memcache_servers` of almost every service
@@ -526,21 +538,21 @@ None.
 ### 4.7 Dependencies
 - The VIP (keepalived, which is configured *later* in the same run) and the haproxy group (as `chrony-server`).
 - `ip_nonlocal_bind`, which is set later by `haproxy/config-host.yml`.
-  - HYPOTHESIS: on a first deploy, chronyd on a non-VIP chrony-server host binds the VIP before `ip_nonlocal_bind` is
-    set, and may fail to serve until a later restart. NEEDS-LAB.
+  - NOT AVAILABLE: whether, on a first deploy, chronyd on a non-VIP chrony-server host can bind the VIP before
+    `ip_nonlocal_bind` is set, and whether it then serves before a later restart.
 - External NTP reachability.
 - On Ubuntu, `baremetal` removes the host chronyd AppArmor profile (`ansible/roles/baremetal/tasks/post-install.yml:195-209`).
 
 ### 4.8 Operationally notable
 - **Low data-plane risk.**
-  - HYPOTHESIS: a restart can step the clock, because `makestep 3 3` applies again after each restart.
+  - NOT AVAILABLE: whether a restart steps the clock. `makestep 3 3` is set (`chrony.conf.j2:22`).
 - **Cost scales with the number of hosts.** One template, one config.json and one `compare_container` with a
   `docker exec` run on **every compute** on each run.
 - **chrony.conf depends on the haproxy group.** It changes on a host when that host's membership in `chrony-server`
   changes, or when the VIP or `external_ntp_servers` change.
 - **The VIP is the internal time source.** When the VIP fails over to another haproxy node, clients keep the same server
   IP but get a different clock source.
-  - HYPOTHESIS: this is mitigated when external NTP servers are reachable.
+  - NOT AVAILABLE: whether reachable external NTP servers mitigate this.
 
 ---
 
@@ -635,33 +647,35 @@ All handlers have `when: kolla_action != "config"`. There is no `run_once`, `ser
 - **(A) The whole DB cluster restarts at once.** Any change to `ovn-nb-db`/`ovn-sb-db` restarts every member at once
   under serial 0. That covers config.json, i.e. the IP, the first-host seed or the group order, and also an image change
   on upgrade.
-  - HYPOTHESIS: RAFT loses quorum briefly, and the neutron-server OVN driver and ovn-northd reconnect. The data plane
-    keeps its installed flows while the SB is unreachable.
+  - NOT AVAILABLE: whether RAFT loses quorum, how the neutron-server OVN driver and ovn-northd reconnect, and whether
+    the data plane keeps its installed flows while the SB is unreachable.
   - Mitigation: `ANSIBLE_SERIAL` gives a rolling restart, at the cost of making every play serial.
-- **(B) The seed host is a single point of failure for re-deploys.** The DB on `groups[...][0]` gets no
-  `cluster-remote-addr`.
-  - HYPOTHESIS: if that first host is replaced or its `ovn_nb_db`/`ovn_sb_db` volume is lost, ovn-ctl **creates a new,
-    separate single-node cluster** instead of joining the existing one. The result is split brain, with clients
-    load-balancing across two clusters.
+- **(B) Whether the seed host is a single point of failure for re-deploys is NOT AVAILABLE.** The DB on
+  `groups[...][0]` gets no `cluster-remote-addr`.
+  - NOT AVAILABLE: what ovn-ctl does if that first host is replaced or its `ovn_nb_db`/`ovn_sb_db` volume is lost, in
+    particular whether it **creates a new, separate single-node cluster** instead of joining the existing one (split
+    brain, with clients load-balancing across two clusters).
   - There is no code for member removal or replacement (`cluster/kick`, `cluster/leave`), and none for backups (grep:
-    no `ovsdb-client backup` anywhere in roles). NEEDS-LAB.
+    no `ovsdb-client backup` anywhere in roles).
 - **(C) ovn-controller restarts.** They happen on image or container-parameter change (upgrade, `deploy-containers`)
   or when a deploy/reconfigure rewrites its `config.json`, and hit **all computes and network nodes in parallel**.
   The OVN manifests have no `config_files` (`roles/ovn/templates/*.json.j2`), so `kolla_set_configs --check` always
   exits 0: a command-line change written by `genconfig` is applied neither by `deploy-containers` nor by a later run,
   until the container restarts for another reason ([annex/kolla-images.md §3](../kolla-images.md)).
-  - HYPOTHESIS: Ussuri-era OVN clears and re-installs OpenFlow flows on restart. That gives a short data-plane
-    interruption per chassis, plus north-south traffic loss if all gateway chassis (network nodes) restart together.
-  - HYPOTHESIS: there is also an SB DB reconnect storm whose size scales with the number of computes. NEEDS-LAB.
-- **(D) Bootstrap cost scales with computes.** It runs about 4-5 `docker exec ovs-vsctl` per compute on every
-  deploy, reconfigure and upgrade, always reported as changed.
-  - HYPOTHESIS: re-setting identical `external_ids` is a no-op for ovn-controller, but a changed `ovn_sb_connection`
-    makes every chassis reconnect.
+  - NOT AVAILABLE: whether Ussuri-era OVN clears and re-installs OpenFlow flows on restart, and so whether there is a
+    short data-plane interruption per chassis, plus north-south traffic loss when all gateway chassis (network nodes)
+    restart together.
+  - NOT AVAILABLE: whether there is also an SB DB reconnect storm whose size scales with the number of computes.
+- **(D) Bootstrap cost scales with computes.** It runs 4 `docker exec ovs-vsctl` per compute (5 with
+  `computes_need_external_bridge`, counted from the `when` conditions of `bootstrap.yml:2-45`) on every deploy,
+  reconfigure and upgrade, always reported as changed.
+  - NOT AVAILABLE: whether re-setting identical `external_ids` is a no-op for ovn-controller, and whether a changed
+    `ovn_sb_connection` makes every chassis reconnect.
 - **(E) Gateway options are clobbered.**
   - `enable-chassis-as-gw` *overwrites* `ovn-cms-options` on network nodes (`bootstrap.yml:27-30`).
   - It is *removed* entirely on non-gateway openvswitch hosts (32-37) on every run.
-  - Any manual `ovn-cms-options` such as availability-zone hints is lost on every reconfigure. That impact is a
-    HYPOTHESIS; the overwrite itself is code.
+  - Any manual `ovn-cms-options` value, such as availability-zone hints, is overwritten or removed on every
+    reconfigure (the code above). The impact of that loss is NOT AVAILABLE.
   - Bridge mappings are only ever set, never removed (18-25).
 - **(F) Security.** NB and SB listen with `create-insecure-remote=yes` on plain TCP.
 - **(G) OVN + DPDK cannot work in this release (inference from code):**
@@ -693,8 +707,9 @@ role tag `ovs-dpdk`.
 - Container commands: `start-ovsdb-server 127.0.0.1` and `ovs-vswitchd unix:/run/openvswitch/db.sock … --mlockall`
   (`templates/*.json.j2`).
 - `neutron_bridge_name: "br_dpdk"` (56) is a role default.
-  - Inference from Ansible variable precedence: it is **shadowed** by playbook `group_vars/all.yml:940` (`br-ex`). The
-    role default is dead unless set in globals.
+  - Ansible merges role defaults first and group variables after them (ansible 2.9.27
+    `lib/ansible/vars/manager.py:186-190,205-206,290-293`), so it is **shadowed** by playbook
+    `group_vars/all.yml:940` (`br-ex`). The role default is dead unless set in globals.
 - **Templating bug in `ovs_cidr_mappings`** (44). For multiple bridges it emits the literal text
   `{neutron_bridge_name.split(',')[0]}` (single braces) instead of a Jinja expression.
 
@@ -708,15 +723,16 @@ role tag `ovs-dpdk`.
 - **pull = BUG.**
   - The `vars/main.yml:2` value `project_name: "ovs"` makes `service-images-pull` look up `ovs_services`
     (`ansible/roles/service-images-pull/tasks/main.yml:14`), which does not exist anywhere (grep).
-  - Toy check of the same lookup in Ansible 2.9.27: `FAILED! … "No variable found with this name: ovs_services"`.
-  - So `kolla-ansible pull` should fail on DPDK hosts. NEEDS-LAB to confirm end to end.
+  - For an undefined name and no `default`, the `vars` lookup raises `No variable found with this name: ovs_services`
+    (ansible 2.9.27 `lib/ansible/plugins/lookup/vars.py:80-94`).
+  - So `kolla-ansible pull` should fail on DPDK hosts. The end-to-end outcome is NOT AVAILABLE.
 - **stop** = service-stop with `ovsdpdk_services` (works).
 
 `config.yml` key tasks (all of them run on deploy, reconfigure, upgrade **and genconfig**):
 - **Config dirs and config.json** (2-25), gated by `enabled` and `host_in_groups`.
   - The `config.json` copy has **no `become`**, although the dirs are root:root 0770 (`config_owner_user: root`,
     `group_vars/all.yml:20-21`).
-  - HYPOTHESIS: this fails with a non-root `ansible_user`.
+  - NOT AVAILABLE: whether this fails with a non-root `ansible_user`.
 - **"Copying ovs-dpdkctl tool"** (27-31). `copy src: ../tools/ovs-dpdkctl.sh`. It has no `become` and **no `when`**.
 - **"Install ovs-dpdkctl service and config"** (33-44). `command: ovs-dpdkctl.sh install`, which always reports
   changed and has no `when`. Inside `tools/ovs-dpdkctl.sh`:
@@ -747,7 +763,8 @@ role tag `ovs-dpdk`.
 5. `Ensuring ovsdpdk bridges are properly setup named` (70-86). `init`, when the policy is `named` (the default, line 54).
 6. **`wait for dpdk tunnel ip`** (88-92). `wait_for: host: <dpdk_tunnel_interface_address> timeout: 300 sleep: 5`, with
    **no port and no path**.
-   - In Ansible 2.9.27 `wait_for` then just does `time.sleep(timeout)` (`modules/utilities/logic/wait_for.py:538-539`).
+   - `wait_for` then just does `time.sleep(timeout)` (ansible 2.9.27
+     `lib/ansible/modules/utilities/logic/wait_for.py:538-539`).
    - So **every DB restart costs a fixed 300 s sleep** per batch.
 7. `ovs-dpdk gather facts` (94-102). `setup` re-gathers facts.
 
@@ -763,7 +780,7 @@ from handlers**, i.e. when `ovsdpdk-db` restarts. It is not re-asserted on a pla
 
 ### 6.8 Operationally notable
 - **Any `ovsdpdk-db` restart also restarts `ovs-vswitchd`.** That means an image change or config.json drift.
-  - HYPOTHESIS: this is a data-plane outage for all VMs on that host (vhost-user reconnect).
+  - NOT AVAILABLE: whether this is a data-plane outage for all VMs on that host (vhost-user reconnect).
   - It happens **on all DPDK computes in parallel**, followed by a mandatory 5-minute sleep.
 - **NIC rebinding and unit installation run on every deploy, reconfigure, upgrade and genconfig.** They are idempotent
   only as long as the driver already matches.
@@ -796,7 +813,7 @@ The loop is `with_dict: project_services | select_services_enabled_and_mapped_to
 - **For haproxy, the loop includes `keepalived`.**
   - A CA bundle change (e.g. a root CA rotation with `kolla_copy_ca_into_containers: yes`) therefore triggers
     `Restart keepalived container` on all haproxy hosts in parallel, together with the haproxy restart.
-  - That is VIP-flap risk (HYPOTHESIS), even though `keepalived.json.j2` does not reference the CA files.
+  - Whether that flaps the VIP is NOT AVAILABLE. `keepalived.json.j2` does not reference the CA files.
   - The kolla image does install them: keepalived starts through `kolla_start`, which runs `kolla_copy_cacerts` at
     every start. That script deletes the old `kolla-customca-*` entries and installs every file of
     `/var/lib/kolla/config_files/ca-certificates/` (kolla `docker/base/start.sh:13`, `docker/base/copy_cacerts.sh:7-27`;
@@ -840,7 +857,8 @@ The loop is `with_dict: project_services | select_services_enabled_and_mapped_to
   certificates. External and internal certs expire after 365 days; the files must be deleted manually.
 - **Adding a `tls-backend` host does not update the backend SANs.** `backend.csr` and `backend.crt` exist
   (`generate-backend.yml:32,46`), so the cert is not re-issued.
-  - HYPOTHESIS: with `kolla_verify_tls_backend: yes` (`group_vars/all.yml:804`), haproxy then rejects the new backend.
+  - NOT AVAILABLE: whether haproxy then rejects the new backend with `kolla_verify_tls_backend: yes`
+    (`group_vars/all.yml:804`).
 - **Oddity in key generation.** The backend key task writes `private/backend/backend.key` but its `creates:` checks
   `kolla_tls_backend_key` (`generate-backend.yml:16-21`).
   - If an operator pre-supplies `backend-key.pem`, keygen is skipped but the CSR step still needs `backend.key`.
@@ -853,14 +871,14 @@ The loop is `with_dict: project_services | select_services_enabled_and_mapped_to
 
 | Component | Restarted when | Hosts at once (default) | Blast radius |
 |---|---|---|---|
-| haproxy | any `services.d`/haproxy.cfg/run.sh/pem/CA/config.json change, image change | all haproxy hosts | all APIs plus MariaDB and other VIP traffic; possible VIP failover (HYPOTHESIS) |
-| keepalived | keepalived.conf (inventory order!), config.json, CA copy, image change, **every upgrade (backups stopped)** | all haproxy hosts | VIP move or outage |
-| memcached | config.json (IP, port, memory, limit), image | all memcached hosts | all caches flushed; Horizon logouts (HYPOTHESIS) |
+| haproxy | any `services.d`/haproxy.cfg/run.sh/pem/CA/config.json change, image change | all haproxy hosts | all APIs plus MariaDB and other VIP traffic; VIP failover: NOT AVAILABLE |
+| keepalived | keepalived.conf (inventory order!), config.json, CA copy, image change, **every upgrade (backups stopped)** | all haproxy hosts | VIP move or outage: NOT AVAILABLE |
+| memcached | config.json (IP, port, memory, limit), image | all memcached hosts | all caches flushed; Horizon logouts: NOT AVAILABLE |
 | chrony | chrony.conf (VIP, NTP servers, chrony-server membership), image | all hosts incl. computes | low |
-| ovn-nb/sb-db | config.json (IPs, seed host = `groups[...][0]`), image | all DB hosts | NB/SB API down; quorum re-election (HYPOTHESIS) |
+| ovn-nb/sb-db | config.json (IPs, seed host = `groups[...][0]`), image | all DB hosts | NB/SB API down; quorum re-election: NOT AVAILABLE |
 | ovn-northd | NB/SB host list, image | all northd hosts | logical-flow processing pause |
-| ovn-controller | image, drift | **all computes and network nodes** | short data-plane blip per chassis (HYPOTHESIS, NEEDS-LAB) |
-| ovsdpdk-db → vswitchd | image, drift (db restart always restarts vswitchd) | **all DPDK hosts** | VM data-plane outage, then a 300 s sleep |
+| ovn-controller | image, drift | **all computes and network nodes** | data-plane blip per chassis: NOT AVAILABLE |
+| ovsdpdk-db → vswitchd | image, drift (db restart always restarts vswitchd) | **all DPDK hosts** | VM data-plane outage: NOT AVAILABLE; then a 300 s sleep |
 
 Things that run on **every** reconfigure, regardless of changes:
 - haproxy config-host (sysctl/modprobe) and the template set, plus 49 service includes (`-t haproxy` or no tags).

@@ -21,12 +21,12 @@ Conventions:
 
 | Goal | Command | Notes |
 |---|---|---|
-| List tags as Ansible sees them | `EXTRA_OPTS="--list-tags" kolla-ansible -i multinode deploy` | Works. Shows the inherited task tags (`common` appears nearly everywhere) |
-| List hosts a run would target | `EXTRA_OPTS="--list-hosts" kolla-ansible -i multinode -t nova reconfigure` | Plays with `&enable_<svc>_True` patterns show **0 hosts**: the groups are created at run time |
+| List tags as Ansible sees them | `EXTRA_OPTS="--list-tags" kolla-ansible -i multinode deploy` | Works. Shows the inherited task tags (`common` appears nearly everywhere; [annex/listings/list-tags-site.txt](../annex/listings/list-tags-site.txt)) |
+| List hosts a run would target | `EXTRA_OPTS="--list-hosts" kolla-ansible -i multinode -t nova reconfigure` | Plays with `&enable_<svc>_True` patterns show **0 hosts**: the groups are created at run time (03 §2.6) |
 | List tasks | `EXTRA_OPTS="--list-tasks" …` | **Not useful**: only `include_tasks` placeholders are shown (03 §2.6) |
 | Render configs without restarting | `kolla-ansible -i multinode genconfig [-t <svc>] [--limit <hosts>]` | Writes `/etc/kolla/<svc>/` on the targets. All handlers are skipped. Also re-renders haproxy `services.d` for the tagged services |
 | See what will restart | on each host: `docker exec -u root <container> /usr/local/bin/kolla_set_configs --check; echo $?` | 0 = every file listed in `config.json`'s `config_files` matches its live copy (content, mode, owner). `command`, `permissions`, removed entries and stale optional files are **not** compared, so memcached (`"config_files": []`) always returns 0. 1 = a listed file differs or a non-optional one is missing from the container → restart on the next `deploy`/`reconfigure`/`deploy-containers`. 1 is also returned for a required source missing from `/var/lib/kolla/config_files` or an invalid `config.json`; the restarted container then fails `kolla_set_configs` at start. `preserve_properties` entries (e.g. prometheus extras already copied into the container) and, in practice, directory sources with subdirectories return 1 on every run (03 §3). 137 is also treated as drift. 2 = an unexpected exception, such as a missing `config.json` or a newly rendered `optional` file not yet in the container (e.g. nova-compute `release`); the latter is real drift, and it gives 2 only if no entry listed before it differs (otherwise 1). On 2, or any code other than 0, 1 and 137, `kolla_docker` fails the check task instead of restarting [CODE `kolla_docker.py:566-578,1071-1073`, kolla `docker/base/set_configs.py:60-65,135-136,160-211,217-253,280-296,407-410,427-432`, kolla `docker/base/start.sh:2,8`]. Details: [annex/kolla-images.md §3](../annex/kolla-images.md). Keep `-u root`: Kolla runs the check as root (`kolla_docker.py:544-578`), and containers that run as a service user cannot read the root-owned 0660 files in `/var/lib/kolla/config_files` |
-| Check-mode run | `EXTRA_OPTS="--check --diff" kolla-ansible … reconfigure` | [NEEDS-LAB] `kolla_docker` does not support check mode, and many tasks register outputs used later. Expect failures or partial results; staging only |
+| Check-mode run | `EXTRA_OPTS="--check --diff" kolla-ansible … reconfigure` | [CODE] `kolla_docker` does not declare check-mode support (`kolla_docker.py:1031-1035`), so Ansible skips it under `--check` (ansible 2.9.27 `lib/ansible/module_utils/basic.py:1595-1596`). Many tasks register outputs used later. [NOT AVAILABLE] Whether such a run fails or gives partial results; staging only |
 | Pre-deployment checks | `kolla-ansible -i multinode prechecks [-t <svc>]` | Read-only (fact sheet E). `-t <svc>` skips the `prechecks` role (untagged) but runs `<svc>/precheck.yml` |
 
 ---
@@ -64,11 +64,13 @@ kolla-ansible -i multinode -t nova reconfigure
   - haproxy (nova and nova-cell frontends);
   - the 10 nova plays;
   - `common` on every nova host **and every compute**.
-- **One-shot:** 5 container runs (API DB sync, map_cell0, cell DB sync, list_cells ×2) plus RabbitMQ user/vhost, Keystone
-  registration, SIGHUP of `nova_scheduler`, `discover_hosts` [LAB s01].
+- **One-shot:** 5 container runs (API DB sync, map_cell0, cell DB sync, list_cells ×2) plus RabbitMQ user/vhost,
+  Keystone registration, SIGHUP of `nova_scheduler`, `discover_hosts` [CODE, when cell0 is mapped and the cell is
+  unchanged: `roles/nova/tasks/bootstrap.yml:52-54`, `roles/nova-cell/tasks/bootstrap.yml:35-41`,
+  `create_cells.yml:2`, `discover_computes.yml:5-18`; 03 §3].
 - **Restarts:** depend on the drift ([07](07-day2-operational-impact.md) §A). A nova-compute drift restarts
   `nova_compute`, `nova_libvirt` and `nova_ssh` on each compute where it occurs, so a change common to all computes
-  restarts them on every compute [LAB s03].
+  restarts them on every compute [CODE `roles/nova-cell/tasks/check-containers.yml:2-20`, loop-notify, 03 §2.4].
 
 ### 2.3 Reconfigure only the Nova control plane (no compute impact)
 
@@ -98,11 +100,10 @@ kolla-ansible -i multinode -t nova-cell deploy-containers --limit 'compute[10:19
 ```
 
 - `deploy-containers` runs only `check-containers.yml` and the handlers it notifies. These restart each container with
-  drift written by `genconfig` and, by loop-notify, the other containers of that role on the same host [LAB s14 → s15:
-  only `nova_compute` drifted; `nova_ssh`, `nova_libvirt` and `nova_compute` restarted]. Through
+  drift written by `genconfig` and, by loop-notify, the other containers of that role on the same host [CODE
+  `roles/nova-cell/tasks/deploy-containers.yml:2`; 03 §2.4]. Through
   `kolla_set_configs --check` it sees only drift in the files listed in `config.json`'s `config_files` (content,
-  owner, perm) [CODE kolla `docker/base/set_configs.py:160-191,407-410`]; the lab stub hashes the whole config
-  directory instead, so the lab does not test this scope. It does not see changes to
+  owner, perm) [CODE kolla `docker/base/set_configs.py:160-191,407-410`]. It does not see changes to
   `config.json`'s own `command`/`permissions` (e.g. memcached: empty `config_files`), and no later
   `deploy`/`reconfigure` restarts for those either, because the `config.json` template task is then unchanged; they take
   effect at the next restart for another reason. A newly rendered `optional` file whose destination is not yet in the
@@ -129,8 +130,10 @@ ANSIBLE_SERIAL=10 kolla-ansible -i multinode -t nova reconfigure
   nova-scheduler, nova-super-conductor), so they repeat only if those groups are larger than the batch. The cell DB
   sync (`nova_cell_bootstrap`) is not `run_once`: it is gated on the first nova-conductor and runs once at any serial
   value. Compute discovery runs on the first compute of each nova-cell batch, so it repeats once per batch that
-  contains computes [LAB s16, serial=1: `nova_api_bootstrap` ×3, `nova_cell_bootstrap` ×1, discover_hosts ×3].
-- Batches apply per play: the whole fleet passes the nova-cell play before the next play starts.
+  contains computes [CODE, 03 §2.5: with `kolla_serial=1` and the three `multinode` controllers,
+  `nova_api_bootstrap` ×3, `nova_cell_bootstrap` ×1, discovery once per compute].
+- Batches apply per play: the whole fleet passes the nova-cell play before the next play starts [CODE ansible 2.9.27
+  `lib/ansible/executor/playbook_executor.py:161-169`].
 
 ### 2.7 Neutron
 
@@ -157,7 +160,7 @@ kolla-ansible -i multinode -t nova --skip-tags haproxy reconfigure
 ### 2.9 Apply `common` changes (fluentd, cron, kolla_toolbox)
 
 ```bash
-# -t common is a NO-OP in Ussuri (LAB s08). Use a play that reaches the hosts first:
+# -t common is a NO-OP in Ussuri (03 §2.1). Use a play that reaches the hosts first:
 kolla-ansible -i multinode -t chrony reconfigure            # chrony play includes all hosts by default
 kolla-ansible -i multinode -t chrony reconfigure --limit 'compute[0:49]'
 ```
@@ -175,11 +178,12 @@ kolla-ansible -i multinode upgrade                      # recreate from new imag
 ANSIBLE_SERIAL=20 kolla-ansible -i multinode -t nova upgrade
 ```
 
-- `pull` never changes running containers [LAB s10].
+- `pull` never changes running containers [CODE `roles/service-images-pull/tasks/main.yml:2-14`,
+  `kolla_docker.py:599-633`].
 - `deploy`/`reconfigure` never pull an image that is already present locally, even if the registry has a newer
-  build under the same tag [LAB s09a].
+  build under the same tag [CODE `kolla_docker.py:299-307,797-798,805-808`].
 - After a `pull` that downloaded something, the next `deploy`, `reconfigure` or `upgrade` **recreates** the affected
-  containers. Loop-notify restarts their siblings [LAB s09c].
+  containers. Loop-notify restarts their siblings [CODE `kolla_docker.py:403-418,781-803`; 03 §2.4].
 
 ### 2.11 Add a compute node
 
@@ -189,12 +193,14 @@ kolla-ansible -i multinode pull --limit compute501
 kolla-ansible -i multinode deploy --limit compute501
 ```
 
-[LAB s17: details in [07](07-day2-operational-impact.md) §G]
+Details in [07](07-day2-operational-impact.md) §G.
 
-- Facts for **all** hosts are still gathered, sequentially from `compute501` (`gather-facts.yml:29-50`). Enable fact
-  caching for large inventories.
+- Facts for **all** hosts are still gathered, sequentially from `compute501` (`gather-facts.yml:29-50`; loop items
+  run one after another, ansible 2.9.27 `lib/ansible/executor/task_executor.py:317-367`). Enable fact caching for
+  large inventories.
 - Discovery runs from the first compute of the batch, delegated to `nova-conductor[0]`. That host is outside the
-  limit, but `delegate_to` works.
+  limit, but `delegate_to` works: Ansible looks the delegated host up in the whole inventory [CODE ansible 2.9.27
+  `lib/ansible/vars/manager.py:569-594`, `lib/ansible/inventory/manager.py:189-190`].
 - `/etc/hosts` on existing hosts is **not** updated with the new compute (`bootstrap-servers` was limited). Live
   migration with `libvirt_tls` (hostname-based) and RabbitMQ name resolution may need a full `bootstrap-servers` run
   later (fact sheet E §3).
@@ -204,8 +210,8 @@ kolla-ansible -i multinode deploy --limit compute501
 - Changing the `rabbitmq` membership changes the transport URL everywhere, and changing `memcached` changes the
   memcache server lists. In the default inventory both are children of `control`, so a controller change does both.
   That restarts all nova and neutron containers on all computes, and most control-plane services
-  (R3, R4, [LAB s12]). A `memcached`-only change does not touch nova-compute (the compute `nova.conf` has no
-  memcache list) but still restarts the neutron agents on computes (`neutron.conf`).
+  (R3 and R4 in [08](08-operational-risk-matrix.md)). A `memcached`-only change does not touch nova-compute (the
+  compute `nova.conf` has no memcache list) but still restarts the neutron agents on computes (`neutron.conf`).
 - Galera and RabbitMQ membership changes need their own procedures. Ussuri has no automated member removal
   (fact sheets A, B).
 

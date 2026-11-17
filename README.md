@@ -1,6 +1,6 @@
 # Kolla-Ansible Ussuri — Reverse Engineering for Day-2 Operations
 
-A source-level and execution-level study of **Kolla-Ansible `ussuri-eol`** (`openstack/kolla-ansible`, tag
+A source-level study of **Kolla-Ansible `ussuri-eol`** (`openstack/kolla-ansible`, tag
 `ussuri-eol`, HEAD `8a94fe9`). It covers how Kolla-Ansible orchestrates an OpenStack platform, what each tag really
 executes, how runs scale with the number of compute nodes, and what Kolla-Ansible commands do to a running production
 platform.
@@ -17,11 +17,11 @@ level.
 | 03 | [Ansible Roles and Tags Mapping](docs/03-ansible-roles-and-tags-mapping.md) | What each tag executes, on which hosts, with which handlers, and why tag names mislead |
 | 04 | [Deployment Execution Flow](docs/04-deployment-execution-flow.md) | Play order, intra-role order, handler flush points, batching; 5 Mermaid flow diagrams plus a batching Gantt chart |
 | 05 | [Nova Deep Dive](docs/05-nova-deep-dive.md) | Nova roles, plays, cells, discovery, dependencies, libvirt restart semantics |
-| 06 | [Compute Scaling and Performance](docs/06-compute-scaling-and-performance.md) | What grows with compute count; measured task counts; model for 10–500 computes; optimisations |
+| 06 | [Compute Scaling and Performance](docs/06-compute-scaling-and-performance.md) | What grows with compute count; per-compute task chains; model for 10–500 computes; optimisations |
 | 07 | [Day-2 Operational Impact](docs/07-day2-operational-impact.md) | Scenarios A–I (reconfigure Nova/Neutron/common, images, service tags, membership changes, adding computes) |
 | 08 | [Operational Risk Matrix](docs/08-operational-risk-matrix.md) | 25 risks with blast radius, VM/API impact, precautions; pre-execution checklist |
 | 09 | [Practical Command Reference](docs/09-practical-command-reference.md) | Real commands, their scope and impact; safe patterns |
-| 10 | [Technical Findings and Open Questions](docs/10-technical-findings-and-open-questions.md) | Findings, bugs and limitations, open questions with experiment designs |
+| 10 | [Technical Findings and Open Questions](docs/10-technical-findings-and-open-questions.md) | Findings, bugs and limitations, open questions (each answered from the code or marked not available) |
 
 Annexes:
 
@@ -36,8 +36,8 @@ Annexes:
 - [annex/kolla-images.md](annex/kolla-images.md) — what the kolla images do at start and in one-shot containers:
   `kolla_start`, `kolla_set_configs` and its `--check`, `KOLLA_BOOTSTRAP`/`KOLLA_UPGRADE`/`KOLLA_OSM` per image; read
   from the kolla `ussuri-eol` image sources.
-- [annex/lab/](annex/lab/README.md) — the execution lab (real `site.yml` against simulated hosts), scenario results,
-  and minimal reproductions of the Ansible behaviours Kolla depends on.
+- [annex/listings/](annex/listings/README.md) — Ansible 2.9.27's own parse of the unmodified playbooks: the
+  `--list-tags` output of `site.yml` and its `--list-tasks -t nova` output. Nothing was executed against a host.
 
 ## Ten things to know before running Kolla-Ansible Ussuri on production
 
@@ -45,25 +45,25 @@ Annexes:
    DB creation and the DB-sync bootstrap containers for most services; Neutron's DB sync is the default exception. The
    only lightweight path is `genconfig` followed by `deploy-containers` (docs/04 §4).
 2. **Config is applied by a full stop/start, never a reload, and the effective SIGKILL timeout is 10 s.**
-   `docker_graceful_timeout` is silently ignored (docs/01 §6, proven). The only signal Kolla sends is a `SIGHUP` to
+   `docker_graceful_timeout` is silently ignored (docs/01 §6). The only signal Kolla sends is a `SIGHUP` to
    `nova_scheduler`, which refreshes its cell cache.
 3. **One changed container restarts all containers of its role on that host** (Ansible 2.9 loop-notify). A
-   nova-compute config change restarts **nova_libvirt** on every compute (docs/03 §2.4, proven).
+   nova-compute config change restarts **nova_libvirt** on every compute (docs/03 §2.4).
 4. **Without batching, handlers restart a service on every host of the play at once.** Batching is `ANSIBLE_SERIAL`
    for `reconfigure`/`upgrade` and `-e kolla_serial=N` for `deploy`, which ignores `ANSIBLE_SERIAL`. Only MariaDB
    (4 waves) and RabbitMQ (one by one) roll by themselves.
 5. **A service tag is never just that service.** For a service with a frontend it also runs the haproxy frontend
    config (and can restart HAProxy). It runs the `common` role on every host of the play (memcached and multipathd
    excepted) and, for API services, Keystone registration and DB sync (docs/03 §3, docs/07 §E).
-6. **`-t common` does nothing** (docs/03 §2.1, proven). Use `-t chrony` or a service tag to push fluentd/cron changes.
+6. **`-t common` does nothing** (docs/03 §2.1). Use `-t chrony` or a service tag to push fluentd/cron changes.
 7. **Global settings land in per-host files.** `enable_*`, RabbitMQ/memcached membership and passwords end up in
    compute-side configs, so small central changes cause fleet-wide restarts (docs/07 §I).
 8. **`deploy` never pulls an image that is already present.** Rebuilt images under the same tag need `pull`. A tag
    change applied with `deploy` recreates the entire fleet at once (docs/07 §D).
 9. **`--limit` does not contain everything.** Delegated tasks still run on `groups[x][0]` controllers, and all hosts'
    facts are gathered serially by the limited hosts (docs/06, docs/07 §G).
-10. **`--list-tasks` cannot predict a run.** Use `genconfig` plus `kolla_set_configs --check`, staging, or the lab
-    approach (docs/09 §1). `--check` compares only the files listed in `config.json`, not its `command` or
+10. **`--list-tasks` cannot predict a run.** Use `genconfig` plus `kolla_set_configs --check`, or staging
+    (docs/09 §1). `--check` compares only the files listed in `config.json`, not its `command` or
     `permissions`: memcached lists no files, so a change to its command line never shows as drift. A plain
     `reconfigure` still applies it (the changed `config.json` notifies the restart handler), but once `genconfig` has
     written it, no later run restarts the container for it; it takes effect at the next restart for another reason
@@ -80,9 +80,9 @@ Annexes:
 | Which OpenStack components are affected? | The tagged service, plus HAProxy (only if its frontend changed), plus fluentd/cron/kolla_toolbox (if `common` drifted) | docs/07 §E |
 | Which compute nodes will receive changes? | Every compute in the play's host patterns (`nova`, `nova-cell`, `neutron`, `openvswitch`, `chrony`, `iscsi`, …) runs the tasks. Restarts happen where drift exists, usually all or none, because inputs are global | docs/06 §2, docs/07 §A.3 |
 | Will containers restart or be recreated? | Restart (stop 10 s → start) on config drift. Recreate on image or parameter change. Never on no-change runs, except containers whose `config.json` has an entry that `kolla_set_configs --check` always reports as drift (e.g. `prometheus_server` once files exist under `/etc/kolla/config/prometheus/extras/`: that `preserve_properties` entry has no `perm`); they restart on every deploy/reconfigure. Siblings in the same role restart too | docs/01 §4.3, docs/03 §2.4, [annex/kolla-images.md §3](annex/kolla-images.md) |
-| Can running VMs be impacted? | Directly through `nova_libvirt` restarts (frequent, via loop-notify) and OVS/vswitchd or L3-agent restarts. VM survival across a libvirt restart needs a lab check | docs/05 §5, docs/08 R1/R6/R7, docs/10 Q1–Q4 |
+| Can running VMs be impacted? | Directly through `nova_libvirt` restarts (frequent, via loop-notify) and OVS/vswitchd or L3-agent restarts. Whether VMs survive a libvirt restart is not available from the sources | docs/05 §5, docs/08 R1/R6/R7, docs/10 Q1–Q4 |
 | What is the execution order? | `site.yml` play order (no dependency resolver); within a role: register → config → check → bootstrap → flush | docs/04 |
-| Which tasks can take hours with hundreds of computes? | Per-compute chains (≈46–80 executed remote module invocations per compute per run, ≈91 on a first deploy) multiplied by ⌈C/forks⌉ waves, serial fact gathering under `--limit`, image pulls (11 per compute), per-batch waits under `serial` | docs/06 §3–4 |
+| Which tasks can take hours with hundreds of computes? | Per-compute task chains multiplied by ⌈C/forks⌉ waves, serial fact gathering under `--limit`, image pulls (one per container placed on the compute, docs/02 §5), per-batch waits under `serial` | docs/06 §3–4 |
 | Why does a small change generate a large workload? | Global inputs are rendered into per-host files; loop-notify; every run re-executes the full per-host chain | docs/06 §5, docs/07 §I |
 | How can I minimise the operational impact? | `genconfig` + diff + `deploy-containers --limit` batches; narrow tags with `--skip-tags haproxy`; `ANSIBLE_SERIAL`; pre-pull; fact caching and pipelining; avoid global drift | docs/08 §3, docs/09 §2, docs/06 §8 |
 
@@ -93,18 +93,19 @@ Annexes:
 | 1. Source exploration | Cloned `ussuri-eol`; read `tools/kolla-ansible`, `site.yml`, `nova.yml`, `gather-facts.yml`, `group_vars/all.yml`, the `kolla_docker`/`kolla_toolbox` modules, `merge_configs`, filters, and the `common`, `nova`, `nova-cell`, `neutron`, `openvswitch` and service-* helper roles in full. Also read the kolla image repository (`ussuri-eol`) for the image start path and the one-shot containers (annex/kolla-images.md) |
 | 2. Static analysis | Generated tables of all plays, containers, roles and handlers (`tools/extract_kolla_inventory.py`). Five parallel source-reading passes produced the fact sheets, which were then spot-checked |
 | 3. Dependency mapping | Template references, transport URLs and group loops → docs/02 |
-| 4. Performance analysis | Per-host task profiles and scale runs in the lab → docs/06 |
-| 5. Operational analysis | 21 Day-2 scenarios executed in the lab → docs/07, 08 |
-| 6. Validation | Ansible 2.9.27 (the supported version): `--list-tags`/`--list-tasks` on the real playbook; full execution with stub modules; minimal reproductions of loop-notify, tag inheritance and the `kolla_docker` timeout override |
+| 4. Performance analysis | Per-host task chains read from the role sources and the `--list-tasks` listing → docs/06 |
+| 5. Operational analysis | Day-2 scenarios traced through the role sources → docs/07, 08 |
+| 6. Validation | Ansible 2.9.27 (the supported version): `--list-tags`/`--list-tasks` listings of the real playbook (annex/listings/); loop-notify and tag inheritance read in the Ansible 2.9.27 source; the `kolla_docker` timeout override read in the module source |
 
-Evidence labels used everywhere:
+Evidence labels used everywhere. The study rests only on reading source code; nothing was run against a host.
 
-- **[CODE]** read in the source: kolla-ansible, or the kolla image repository when the path has a `kolla` prefix
-  (e.g. kolla `docker/base/set_configs.py:407-410`).
-- **[ANSIBLE]** Ansible 2.9 semantics, verified.
-- **[LAB]** observed when executing the real playbooks.
-- **[HYPOTHESIS]** inferred.
-- **[NEEDS-LAB]** needs a real environment; experiments are designed in docs/10 §4.
+- **[CODE]** shown by the sources, with a `path:line` citation nearby: kolla-ansible `ussuri-eol` (unprefixed paths),
+  the kolla image repository when the path has a `kolla` prefix (e.g. kolla `docker/base/set_configs.py:407-410`),
+  the Ansible source when the path has an `ansible 2.9.27` (or `ansible 2.8.20`) prefix, and the `--list-tags` and
+  `--list-tasks` listings in annex/listings/ (Ansible's own parse of the playbooks).
+- **[NOT AVAILABLE]** the sources do not establish it.
+
+The fact sheets use the words FACT and NOT AVAILABLE for the same two levels.
 
 ## Repository layout
 
@@ -116,7 +117,7 @@ annex/
   kolla-images.md
   service-cards.md
   factsheets/    A–E per-role evidence
-  lab/           harness, results, minimal reproductions
+  listings/      --list-tags and --list-tasks outputs
 tools/
   extract_kolla_inventory.py
   service_cards.py

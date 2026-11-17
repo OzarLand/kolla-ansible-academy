@@ -89,9 +89,8 @@ flowchart TB
 ## 3. Control-plane services
 
 Legend: **DB** = MariaDB through the VIP, **MQ** = RabbitMQ (all nodes listed), **MC** = memcached, **KS** = Keystone.
-A ✔ means the service's main config template references it [CODE, template grep in
-[annex/lab/README.md](../annex/lab/README.md) §5]. What each bootstrap container runs inside the image is listed in
-[annex/kolla-images.md §4](../annex/kolla-images.md).
+A ✔ means the role's config templates (`roles/<role>/templates/*.j2`) reference it [CODE]. What each bootstrap
+container runs inside the image is listed in [annex/kolla-images.md §4](../annex/kolla-images.md).
 
 | Service | DB | MQ | MC | KS | Other services referenced in config | Deploy-time actions | Notes (fact sheet) |
 |---|---|---|---|---|---|---|---|
@@ -185,13 +184,13 @@ Runtime facts [CODE]:
   on such a host therefore deletes all router namespaces there, and the agent rebuilds them.
 - **Agent containers do not share the host PID namespace.** They have no `pid_mode` (`roles/neutron/defaults/main.yml`).
   Processes they spawn (dnsmasq, keepalived, haproxy for metadata) live in the container's PID namespace.
-  [HYPOTHESIS] They die with the container and are respawned by the agent on start. For the L3 agent the code is
-  consistent with this: its wrapper starts `neutron-l3-agent` without `exec`, and dumb-init runs with `--single-child`
+  [NOT AVAILABLE] Whether they die with the container and are respawned by the agent on start. For the L3 agent, its
+  wrapper starts `neutron-l3-agent` without `exec`, and dumb-init runs with `--single-child`
   (kolla `docker/base/Dockerfile.j2:434`; `roles/neutron/templates/neutron-l3-agent-wrapper.sh.j2:14-18`) [CODE].
-  [HYPOTHESIS] If dumb-init forwards SIGTERM only to its direct child (not shown in these sources), the SIGTERM of
-  `docker stop` reaches bash, not the agent, which gets no graceful shutdown
+  [NOT AVAILABLE] Whether the SIGTERM of `docker stop` then reaches only bash and not the agent, and so whether the
+  agent gets a graceful shutdown: that depends on how dumb-init forwards signals, which these sources do not show
   ([annex/kolla-images.md §2.6, §5.3](../annex/kolla-images.md)).
-  [NEEDS-LAB]: measure the DHCP and router outage per agent restart.
+  [NOT AVAILABLE] The DHCP and router outage per agent restart.
 - **The OVS bridge layout is set in a post-config step.** It is ensured on every deploy/reconfigure by
   `kolla_ensure_openvswitch_configured` (`roles/openvswitch/tasks/post-config.yml:7-17`). The command reports
   `changed` only when it actually changes the bridge.
@@ -200,7 +199,8 @@ Runtime facts [CODE]:
 
 ## 5. Compute-node dependency summary
 
-Everything that lands on a compute host in a default Ussuri deployment (lab `t0-deploy`, 3 computes):
+Everything that lands on a compute host in a default Ussuri deployment (`enable_*` defaults in
+`ansible/group_vars/all.yml:569-712`, placement from each role's `<role>_services`):
 
 | Container | Role | Config source that is *global* (changes fleet-wide) |
 |---|---|---|
@@ -216,10 +216,10 @@ cyborg, skydive and monasca (fact sheet D §5). Each of them embeds host lists f
 memcached, influxdb, etcd, prometheus) in its config. The full list of templates that loop over groups is in
 [annex/generated-inventory.md §4](../annex/generated-inventory.md).
 
-**Rule of thumb [CODE + LAB]:** a compute host's configuration depends on *global* state (enabled services, the
-membership of the RabbitMQ, memcached and etcd groups, the internal VIP and external NTP servers, service passwords), not only on the compute host
-itself. That is why changes that look small trigger fleet-wide restarts ([06](06-compute-scaling-and-performance.md),
-[07](07-day2-operational-impact.md)).
+**Rule of thumb [CODE]:** a compute host's configuration depends on *global* state (enabled services, the
+membership of the RabbitMQ, memcached and etcd groups, the internal VIP and external NTP servers, service passwords),
+not only on the compute host itself. That is why changes that look small trigger fleet-wide restarts
+([06](06-compute-scaling-and-performance.md), [07](07-day2-operational-impact.md)).
 
 ---
 

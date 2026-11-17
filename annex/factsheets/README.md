@@ -1,8 +1,9 @@
 # Per-role fact sheets
 
-Five fact sheets produced by systematic source reading of `ussuri-eol`. Every claim carries a `path:line` reference
-relative to the kolla-ansible repository root. Inferences are labelled **HYPOTHESIS**; anything that needs a real
-environment is labelled **NEEDS-LAB**.
+Five fact sheets produced by systematic source reading of `ussuri-eol`. Every **FACT** carries a `path:line`
+reference relative to the kolla-ansible repository root, the kolla image repository (kolla `docker/...`) or the
+Ansible source (ansible 2.9.27 `lib/ansible/...`). Anything these sources do not establish is labelled
+**NOT AVAILABLE**.
 
 | Sheet | Scope |
 |---|---|
@@ -22,14 +23,16 @@ How the sheets were checked:
   - Docker restart gate in `bootstrap-servers` (`roles/baremetal/tasks/post-install.yml:231-237`);
   - keepalived priority from inventory index (`roles/haproxy/templates/keepalived.conf.j2:13`);
   - compute-side memcached lists (`roles/ceilometer/templates/ceilometer.conf.j2:55`).
-- **Behaviours re-verified by execution:** see [../lab](../lab/README.md).
+- **Ansible behaviours** that the sheets rely on are cited to the Ansible 2.9.27 source where it shows them, and
+  are marked NOT AVAILABLE where it does not.
 
 **Erratum (sheets A, B and E, and any statement that `docker stop` honours `docker_graceful_timeout: 60`).** The
 effective stop timeout of every `kolla_docker` stop/restart is **10 s**. In `kolla_docker.generate_module()`, a module
-parameter that is not `None` overrides `common_options`, and `graceful_timeout` defaults to `10`. This was proven by
-running the real module code
-([../lab/kolla_docker_params.out](../lab/kolla_docker_params.out)). Sheet C states it correctly. Sheet A (common
-mechanics, §1.8), sheet B's "Graceful stop" row and sheet E (§2.4, §13) had the same error and are now corrected.
+parameter that is not `None` overrides `common_options`, and `graceful_timeout` defaults to `10`. The code shows it:
+the argument spec sets `default=10` (`ansible/library/kolla_docker.py:991`), the merge loop skips only `None` values
+(`:1037-1047`), and `stop_container` and `restart_container` pass the value to `docker stop` (`:871-884,892-903`).
+Sheet C states it correctly. Sheet A (common mechanics, §1.8), sheet B's "Graceful stop" row and sheet E (§2.4,
+§13) had the same error and are now corrected.
 Sheet E's §13 also listed `docker_client_timeout` as a working knob; the module ignores it the same way (docs/01 §6).
 
 **Erratum (sheet A, "There is no reload path anywhere in scope").** This holds for the handler path: every
@@ -74,12 +77,15 @@ sheets were written. The main changes, now made in the sheets, are:
 
 In the same pass, sheet E §11 was corrected: like `reconfigure`, `upgrade` overrides a user `-e kolla_serial`
 (`tools/kolla-ansible:430`). Sheets B and C also now cite the kolla source for several image-side statements that
-were **HYPOTHESIS** and that it confirms, for example the keystone, cinder and horizon bootstrap commands and
+were earlier only inferred and that it confirms, for example the keystone, cinder and horizon bootstrap commands and
 glance's recursive chown of `/var/lib/glance`. Statements that cite a kolla path (kolla `docker/...`, relative to the
-root of the kolla image repository at `ussuri-eol`) are [CODE]. Other image-side statements in the sheets remain
-**HYPOTHESIS**. See [annex/kolla-images.md](../kolla-images.md).
+root of the kolla image repository at `ussuri-eol`) are [CODE]. Other image-side statements in the sheets are
+**NOT AVAILABLE**. See [annex/kolla-images.md](../kolla-images.md).
 
-**Context the sheets do not repeat.** The sheets were written before the lab showed that Ansible 2.9 notifies the
-handlers of *every* executed loop item when any item changes. Wherever a sheet says "restarts container X if its
-config changed", read it as "restarts **all containers of that role on that host** if any of them changed" (see
-[docs/03 §2.4](../../docs/03-ansible-roles-and-tags-mapping.md)).
+**Context the sheets do not repeat.** The sheets were written before the Ansible 2.9 source was read for looped
+tasks: when any item changes, Ansible notifies the handlers of *every* executed loop item. Every executed item
+carries the task's `notify`, skipped items return before it is set, the task counts as changed when any item
+changed, and the strategy then notifies the handlers named by each item (ansible 2.9.27
+`lib/ansible/executor/task_executor.py:118-121,559,789-790`, `lib/ansible/plugins/strategy/__init__.py:609-623`).
+Wherever a sheet says "restarts container X if its config changed", read it as "restarts **all containers of that
+role on that host** if any of them changed" (see [docs/03 §2.4](../../docs/03-ansible-roles-and-tags-mapping.md)).
