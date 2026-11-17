@@ -7,8 +7,9 @@ What Kolla-Ansible Ussuri commands do when they run against a live platform, rea
 >
 > - **`-t nova reconfigure` ([§A](#a-reconfigure-nova)):** every compute runs the tasks. Restarts happen only where
 >   drift is detected, in practice on no compute or on all of them, and `nova_libvirt` and `nova_ssh` restart whenever
->   `nova_compute` does ([§A.3](#a3-are-all-compute-nodes-affected-does-nova-compute-restart-on-every-compute)). Whether
->   running VMs survive is [NOT AVAILABLE] ([§A.4](#a4-running-vms-live-migration-scheduling)).
+>   `nova_compute` restarts because of config or image drift
+>   ([§A.3](#a3-are-all-compute-nodes-affected-does-nova-compute-restart-on-every-compute)). Whether running VMs survive
+>   is [NOT AVAILABLE] ([§A.4](#a4-running-vms-live-migration-scheduling)).
 > - **`-t neutron reconfigure` ([§B](#b-reconfigure-neutron))** targets every compute. An `ml2_conf.ini` override meant
 >   for the server also restarts `neutron_openvswitch_agent` on all computes and network nodes [CODE]
 >   ([§B.2](#b2-what-restarts-code)). What an agent restart does to existing connectivity is [NOT AVAILABLE]
@@ -20,10 +21,11 @@ What Kolla-Ansible Ussuri commands do when they run against a live platform, rea
 >   new `openstack_tag` applied with `deploy` recreates every container on every host [CODE]
 >   ([§D.1](#d1-how-image-pulling-and-recreation-work-code)). Risks of doing so: [§D.3](#d3-risks).
 > - **A service tag also touches** the HAProxy frontends of the service, `common` on every host of the service play,
->   Keystone registration, DB creation and schema sync, and hosts outside `--limit`
->   ([§E](#e-execute-a-service-specific-tag-implicit-effects)). A controller membership change is a fleet-wide restart
->   event for every messaging consumer ([§F](#f-change-control-plane-membership-add-or-remove-a-controller)); what
->   adding a compute with `deploy --limit` touches: [§G](#g-add-a-compute-node).
+>   Keystone registration, for most services DB creation and schema sync (Neutron's DB sync only on `deploy` by
+>   default), and hosts outside `--limit` ([§E](#e-execute-a-service-specific-tag-implicit-effects)). A controller
+>   membership change is a fleet-wide restart event for every messaging consumer
+>   ([§F](#f-change-control-plane-membership-add-or-remove-a-controller)); what adding a compute with `deploy --limit`
+>   touches: [§G](#g-add-a-compute-node).
 > - **Recommended pattern:** `genconfig`, then `deploy-containers --limit` batch by batch, with its caveats [CODE]
 >   ([§H](#h-separate-write-config-from-apply-recommended-pattern)). Why a small change can create a large workload:
 >   [§I](#i-why-a-small-change-can-create-a-large-workload).
@@ -117,7 +119,7 @@ sequenceDiagram
 
 | Change | Files rewritten | Restarted on controllers | Restarted on **every compute** | Source |
 |---|---|---|---|---|
-| none | – | none unless a notifying task reports changed | none unless a notifying task reports changed | restart handlers run only when a notifying task reports changed ([03 §2.4](03-ansible-roles-and-tags-mapping.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code)), and `check-containers` reports changed only for a missing or stopped container, a differing compared parameter or a `kolla_set_configs --check` exit 1/137 (`kolla_docker.py:326-350, :480-484, :543-578`; [03 §3](03-ansible-roles-and-tags-mapping.md#3-what-a-tag-really-executes-master-table)); [NOT AVAILABLE] whether every task reports unchanged on an unchanged cloud |
+| none | – | none unless a notifying task reports changed | none unless a notifying task reports changed | restart handlers run only when a notifying task reports changed ([03 §2.4](03-ansible-roles-and-tags-mapping.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code)), and `check-containers` reports changed only for a missing or not-running container, a differing compared parameter, or a `kolla_set_configs --check` exit 1/137 or Docker client error (`kolla_docker.py:326-350, :480-484, :543-578`; [03 §3](03-ansible-roles-and-tags-mapping.md#3-what-a-tag-really-executes-master-table)); [NOT AVAILABLE] whether every task reports unchanged on an unchanged cloud |
 | `/etc/kolla/config/nova.conf` (global override) | `nova.conf` of every nova service | nova_api, nova_scheduler, nova_conductor, nova_novncproxy | **nova_compute, nova_libvirt, nova_ssh** | both `Copying over nova.conf` loops merge `{{ node_custom_config }}/nova.conf` (`roles/nova/tasks/config.yml:51-69`, `roles/nova-cell/tasks/config.yml:63-82`); [03 §2.4](03-ansible-roles-and-tags-mapping.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code) |
 | `/etc/kolla/config/nova/nova-compute.conf` | `nova-compute/nova.conf` only | – | **nova_compute, nova_libvirt, nova_ssh** (libvirt and ssh by loop-notify) | `roles/nova-cell/tasks/config.yml:63-82`; [03 §2.4](03-ansible-roles-and-tags-mapping.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code) |
 | `/etc/kolla/config/nova/nova-scheduler.conf` | `nova-scheduler/nova.conf` only | nova_scheduler **+ nova_api** (loop-notify) | – | `roles/nova/tasks/config.yml:51-69`; [03 §2.4](03-ansible-roles-and-tags-mapping.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code) |
@@ -429,12 +431,11 @@ For an API service such as keystone, glance, cinder, heat or placement:
 - **VM impact:** these services restart none of the containers that [03
   §3.1](03-ansible-roles-and-tags-mapping.md#31-per-tag-answers-files-vms-apis-networkingstorage-safety-prerequisites)
   traces to running VMs [CODE]; any other effect on VMs is [NOT AVAILABLE]. In-flight glance or cinder transfers are
-  SIGKILLed after 10 s ([R24](08-operational-risk-matrix.md#1-matrix)). The tags that [03
-  §3.1](03-ansible-roles-and-tags-mapping.md#31-per-tag-answers-files-vms-apis-networkingstorage-safety-prerequisites)
-  marks as affecting running VMs are `nova`, `nova-cell`, `neutron`, `openvswitch` and `baremetal` (run by
-  `bootstrap-servers`, not `reconfigure`; Docker restart, [R14](08-operational-risk-matrix.md#1-matrix)); for `ovn` and
-  `iscsi` it is [NOT AVAILABLE]. Running on computes is not the test: `chrony` runs on every compute but restarts none
-  of those containers.
+  SIGKILLed after 10 s ([R24](08-operational-risk-matrix.md#1-matrix)). Of the tags in 03 §3.1, the ones that can
+  restart those containers are `nova`, `nova-cell`, `neutron`, `openvswitch`, `ovn`, `iscsi` and `baremetal` (run by
+  `bootstrap-servers`, not `reconfigure`; Docker restart, [R14](08-operational-risk-matrix.md#1-matrix)) [CODE]; what
+  those restarts do to running VMs is [NOT AVAILABLE]. Running on computes is not the test: `chrony` runs on every
+  compute but restarts none of those containers.
 - **Risks:** [R8](08-operational-risk-matrix.md#1-matrix) (HAProxy restart),
   [R19](08-operational-risk-matrix.md#1-matrix) (Keystone), [R20](08-operational-risk-matrix.md#1-matrix) (glance file
   backend), [R23](08-operational-risk-matrix.md#1-matrix) (`--limit` on a large inventory),

@@ -422,6 +422,6 @@ All of these are `run_once` per batch, except the cron generator, which runs on 
 | Roles that call `service-ks-register` | **39** | During their deploy/reconfigure they create services, endpoints, users, roles and grants through `openstack_auth`, i.e. the Keystone **admin endpoint on the internal VIP:35357**, `run_once`, 5 retries x 10 s (`ansible/roles/service-ks-register/tasks/main.yml:1-120`, `defaults/main.yml:2-47`) |
 
 Implications:
-- FACT: the `[keystone_authtoken]` sections of 32 roles point keystonemiddleware at Keystone, and 34 roles keep its token cache in memcached (rows above). NOT AVAILABLE: whether those API services fail to authenticate requests while Keystone or memcached is unavailable.
+- FACT: the `[keystone_authtoken]` sections of 33 roles point keystonemiddleware at Keystone (the 32 of the table above plus monasca, whose section is in the subdirectory template `ansible/roles/monasca/templates/monasca-api/api.conf.j2:34-35`), and 35 roles keep its token cache in memcached (`memcache_secret_key`; the table's 34 is corrected in the [erratum](README.md#verification-and-errata)). NOT AVAILABLE: whether those API services fail to authenticate requests while Keystone or memcached is unavailable.
 - Keystone, via the admin endpoint, is a **hard deploy-time dependency** for the `deploy`/`reconfigure` of 39 roles.
 - Every service's `memcached_servers` and `transport_url` embed the full memcached and rabbitmq host lists, so changes to those groups fan out as restarts across the whole control plane.

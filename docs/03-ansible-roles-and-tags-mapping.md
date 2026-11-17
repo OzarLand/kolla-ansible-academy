@@ -10,10 +10,11 @@ How tags actually select work in Kolla-Ansible Ussuri, and what each important t
 >   storage, safety and prerequisites per tag:
 >   [§3.1](#31-per-tag-answers-files-vms-apis-networkingstorage-safety-prerequisites).
 > - **Which tags reach the computes:** `nova`, `nova-cell`, `neutron`, `openvswitch`, `ovn`, `chrony` and `iscsi` target
->   compute hosts; `nova-api` does not touch computes ([§3](#3-what-a-tag-really-executes-master-table)).
-> - **Loop-notify:** a change that concerns one container restarts every container of that role on that host. A
->   nova-compute-only override restarts `nova_compute`, `nova_libvirt` and `nova_ssh` on every compute host [CODE]
->   ([§2.4](#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code)).
+>   compute hosts, as do `baremetal` (`bootstrap-servers`, all hosts) and `nova-reload`/`nova-cell-reload` (work only on
+>   `upgrade`); `nova-api` does not touch computes ([§3](#3-what-a-tag-really-executes-master-table)).
+> - **Loop-notify:** a change that concerns one container restarts every container of that role on that host. With the
+>   default Nova settings, a nova-compute-only override restarts `nova_compute`, `nova_libvirt` and `nova_ssh` on every
+>   compute host [CODE] ([§2.4](#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code)).
 > - **`-t common` is a no-op** [CODE] ([§2.1](#21-dynamic-include_tasks-and-tag-inheritance-code)). To push fluentd,
 >   cron or kolla_toolbox changes, use `-t chrony`, which reaches every host by default, or a service tag
 >   ([§4](#4-practical-consequences)).
@@ -322,11 +323,10 @@ includes ([§2.6](#26---list-tasks-is-not-usable-for-kolla-code)). Use `genconfi
    passwords), not only on the tagged service [CODE]: e.g. common's cron logrotate config lists services by their
    `enable_*` flags and notifies `Restart cron container` (`roles/common/tasks/config.yml:163-240`).
 4. **`--skip-tags` can avoid the haproxy play.** `--skip-tags haproxy` skips the entire haproxy play, including the
-   per-service includes ([fact sheet A §1.9](../annex/factsheets/A-infra-lb-ovn.md#1-haproxy-role-haproxy--keepalived)),
-   while leaving the service play untouched. Combining `-t nova` with `--skip-tags haproxy` is valid. Most service tags
-   (`keystone`, `glance`, `neutron`, `nova`, …) select both the service's haproxy include and the service play(s), so
-   for a single-tag service such as keystone this is the tag-based way to drop the haproxy part. Some tags select no
-   haproxy include at all:
+   per-service includes ([fact sheet A §1.9][sheet-a-19]), while leaving the service play untouched. Combining `-t nova`
+   with `--skip-tags haproxy` is valid. Most service tags (`keystone`, `glance`, `neutron`, `nova`, …) select both the
+   service's haproxy include and the service play(s), so for a single-tag service such as keystone this is the tag-based
+   way to drop the haproxy part. Some tags select no haproxy include at all:
    - `memcache` (only the memcached play);
    - nova's narrower play tags: `-t nova-bootstrap,nova-api-deploy,nova-cell-deploy,nova-refresh-scheduler-cell-cache`
      does what a `-t nova` deploy/reconfigure does, minus the haproxy includes (`site.yml:293-306`);
@@ -337,6 +337,8 @@ includes ([§2.6](#26---list-tasks-is-not-usable-for-kolla-code)). Use `genconfi
    `bootstrap_neutron` DB-sync container, which runs on deploy only while `neutron_enable_rolling_upgrade` keeps its
    default `yes`; Neutron DB and DB-user creation run on both. The other difference is the `kolla_serial` pass-through
    ([01 §2](01-repository-architecture.md#2-from-cli-to-ansible-playbook)).
+
+[sheet-a-19]: ../annex/factsheets/A-infra-lb-ovn.md#19-what-exactly-happens-in-the-haproxy-play-for--t-service-and--t-haproxy
 
 ---
 

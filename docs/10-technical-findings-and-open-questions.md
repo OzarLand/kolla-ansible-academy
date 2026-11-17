@@ -111,8 +111,8 @@ bullets (eight corrections) were also made in the sheets themselves:
   `nova_scheduler` receives a `SIGHUP` on every `deploy`/`reconfigure` that runs the `nova`, `nova-api` or
   `nova-refresh-scheduler-cell-cache` tag (or no tag) and whose `--limit` includes the `nova-scheduler` hosts
   (`ansible/nova.yml:139-156`).
-- **[Fact sheet B §3.10](../annex/factsheets/B-mariadb-rabbitmq-keystone.md#3-keystone-ansibleroleskeystone)**,
-  memcached counts: 35 roles use `memcache_secret_key`, and 38 embed the memcached host list.
+- **[Fact sheet B §3.10][sheet-b-310]**, memcached counts: 35 roles use `memcache_secret_key`, and 38 embed the
+  memcached host list.
 - **[Fact sheet A](../annex/factsheets/A-infra-lb-ovn.md)**, `tags: always` on `import_role: haproxy-config` "in every
   `loadbalancer.yml`": 48 of 49 files do it directly; nova-cell reaches it through a chain of includes.
 - **[Fact sheet B](../annex/factsheets/B-mariadb-rabbitmq-keystone.md)**, "Graceful stop" row: it also stated 60 s; the
@@ -135,6 +135,8 @@ bullets (eight corrections) were also made in the sheets themselves:
 - **[Fact sheet E](../annex/factsheets/E-host-bootstrap-ops-playbooks.md)**, "For every other command, `-e
   kolla_serial=...` works": `upgrade` overrides it like `reconfigure` does (`tools/kolla-ansible:430`); use
   `ANSIBLE_SERIAL`.
+
+[sheet-b-310]: ../annex/factsheets/B-mariadb-rabbitmq-keystone.md#310-runtime-dependency-of-other-services-on-keystone-grep-across-ansiblerolestemplates
 
 ---
 

@@ -14,8 +14,8 @@ actually touch the hosts. The other documents build on the vocabulary defined he
 >   the image or parameters differ and otherwise restarts it [CODE] ([§4.3](#43-the-config--check--handler-pattern)).
 > - **The effective stop timeout is 10 s**, not the 60 s of `docker_graceful_timeout`, which is silently ignored [CODE]
 >   ([§6](#6-custom-modules--container-lifecycle-via-kolla_docker)).
-> - **Images are pulled only if absent locally.** A rebuilt image pushed under the same tag is not fetched by `deploy`
->   or `reconfigure`; it takes an explicit `pull` [CODE]
+> - **`deploy` and `reconfigure` pull an image only if it is absent locally** (`start_container`). A rebuilt image
+>   pushed under the same tag is not fetched by `deploy` or `reconfigure`; it takes an explicit `pull` [CODE]
 >   ([§6](#6-custom-modules--container-lifecycle-via-kolla_docker)).
 > - **Batching is off by default.** `ANSIBLE_SERIAL` defaults to 0, which means all hosts of a play in one batch, and
 >   the wrapper passes `kolla_serial` only for `reconfigure` and `upgrade` [CODE]
@@ -498,5 +498,6 @@ How `kolla_docker` decides [CODE]:
   C](../annex/factsheets/C-glance-placement-cinder-horizon-heat.md)). Other index-sensitive logic:
   - keepalived priority is the index in `groups['haproxy']` ([fact sheet A
     §1.8](../annex/factsheets/A-infra-lb-ovn.md#18-operationally-notable-behaviour) C);
-  - MariaDB restart waves use the index modulo 4 ([fact sheet B
-    §1.5](../annex/factsheets/B-mariadb-rabbitmq-keystone.md#1-mariadb-ansiblerolesmariadb)).
+  - MariaDB restart waves use the index modulo 4 ([fact sheet B §1.5][sheet-b-15]).
+
+[sheet-b-15]: ../annex/factsheets/B-mariadb-rabbitmq-keystone.md#15-handlers-ansiblerolesmariadbhandlersmainyml-in-definition-order

@@ -49,9 +49,9 @@ nova-scheduler hosts. It does so on `deploy` and `reconfigure` runs that select 
 `nova-refresh-scheduler-cell-cache` tag, or no tag (`ansible/nova.yml:140-156`,
 `roles/nova/tasks/refresh_scheduler_cell_cache.yml:10`).
 
-**Erratum (sheet B [§3.10](B-mariadb-rabbitmq-keystone.md#3-keystone-ansibleroleskeystone), memcached counts).** In
-`ussuri-eol`, **35** roles have `memcache_secret_key` in their templates, not 34, and **37** (not 36) have
-`memcache_servers`/`memcached_servers`. The memcached *host list* is embedded by **38** roles:
+**Erratum (sheet B [§3.10][sheet-b-310], memcached counts).** In `ussuri-eol`, **35** roles have `memcache_secret_key`
+in their templates, not 34, and **37** (not 36) have `memcache_servers`/`memcached_servers`. The memcached *host list*
+is embedded by **38** roles:
 - 37 loop over `groups['memcached']` in their templates (this includes horizon, whose `CACHES.LOCATION` uses the
   loop);
 - monasca builds the list in `monasca_memcached_servers` (`roles/monasca/defaults/main.yml:127`).
@@ -95,5 +95,7 @@ carries the task's `notify`, skipped items return before it is set, the task cou
 changed, and the strategy then notifies the handlers named by each item (ansible 2.9.27
 `lib/ansible/executor/task_executor.py:118-121,559,789-790`, `lib/ansible/plugins/strategy/__init__.py:609-623`).
 Wherever a sheet says "restarts container X if its config changed", read it as "restarts **all containers of that
-role on that host** if any of them changed" (see [docs/03
-§2.4](../../docs/03-ansible-roles-and-tags-mapping.md#2-ansible-29-semantics-that-kolla-relies-on)).
+role on that host** if any of them changed" (see [docs/03 §2.4][docs-03-loop-notify]).
+
+[sheet-b-310]: B-mariadb-rabbitmq-keystone.md#310-runtime-dependency-of-other-services-on-keystone-grep-across-ansiblerolestemplates
+[docs-03-loop-notify]: ../../docs/03-ansible-roles-and-tags-mapping.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code

@@ -6,8 +6,9 @@ Which Kolla-Ansible Ussuri operations grow with the number of compute nodes, why
 >
 > - **No timings are given.** Work is counted as operations read from the source; task-result totals and wall times are
 >   [NOT AVAILABLE] ([§2](#2-work-per-compute-host-read-from-the-task-files), [§4.1](#41-model)).
-> - **Per compute, a no-change `-t nova reconfigure` makes 46 remote module invocations (53 on compute001) and 6
->   `compare_container` calls; a full `deploy` or `reconfigure` makes 11 `compare_container` calls** [CODE]
+> - **Per compute, for the default Ussuri service set with Cinder LVM, `nova_compute_virt_type: kvm` and a CentOS host,
+>   a no-change `-t nova reconfigure` makes 46 remote module invocations (53 on compute001) and 6 `compare_container`
+>   calls; a full `deploy` or `reconfigure` makes 11 `compare_container` calls** [CODE]
 >   ([§2](#2-work-per-compute-host-read-from-the-task-files)).
 > - **Adding computes adds waves, not tasks:** the critical path of a play is the number of executed task-items on the
 >   slowest host × ⌈H/F⌉ waves ([§4.1](#41-model)). Operation counts for 10 to 500 computes:

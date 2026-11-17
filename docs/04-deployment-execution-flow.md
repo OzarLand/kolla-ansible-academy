@@ -347,5 +347,6 @@ Handlers create ordering that is not visible in task files:
    haproxy role's `Restart haproxy container`. This is why the haproxy play includes the haproxy role even for
    `-t <svc>`.
 5. **The MariaDB restart is itself a sequence of handler-driven waves** (`index % 4`), with port and WSREP waits
-   between waves ([fact sheet B
-   §1.5](../annex/factsheets/B-mariadb-rabbitmq-keystone.md#1-mariadb-ansiblerolesmariadb)).
+   between waves ([fact sheet B §1.5][sheet-b-15]).
+
+[sheet-b-15]: ../annex/factsheets/B-mariadb-rabbitmq-keystone.md#15-handlers-ansiblerolesmariadbhandlersmainyml-in-definition-order
