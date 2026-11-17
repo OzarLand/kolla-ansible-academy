@@ -28,12 +28,15 @@ How the sheets were checked:
 effective stop timeout of every `kolla_docker` stop/restart is **10 s**. In `kolla_docker.generate_module()`, a module
 parameter that is not `None` overrides `common_options`, and `graceful_timeout` defaults to `10`. This was proven by
 running the real module code
-([../lab/kolla_docker_params.out](../lab/kolla_docker_params.out)). Sheet C states it correctly.
+([../lab/kolla_docker_params.out](../lab/kolla_docker_params.out)). Sheet C states it correctly. The same error was in
+sheet B's "Graceful stop" row, which is now corrected in the sheet.
 
 **Erratum (sheet A, "There is no reload path anywhere in scope").** This holds for the handler path: every
 handler stops and starts or recreates its container, and `kolla_docker` has no reload action. Outside the handlers,
-Kolla sends one signal: on every `deploy`/`reconfigure`, the "Refresh nova scheduler cell cache" play sends `SIGHUP` to
-`nova_scheduler` (`ansible/nova.yml:140-156`, `roles/nova/tasks/refresh_scheduler_cell_cache.yml:10`).
+Kolla sends one signal: the "Refresh nova scheduler cell cache" play sends `SIGHUP` to `nova_scheduler` on the
+nova-scheduler hosts. It does so on `deploy` and `reconfigure` runs that select the `nova`, `nova-api` or
+`nova-refresh-scheduler-cell-cache` tag, or no tag (`ansible/nova.yml:139-156`,
+`roles/nova/tasks/refresh_scheduler_cell_cache.yml:10`).
 
 **Erratum (sheet B §3.10, memcached counts).** In `ussuri-eol`, **35** roles have `memcache_secret_key` in their
 templates, not 34, and **37** (not 36) have `memcache_servers`/`memcached_servers`. The memcached *host list* is
@@ -50,6 +53,27 @@ for 48 of the 49 `loadbalancer.yml` files. `roles/nova-cell/tasks/loadbalancer.y
 itself. It reaches it through a chain: `import_tasks: proxy_loadbalancer.yml`, then `include_tasks:
 cell_proxy_loadbalancer.yml`, then `import_role: haproxy-config`, with `tags: always` at every level. The effect is the
 same.
+
+**Erratum (image-side statements, kolla `ussuri-eol` read later).** The kolla image sources were read after the
+sheets were written. They changed these statements, which are now corrected in the sheets:
+- sheet A: keepalived's `/check_alive.sh` does query the haproxy stats socket (kolla
+  `docker/keepalived/check_alive.sh:6`). The haproxy image ships a reload helper that kolla-ansible ussuri never calls
+  (kolla `docker/haproxy/ensure_latest_config.sh:5-14`);
+- sheet B: the RabbitMQ Erlang cookie is written only by the bootstrap container, never on a normal start (kolla
+  `docker/rabbitmq/extend_start.sh:7-18`);
+- sheet C: the placement bootstrap container also runs `db online_data_migrations`, on every deploy and reconfigure
+  (kolla `docker/placement/placement-api/extend_start.sh:5-9`). The glance bootstrap adds `db_load_metadefs` (kolla
+  `docker/glance/glance-api/extend_start.sh:5-9`). The heat bootstrap creates the heat domain and user only when the
+  domain is absent (kolla `docker/heat/heat-api/extend_start.sh:5-17`). Horizon runs `collectstatic` only when its
+  settings hash is missing or differs, a dashboard plugin is added or removed, or `FORCE_GENERATE=yes` (kolla
+  `docker/horizon/extend_start.sh:57-63,322-337,368-372`);
+- sheet D: swift config and rings are copied into a container only at its start (kolla `docker/base/start.sh:8`,
+  `docker/base/set_configs.py:391-393`). Only `swift_rsyncd` fixes `/srv/node` ownership at start (kolla
+  `docker/swift/swift-rsyncd/extend_start.sh:3`).
+
+In the same pass, sheet E §11 was corrected: like `reconfigure`, `upgrade` overrides a user `-e kolla_serial`
+(`tools/kolla-ansible:430`). Statements that cite a kolla path are [CODE]. Other image-side statements in the sheets
+remain **HYPOTHESIS**. See [annex/kolla-images.md](../kolla-images.md).
 
 **Context the sheets do not repeat.** The sheets were written before the lab showed that Ansible 2.9 notifies the
 handlers of *every* executed loop item when any item changes. Wherever a sheet says "restarts container X if its

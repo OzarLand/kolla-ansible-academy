@@ -197,9 +197,9 @@ Order caveats:
 |---|---|---|---|---|---|---|---|
 | `deploy` | yes | yes | yes | yes | yes | only if absent | Full flow |
 | `reconfigure` | yes | yes | yes | yes (most roles) | yes | only if absent | Identical to deploy in most roles (01 §4.2). `kolla_serial` passed |
-| `upgrade` | yes | yes | yes | upgrade-specific (`bootstrap_upgrade`, rolling or legacy upgrade, online migrations) | yes (some roles) | only if absent → run `pull` first | Nova reload plays and online migrations are active only here |
-| `deploy-containers` | **no** | yes (incl. config drift vs files already on disk) | yes | no | no | only if absent | `tasks/deploy-containers.yml` = `check-containers.yml`. haproxy includes skipped (`site.yml:392`) |
-| `genconfig` (`config`) | yes | no | **all container restarts skipped** (`when: kolla_action != "config"`; only the deprecated nova-hyperv Windows-service handlers are unguarded, 08 §3) | no | no | no | Fluentd label check still pulls the fluentd image if missing (`roles/common/tasks/config.yml:26-37`) |
+| `upgrade` | yes | yes | yes | yes: most roles re-run the deploy `KOLLA_BOOTSTRAP` one-shot with the new image (cinder, heat, barbican, octavia, manila, horizon, placement, legacy glance/neutron). Upgrade-only one-shots: keystone `KOLLA_UPGRADE` (expand + migrate) then `KOLLA_FINISH_UPGRADE` (contract); neutron rolling (default) `NEUTRON_DB_EXPAND`/`NEUTRON_DB_CONTRACT`; glance rolling (opt-in) `GLANCE_DB_EXPAND`/`MIGRATE`/`CONTRACT`; mariadb `mysql_upgrade`; `KOLLA_OSM` online migrations (nova, placement, cinder, rolling ironic). Nova `bootstrap_upgrade` re-runs its deploy db-sync container, minus DB creation and cell0 mapping ([annex/kolla-images.md §4](../annex/kolla-images.md)) | yes (some roles) | only if absent → run `pull` first | Nova reload plays and the separate `KOLLA_OSM` online-migration containers are active only here. Placement's bootstrap container also runs `placement-manage db online_data_migrations` on every deploy/reconfigure (kolla `docker/placement/placement-api/extend_start.sh:5-9`); so does Ironic's with `ironic_enable_rolling_upgrade: no` |
+| `deploy-containers` | **no** | yes (incl. drift of the files listed in `config_files`; not `command`/`permissions` changes inside `config.json`, see below) | yes | no | no | only if absent | `tasks/deploy-containers.yml` = `check-containers.yml`. haproxy includes skipped (`site.yml:392`) |
+| `genconfig` (`config`) | yes | no | **all container restarts skipped** (`when: kolla_action != "config"`; only the deprecated nova-hyperv Windows-service handlers can actually run, since the other unguarded handlers are chained to guarded ones or never notified by genconfig, 08 §3) | no | no | no | Fluentd label check still pulls the fluentd image if missing (`roles/common/tasks/config.yml:26-37`) |
 | `pull` | no | no | no | no | no | **yes**, every enabled container mapped to the host, plus `common` | `service-images-pull` |
 | `stop` | no | no | no | no | no | no | `stop_container` for every enabled container on the host, honouring `skip_stop_containers` |
 | `precheck` | no | no | no | no | no | no | `prechecks` role + each role's `precheck.yml` (port checks, group validation) |
@@ -207,8 +207,16 @@ Order caveats:
 
 The combination **`genconfig` → (review the diff) → `deploy-containers --limit <batch>`** is the only built-in way to
 separate "write the config" from "apply it", and to apply in controlled batches. It works because
-`compare_container` detects config drift through `kolla_set_configs --check` [CODE `kolla_docker.py:543-578`, LAB
-s14 → s15]. See [07](07-day2-operational-impact.md) §H.
+`compare_container` detects drift in the files listed in each `config.json`'s `config_files` (content, mode, owner)
+through `kolla_set_configs --check` [CODE `kolla_docker.py:543-578`, kolla `docker/base/set_configs.py:160-235,407-410`;
+LAB s14 → s15]. Changes confined to `config.json` itself (`command`, `permissions`; e.g. every memcached setting,
+`roles/memcached/templates/memcached.json.j2:2-3`) are NOT detected. `deploy-containers` therefore does not apply them
+after `genconfig`, and a later `deploy`/`reconfigure` does not either: the `config.json` template task, the only config
+task that notifies the restart, is then unchanged (`roles/memcached/tasks/config.yml:13-26`). An `optional` file that
+newly appears, and whose destination does not exist in the container yet, makes the check exit 2 and the task fail [CODE
+kolla `docker/base/set_configs.py:162-167,430-432`, `kolla_docker.py:575-578`]. The lab stub hashes the whole config
+directory, `config.json` included, so it cannot show either case. See [07](07-day2-operational-impact.md) §H and
+[annex/kolla-images.md §3](../annex/kolla-images.md).
 
 ---
 

@@ -25,7 +25,11 @@ Common mechanics that apply to every role below (all verified in code):
   COPY_ALWAYS and no parameter drift, `recreate_or_restart_container` calls `restart_container`
   (`ansible/library/kolla_docker.py:781-801`), which does `dc.stop(name, timeout=graceful_timeout)` then `dc.start`
   (`kolla_docker.py:892-904`). `docker_graceful_timeout: 60` (`ansible/group_vars/all.yml:154`).
-  **There is no "reload" path anywhere in scope.**
+  **There is no "reload" path anywhere in scope.** The haproxy image ships a reload helper,
+  `kolla_ensure_haproxy_latest_config` (kolla `docker/haproxy/Dockerfile.j2:20-21`,
+  `docker/haproxy/ensure_latest_config.sh:5-14`), but kolla-ansible ussuri never calls it (grep finds no caller). It
+  also signals `haproxy-systemd-wrapper`, which `haproxy_run.sh` does not start
+  (`ansible/roles/haproxy/templates/haproxy_run.sh.j2:9`).
 - **`kolla_serial` is only set for two actions.** The CLI passes it only for `upgrade` and `reconfigure`
   (`tools/kolla-ansible:430,439`), from `ANSIBLE_SERIAL`, which defaults to `0` = all hosts at once
   (`tools/kolla-ansible:236`).
@@ -90,7 +94,9 @@ Common mechanics that apply to every role below (all verified in code):
   `enable_haproxy: "yes"` (574).
 - **Shared socket volume.** The `haproxy_socket` volume is shared between both containers. The haproxy stats socket is
   `stats socket /var/lib/kolla/haproxy/haproxy.sock` (`templates/haproxy_main.cfg.j2:15`).
-  - HYPOTHESIS: keepalived's `/check_alive.sh` lives in the kolla *image*, not in this repo, and queries that socket.
+  - Confirmed in the kolla source: keepalived's `/check_alive.sh` lives in the kolla *image*, not in this repo, and
+    runs `echo "show info" | socat unix-connect:/var/lib/kolla/haproxy/haproxy.sock stdio` (kolla
+    `docker/keepalived/check_alive.sh:6`, baked in by kolla `docker/keepalived/Dockerfile.j2:22,25`).
 - No pid_mode or ipc_mode is set.
 
 ### 1.3 Task flow per `kolla_action`
@@ -201,7 +207,10 @@ None.
     (`rise 10` × 2 s) before it may hold the VIP again. That means a possible VIP outage of about 20 s even though the
     "Waiting for haproxy" handler succeeds quickly.
   - Because of `nopreempt` (line 10) the VIP may also end up on a different node.
-  - NEEDS-LAB: this depends on the image's `/check_alive.sh` and on keepalived's initial script state.
+  - The check itself is known: the image's `/check_alive.sh` only asks the haproxy stats socket for `show info`
+    (kolla `docker/keepalived/check_alive.sh:6`), so it fails as soon as haproxy stops answering on the socket. The
+    FAULT and `rise` timing is upstream keepalived behaviour. NEEDS-LAB: the timing and keepalived's initial script
+    state.
 - **(C) keepalived priority depends on inventory order.**
   - `priority = index in groups['haproxy'] + 1` (`keepalived.conf.j2:13`).
   - Inserting, removing or re-ordering a haproxy host changes `keepalived.conf` on every host after it in the list. In

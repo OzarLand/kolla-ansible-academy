@@ -2,8 +2,10 @@
 
 What really happens when Kolla-Ansible Ussuri commands run against a live platform. Each scenario was executed in the
 lab with the **unmodified `site.yml`** (Ansible 2.9.27, simulated hosts, `kolla_docker` stub mirroring the real
-decision logic). Every scenario starts from the same deployed state: 3 controllers, 2 network nodes, 3 computes, 1
-storage node and 1 monitoring node, with Keystone, Glance, Placement, Nova, Neutron/OVS, Cinder/LVM, Heat and Horizon.
+container-parameter decision logic; config drift is approximated by a content hash of the whole `/etc/kolla/<svc>/`
+directory, not by `kolla_set_configs --check` semantics, see [annex/kolla-images.md §3](../annex/kolla-images.md)).
+Every scenario starts from the same deployed state: 3 controllers, 2 network nodes, 3 computes, 1 storage node and 1
+monitoring node, with Keystone, Glance, Placement, Nova, Neutron/OVS, Cinder/LVM, Heat and Horizon.
 Raw per-run numbers are in [annex/lab/results.md](../annex/lab/results.md).
 
 Throughout this document:
@@ -77,7 +79,7 @@ sequenceDiagram
 | Effect | Guaranteed by code | Depends on environment |
 |---|---|---|
 | nova-compute stop/start (10 s SIGKILL) | yes, when drift | [HYPOTHESIS] VMs unaffected; in-flight operations on that host fail or are left mid-task; the service is reported down only if the restart exceeds `service_down_time` |
-| libvirtd stop/start | yes, whenever nova-compute drifts | [NEEDS-LAB] VMs normally survive (QEMU moved to `machine.slice`, cgroup mounted rw, `pid_mode: host`). Live migrations in progress **fail**. Libvirt API calls fail for seconds. Run the experiment in 05 §5 before trusting this |
+| libvirtd stop/start | yes, whenever nova-compute drifts | [NEEDS-LAB] VMs normally survive (QEMU moved to `machine.slice`, cgroup mounted rw, host `/run` bind mount, `pid_mode: host`). The image's start scripts do nothing to QEMU, cgroups or `/var/run/libvirt` [CODE, kolla `docker/base/start.sh`, `docker/nova/nova-libvirt/extend_start.sh`; [annex/kolla-images.md §5](../annex/kolla-images.md)]. The open questions are therefore libvirt and Docker behaviour: the stop (SIGKILL after 10 s) and libvirtd re-attaching to running domains when it starts. Live migrations in progress **fail**. Libvirt API calls fail for seconds. Run the experiment in 05 §5 before trusting this |
 | nova-ssh stop/start | yes, with the above | resize / cold migration disk copies over port 8022 are interrupted |
 | Scheduling | API and scheduler restarts are parallel on all controllers (serial 0) | API calls fail during the restart window. The scheduler gets SIGHUP on every run (cell-cache refresh), which is harmless |
 | Host mapping | `discover_hosts` runs every time | harmless; maps any newly registered compute |
@@ -88,8 +90,8 @@ sequenceDiagram
 - **Before:**
   - `kolla-ansible -t nova genconfig` (restarts nothing), then diff `/etc/kolla/nova-*/nova.conf` on one controller
     and one compute.
-  - `docker exec -u root nova_compute /usr/local/bin/kolla_set_configs --check; echo $?` on a few computes: exit 1 means the container *will*
-    restart, and so will `nova_libvirt` and `nova_ssh`.
+  - `docker exec -u root nova_compute /usr/local/bin/kolla_set_configs --check; echo $?` on a few computes: exit 1
+    means the container *will* restart, and so will `nova_libvirt` and `nova_ssh`.
   - No active live migrations: `openstack server list --all-projects --status MIGRATING`.
 - **Apply in batches:** `deploy-containers --limit` (§H) or `ANSIBLE_SERIAL`.
 - **After:**
@@ -176,8 +178,11 @@ included `reconfigure.yml` tasks are filtered out because they do not carry the 
   | `-t chrony` | all hosts (recommended way to push `common` changes) |
   | `-t haproxy` | haproxy hosts |
 - **What it can change:**
-  - `td-agent.conf` (fluentd inputs/outputs, built from the `enable_*` flags of the services in
-    `fluentd_input_openstack_services` and the Elasticsearch/Monasca settings);
+  - `td-agent.conf` (fluentd inputs/outputs). It is built from the `enable_*` flags of the services in
+    `fluentd_input_openstack_services`, `enable_swift`/`enable_haproxy` (local outputs on swift and haproxy hosts
+    only), `glance_enable_tls_backend` (glance-tls-proxy output on every host), the fluentd image's `fluentd_version`
+    label (selects the rewrite filter, 0.12 if absent), custom files under `{{ node_custom_config }}/fluentd/` and the
+    Elasticsearch/Monasca settings;
   - `logrotate.conf` (cron, built from `cron_logrotate_services`);
   - the RabbitMQ erlang cookie in kolla_toolbox;
   - container definitions of fluentd, cron and kolla_toolbox (image tag, volumes).
@@ -206,8 +211,10 @@ included `reconfigure.yml` tasks are filtered out because they do not carry the 
   `kolla_toolbox` tasks wait. **No VM, API, network or storage impact.**
 - **Risks:** R2 (fleet-wide restarts after an `enable_*` change), R25 (`-t common` mistaken for a reconfigure).
 - **Verification:**
-  - before: `genconfig`, then `docker exec -u root fluentd /usr/local/bin/kolla_set_configs --check; echo $?`
-    (1 = will restart);
+  - before: `genconfig`, then `docker exec -u root <c> /usr/local/bin/kolla_set_configs --check; echo $?` in each of
+    `fluentd`, `cron` and `kolla_toolbox` (1 in any of them = all three will restart, by loop-notify; a
+    `logrotate.conf`-only change, e.g. toggling `enable_chrony` or `enable_mariadb`, shows up only in `cron`). The
+    check does not cover image or volume changes;
   - after: `docker ps --filter name=fluentd --filter name=cron --filter name=kolla_toolbox` shows fresh start times;
     `docker logs fluentd` has no parse errors; logs still reach the configured output.
 
@@ -249,11 +256,20 @@ Every host that runs at least one container whose image reference changed:
 ### D.3 Risks
 
 - **Changing the tag and running `deploy`** (instead of `upgrade`) recreates the whole fleet in one go, without the
-  upgrade-specific ordering:
+  upgrade-specific ordering (one-shot containers per image: [annex/kolla-images.md §4](../annex/kolla-images.md)):
   - no `nova-status upgrade check`;
   - no RPC-pin reload plays;
-  - no online data migrations;
-  - RabbitMQ is not stopped cluster-wide, but restarted node by node.
+  - no online data migrations, except Placement's: its bootstrap container (`KOLLA_BOOTSTRAP`,
+    `roles/placement/tasks/bootstrap_service.yml:10-11`) runs `placement-manage db online_data_migrations` on every
+    deploy (kolla `docker/placement/placement-api/extend_start.sh:5-9`). Ironic's does the same with
+    `ironic_enable_rolling_upgrade: no`;
+  - RabbitMQ is not stopped cluster-wide, but restarted node by node;
+  - Neutron (default `neutron_enable_rolling_upgrade: yes`): instead of expand → restart → contract
+    (`roles/neutron/tasks/rolling_upgrade.yml:13-93`), `bootstrap_neutron` runs `neutron-db-manage … upgrade head` for
+    neutron, neutron-dynamic-routing, neutron-fwaas and neutron-vpnaas with the new image **before** the handlers
+    restart the old `neutron_server` containers (kolla `docker/neutron/neutron-server/extend_start.sh:5-12`;
+    `roles/neutron/tasks/deploy.yml:18-21`, `bootstrap_service.yml:2-22`; [LAB s11]). [HYPOTHESIS] Contract migrations
+    then run under live old-version servers.
 - **An OVS image change** recreates `openvswitch_vswitchd` on every OVS host simultaneously (serial 0). [HYPOTHESIS]
   VM networking is interrupted on every compute at the same time. Upgrade OVS per batch:
 
@@ -305,8 +321,9 @@ were skipped by `when: enable_<svc>`). Nothing restarted.
 For an API service such as keystone, glance, cinder, heat or placement:
 
 1. The gather-facts and group_by plays run on all hosts (`tags: always`).
-2. haproxy play, on the haproxy hosts: `common`, then only the `<svc>` include renders `services.d/<svc>*.cfg`.
-   HAProxy restarts on all haproxy hosts at once if that file changed (R8).
+2. haproxy play, on the haproxy hosts: only the `<svc>` include runs and renders `services.d/<svc>*.cfg`. `common` (a
+   meta dependency of the haproxy role) and the haproxy role's own tasks do not carry the `<svc>` tag, so they are
+   skipped [LAB s01]. HAProxy restarts on all haproxy hosts at once if that file changed (R8).
 3. Service play, on the service hosts: `common` → Keystone registration (`run_once`) → config → check-containers →
    DB/user creation and the DB-sync container on the first host → flush. Every drifted host restarts all of the
    service's containers (loop-notify), all such hosts in parallel. Keystone is the exception: it registers last
@@ -314,16 +331,19 @@ For an API service such as keystone, glance, cinder, heat or placement:
 
 - **Interruption:** the service API is unavailable while its containers restart (up to 10 s stop, then start) on all
   its hosts at once. Add the HAProxy restart window if the frontend changed.
-- **VM impact:** none for these services. In-flight glance or cinder transfers are SIGKILLed after 10 s (R24). Tags
-  whose roles run on computes (`nova`, `nova-cell`, `neutron`, `openvswitch`, `ovn`, `iscsi`) are the VM-affecting
-  ones (03 §3.1).
+- **VM impact:** none for these services. In-flight glance or cinder transfers are SIGKILLed after 10 s (R24). The
+  tags that 03 §3.1 marks as affecting running VMs are `nova`, `nova-cell`, `neutron`, `openvswitch` and `baremetal`
+  (run by `bootstrap-servers`, not `reconfigure`; Docker restart, R14); `ovn` and `iscsi` are [HYPOTHESIS] there.
+  Running on computes is not the test: `chrony` runs on every compute and has no VM impact.
 - **Risks:** R8 (HAProxy restart), R19 (Keystone), R20 (glance file backend), R23 (`--limit` on a large inventory), R24
   (10 s SIGKILL).
 - **Verification:**
   - before: `kolla-ansible -t <svc> genconfig`, then `kolla_set_configs --check` in each `<svc>` container and a diff of
     `/etc/kolla/haproxy/services.d/<svc>*.cfg` against the previous version;
-  - after: `openstack endpoint list --service <svc>` is unchanged, the API answers through the VIP, the container
-    start times show which hosts restarted, and `docker ps --filter name=haproxy` shows whether HAProxy restarted.
+  - after: `openstack endpoint list --service <name>` is unchanged for each Keystone service the role registers (each
+    `name` in `<svc>_ks_services`, e.g. `cinderv2` and `cinderv3` for cinder, `heat` and `heat-cfn` for heat), the API
+    answers through the VIP, the container start times show which hosts restarted, and
+    `docker ps --filter name=haproxy` shows whether HAProxy restarted.
 
 ---
 
@@ -355,7 +375,9 @@ as such, and batch the compute side.
   - a Keystone API call to wait for compute registration.
 - **Facts:** gathered for all 12 hosts. The new compute itself runs the delegated `setup` loop sequentially
   (`gather-facts.yml:29-50`).
-- **Not touched:** existing computes. Controllers get no config writes or restarts, only the delegated one-shots listed above.
+- **Not touched:** existing computes. Controllers get no config writes or restarts, only delegated tasks: those listed
+  above, the fact gathering above (`setup` on all three controllers), and the Neutron DB and DB-user tasks
+  (`mysql_db`, `mysql_user` run through `kolla_toolbox`) on `control01`.
 - **Caveats:**
   - Existing hosts' `/etc/hosts` is not updated (`bootstrap-servers --limit`).
   - With `libvirt_tls: true` (hostname-based migration), the other computes cannot resolve the new host until a
@@ -367,9 +389,9 @@ as such, and batch the compute side.
 
 [LAB s14 → s15]
 
-1. `kolla-ansible -t nova genconfig` wrote the new `nova.conf` on all hosts. **Zero restarts**: every container restart handler has
-   `when: kolla_action != "config"`. The only unguarded restart handlers are the deprecated nova-hyperv Windows-service
-   ones, which `-t nova` does not select (08 §3).
+1. `kolla-ansible -t nova genconfig` wrote the new `nova.conf` on all hosts. **Zero restarts**: every container restart
+   handler has `when: kolla_action != "config"`. The only unguarded restart handlers are the deprecated nova-hyperv
+   Windows-service ones, which `-t nova` does not select (08 §3).
 2. `kolla-ansible -t nova deploy-containers --limit compute001` restarted only compute001's nova containers. Drift is
    detected by `kolla_set_configs --check` inside `compare_container`. It ran 19 tasks on one host, with no bootstrap,
    no Keystone registration and no haproxy play.
@@ -377,10 +399,16 @@ as such, and batch the compute side.
 
 Caveats:
 
-- Between steps 1 and 3, **any other Kolla run that reaches those hosts applies the pending drift**. That includes an
-  unrelated `-t chrony` run that touches common: the nova containers are not checked by it, but the common ones are.
-- Hosts restarted by Docker or reboot also pick up the new config, because `COPY_ALWAYS` copies at container start.
-  Keep the window short.
+- Between steps 1 and 3, **any other Kolla run that reaches those hosts applies the pending drift in files listed in
+  `config_files`**. That includes an unrelated `-t chrony` run that touches common: the nova containers are not
+  checked by it, but the common ones are.
+- Drift confined to `config.json`'s `command` or `permissions` (e.g. memcached's `-m`/`-c`, whose `config_files` is
+  empty) is never detected: `kolla_set_configs --check` compares only `config_files` (kolla
+  `docker/base/set_configs.py:407-410`, [annex/kolla-images.md §3](../annex/kolla-images.md)), and the template task
+  is already unchanged. No later Kolla run restarts the container for it, step 2 included. It takes effect only at the
+  next restart for another reason.
+- Hosts restarted by Docker or reboot also pick up the new config, because `COPY_ALWAYS` copies the files and rewrites
+  `/run_command` at container start (kolla `docker/base/set_configs.py:319-324,391-393`). Keep the window short.
 
 ---
 

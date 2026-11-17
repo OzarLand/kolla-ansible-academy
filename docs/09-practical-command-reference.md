@@ -25,7 +25,7 @@ Conventions:
 | List hosts a run would target | `EXTRA_OPTS="--list-hosts" kolla-ansible -i multinode -t nova reconfigure` | Plays with `&enable_<svc>_True` patterns show **0 hosts**: the groups are created at run time |
 | List tasks | `EXTRA_OPTS="--list-tasks" …` | **Not useful**: only `include_tasks` placeholders are shown (03 §2.6) |
 | Render configs without restarting | `kolla-ansible -i multinode genconfig [-t <svc>] [--limit <hosts>]` | Writes `/etc/kolla/<svc>/` on the targets. All handlers are skipped. Also re-renders haproxy `services.d` for the tagged services |
-| See what will restart | on each host: `docker exec -u root <container> /usr/local/bin/kolla_set_configs --check; echo $?` | 0 = no drift; 1 = drift → will restart on the next `deploy`/`reconfigure`/`deploy-containers`; 137 is also treated as drift; any other code (e.g. 2) is an error, not drift. Keep `-u root`: Kolla runs the check as root (`kolla_docker.py:544-578`), and containers that run as a service user cannot read the root-owned 0660 files in `/var/lib/kolla/config_files` |
+| See what will restart | on each host: `docker exec -u root <container> /usr/local/bin/kolla_set_configs --check; echo $?` | 0 = every file listed in `config.json`'s `config_files` matches its live copy (content, mode, owner). `command`, `permissions`, removed entries and stale optional files are **not** compared, so memcached (`"config_files": []`) always returns 0. 1 = a listed file differs or a non-optional one is missing from the container → restart on the next `deploy`/`reconfigure`/`deploy-containers`. 1 is also returned for a required source missing from `/var/lib/kolla/config_files` or an invalid `config.json`; the restarted container then fails `kolla_set_configs` at start. 137 is also treated as drift. 2 = unexpected exception: a missing `config.json`, or a newly rendered `optional` file not yet in the container (e.g. nova-compute `release`). The latter is real drift, but `kolla_docker` fails the check task instead of restarting [CODE `kolla_docker.py:566-578`, kolla `docker/base/set_configs.py:160-167,217-253,407-410,427-432`]. Details: [annex/kolla-images.md §3](../annex/kolla-images.md). Keep `-u root`: Kolla runs the check as root (`kolla_docker.py:544-578`), and containers that run as a service user cannot read the root-owned 0660 files in `/var/lib/kolla/config_files` |
 | Check-mode run | `EXTRA_OPTS="--check --diff" kolla-ansible … reconfigure` | [NEEDS-LAB] `kolla_docker` does not support check mode, and many tasks register outputs used later. Expect failures or partial results; staging only |
 | Pre-deployment checks | `kolla-ansible -i multinode prechecks [-t <svc>]` | Read-only (fact sheet E). `-t <svc>` skips the `prechecks` role (untagged) but runs `<svc>/precheck.yml` |
 
@@ -97,8 +97,12 @@ kolla-ansible -i multinode -t nova-cell deploy-containers --limit 'compute[0:9]'
 kolla-ansible -i multinode -t nova-cell deploy-containers --limit 'compute[10:19]'
 ```
 
-- `deploy-containers` runs only `check-containers.yml`, which detects the config drift written by `genconfig`
-  through `kolla_set_configs --check` [LAB s14 → s15].
+- `deploy-containers` runs only `check-containers.yml`. Through `kolla_set_configs --check` it detects genconfig drift
+  in the files listed in `config.json`'s `config_files` (content, owner, perm) [LAB s14 → s15], but not changes to
+  `config.json`'s own `command`/`permissions` (e.g. memcached: empty `config_files`), and no later
+  `deploy`/`reconfigure` restarts for those either. A newly rendered `optional` file whose destination is not yet in
+  the container (e.g. nova-compute's `release`) makes `--check` exit 2 and the task fail
+  ([annex/kolla-images.md §3](../annex/kolla-images.md)).
 - Each batch restarts only its hosts. No bootstrap containers, no Keystone registration and no haproxy play run.
 - **Caveat:** `genconfig -t nova-cell` also renders the conductor and console config on controllers. Include them
   in a batch too, or the drift stays pending there.
@@ -222,8 +226,8 @@ kolla-ansible -i multinode destroy --yes-i-really-really-mean-it   # never on pr
 | Command | Hosts touched (default inventory) | Can restart | One-shot containers | Typical duration driver |
 |---|---|---|---|---|
 | `-t keystone reconfigure` | haproxy, control | keystone ×3, haproxy | keystone db sync | small |
-| `-t glance reconfigure` | haproxy, `glance-api` | glance-api, haproxy | db sync + MariaDB global flag toggle | small |
-| `-t placement reconfigure` | haproxy, control | placement-api, haproxy | db sync | small |
+| `-t glance reconfigure` | haproxy, `glance-api` | glance-api, haproxy | db sync + metadefs load + MariaDB global flag toggle | small |
+| `-t placement reconfigure` | haproxy, control | placement-api, haproxy | db sync + online data migrations (one `bootstrap_placement` container) | small |
 | `-t nova reconfigure` | haproxy, control, **all computes** | all nova incl. **libvirt**, haproxy | 5 runs | number of computes |
 | `-t nova-api reconfigure` | haproxy, control | nova-api, scheduler, haproxy | 2 | small |
 | `-t nova-cell reconfigure` | haproxy (console-proxy frontends), control (conductor, consoles), **all computes** | conductor, consoles, compute, libvirt, ssh; haproxy if a console-proxy frontend changed | 2 + discovery | number of computes |

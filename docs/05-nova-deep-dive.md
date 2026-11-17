@@ -157,6 +157,16 @@ Ordered by necessity [CODE + upstream Nova behaviour, marked HYPOTHESIS where up
 | 9 | API online data migrations (`230-247`) | `nova-api[0]` | upgrade | `nova_api_online_data_migrations` one-shot |
 | 10 | Cell online data migrations (`253-272`) | `nova-conductor` (first) | upgrade | `any_errors_fatal` |
 
+**Bootstrap one-shots.** `nova_api_bootstrap` and `nova_cell_bootstrap` run with `KOLLA_UPGRADE` set on deploy,
+reconfigure and upgrade alike (`roles/nova/tasks/bootstrap_service.yml:13`,
+`roles/nova-cell/tasks/bootstrap_service.yml:11`) [LAB s04]. The nova-api image then runs `nova-manage api_db sync`
+and `nova-manage db sync`, whose `[database]` is cell0 (kolla `docker/nova/nova-api/extend_start.sh:16-20`;
+`roles/nova/templates/nova.conf.j2:97-98`). The nova-conductor image runs `nova-manage db sync --local_cell` (kolla
+`docker/nova/nova-conductor/extend_start.sh:9-12`). Neither runs online data migrations. Only plays 9 and 10 do,
+on upgrade, by setting `KOLLA_OSM` (`roles/nova*/tasks/online_data_migrations.yml:11`). No nova task sets
+`KOLLA_BOOTSTRAP`, so the images' bootstrap branches, which would add online data migrations, are never used. See
+[annex/kolla-images.md §4](../annex/kolla-images.md).
+
 **Discovery mechanics** (`roles/nova-cell/tasks/deploy.yml:24-42`, `wait_discover_computes.yml`,
 `discover_computes.yml`):
 
@@ -177,14 +187,36 @@ Facts [CODE]:
   QEMU processes are started by libvirtd *inside* this container.
 - **Persistent state lives on named volumes.** The `libvirtd` volume holds `/var/lib/libvirt` and the
   `nova_libvirt_qemu` volume holds domain XML in `/etc/libvirt/qemu`. Instance disks sit in
-  `nova_instance_datadir_volume` (`/var/lib/nova`). All of them survive a container recreate.
+  `nova_instance_datadir_volume` (`/var/lib/nova`). All of them survive a container recreate. The runtime state is
+  elsewhere. The host's `/run` is bind-mounted `:shared` (`defaults/main.yml:242`), so whatever libvirtd writes under
+  `/run` is on the host and survives a restart or recreate. [HYPOTHESIS] The image's `/var/run` is a symlink to `/run`,
+  so the running-domain state in `/var/run/libvirt` is on that bind mount and is lost only on a host reboot. The
+  Dockerfiles do not show this. The SASL DB, by contrast, stays in the container layer (see below).
+- **The image start path is passive towards running guests.** `kolla_start` runs `kolla_set_configs`,
+  `kolla_copy_cacerts` and the nova-libvirt `extend_start.sh`, then `exec`s `/usr/sbin/libvirtd --listen` (kolla
+  `docker/base/start.sh:8-21`; `templates/nova-libvirt.json.j2:2`). `kolla_set_configs` deletes and rewrites only the
+  `dest` paths of `nova-libvirt.json.j2`, which are all config files (kolla `docker/base/set_configs.py:147-148`).
+  `extend_start.sh` only fixes `/dev/kvm` ownership, mounts xenfs if that module is loaded and creates the log file
+  (kolla `docker/nova/nova-libvirt/extend_start.sh:6-24`). None of these steps touches cgroups, QEMU processes,
+  `/var/run/libvirt`, `/var/lib/libvirt` or `/etc/libvirt/qemu`, and `qemu.conf.j2`/`libvirtd.conf.j2` set no cgroup
+  option. Whether guests survive is therefore decided by the stop path, by where libvirt's defaults placed QEMU, and by
+  libvirtd's reconnect on start. Start path in detail: [annex/kolla-images.md §5](../annex/kolla-images.md).
 - **The restart handler retries 5 times.** "Restart nova-libvirt container" uses `retries: 5 / until: success`. The
   in-code note says: *"retry 5 to remove nova_libvirt container because when guests running, nova_libvirt will raise
   error even though it is removed"* (`roles/nova-cell/handlers/main.yml:87-109`). The authors therefore expect running
   guests during libvirt restarts.
-- **After every libvirt restart, `Create libvirt SASL user` runs** (`saslpasswd2` inside the container,
-  `handlers/main.yml:111-122`), because the SASL DB may not persist.
-- **Effective stop timeout is 10 s** (01 §6). libvirtd gets SIGKILL after 10 s.
+- **After every libvirt restart or recreate, `Create libvirt SASL user` runs** when `libvirt_enable_sasl` is true (the
+  default) (`saslpasswd2` inside the container, `handlers/main.yml:91,111-122`). The SASL DB is `/etc/libvirt/passwd.db`
+  (`templates/sasl.conf.j2:2`). It is on no volume (under `/etc/libvirt` only `qemu/` is, `defaults/main.yml:249`) and
+  no kolla image step creates it. It survives a plain restart (stop and start of the same container) and is lost on
+  every recreate: changed image or parameters, or `config_strategy: COPY_ONCE`
+  (`library/kolla_docker.py:793-803,892-904`). The in-code note says the SASL user must exist for nova-compute to
+  start (`handlers/main.yml:111`).
+- **Effective stop timeout is 10 s** (01 §6), but the SIGKILL does not go to libvirtd. The container's main process is
+  `dumb-init --single-child -- kolla_start` (kolla `docker/base/Dockerfile.j2:433-435,455`; `use-dumb-init` defaults to
+  True, kolla `kolla/common/config.py:170`). `kolla_start` `exec`s libvirtd (kolla `docker/base/start.sh:21`), so
+  libvirtd is dumb-init's direct child. `docker stop` (timeout 10, `library/kolla_docker.py:871-884,892-904`) sends
+  SIGTERM to dumb-init and, after 10 s, SIGKILL to dumb-init.
 - **Libvirt is restarted before nova-compute.** In the handler order `nova-libvirt` comes before `nova-compute`, so
   during the window nova-compute is still running against a libvirtd that is going away.
 - **Kolla ships, but does not install by default, a guest shutdown helper.** `tools/kolla-libvirt-guests.service`
@@ -196,17 +228,32 @@ Facts [CODE]:
 
 What happens to running VMs is **not provable by static analysis** [NEEDS-LAB]:
 
-- [HYPOTHESIS] With libvirt's systemd/cgroupfs integration, each QEMU process is moved into its own `machine.slice`
-  scope on the *host* cgroup tree, which is possible because `/sys/fs/cgroup` is mounted rw. QEMU then survives the
-  stop of the libvirtd container, and libvirtd re-attaches to running domains on start from the `/var/run/libvirt`
-  and `/etc/libvirt/qemu` state. This matches the widespread operator experience that restarting `nova_libvirt`
-  normally does not kill instances.
+- [HYPOTHESIS: dumb-init and containerd behaviour, not in these sources] dumb-init forwards SIGTERM to libvirtd only
+  and exits when libvirtd does, so the 10 s SIGKILL matters only if libvirtd hangs. QEMU gets neither signal directly.
+  Under `pid_mode: host` the runtime kills whatever is still in the container's cgroup when its init exits. Whether
+  VMs survive therefore depends on QEMU's cgroup membership at stop time, not on the 10 s timer.
+- [HYPOTHESIS] With libvirt's systemd integration, libvirtd asks the host's systemd-machined over D-Bus to put each
+  QEMU process in its own `machine.slice` scope on the *host* cgroup tree. Without machined, libvirtd writes the
+  cgroups directly. Three settings let this reach the host: the host `/run` bind mount (`defaults/main.yml:242`)
+  exposes the host D-Bus socket and machined; `pid_mode: host` (`:8`) makes QEMU PIDs host PIDs; and `/sys/fs/cgroup`
+  is mounted rw (`:244`). QEMU then survives the stop of the libvirtd container. On start, libvirtd re-attaches to
+  running domains using the status XML under `/var/run/libvirt/qemu` (on the host `/run`, see above) and the monitor
+  sockets under `/var/lib/libvirt/qemu` (the `libvirtd` volume, `:246`). `/etc/libvirt/qemu` only keeps the persistent
+  definitions. Upstream libvirt stops a domain whose monitor it cannot reconnect to, so that runtime state is what
+  keeps the VM alive. `stdio_handler = "file"` (`qemu.conf.j2:1`) means running QEMU does not depend on a virtlogd
+  inside the container, and none is started. This matches the widespread operator experience that restarting
+  `nova_libvirt` normally does not kill instances. It also matches the handler note above and
+  `tools/cleanup-containers:5-9`: both expect QEMU processes to still be running when `nova_libvirt` is stopped or
+  removed.
+- [HYPOTHESIS] Surviving QEMU processes keep the old container's mount namespace. After a recreate with a new image,
+  they keep running the old QEMU binary until the guest is stopped and started, hard-rebooted or migrated. A reboot
+  inside the guest keeps the same QEMU process.
 - [HYPOTHESIS] Known risk windows:
   - live migrations in flight fail;
   - attach/detach and snapshot operations in progress fail;
   - `virsh` and nova-compute calls fail until libvirtd is back;
   - on cgroup v2 hosts, or Docker versions that clean up the container cgroup on stop, QEMU processes could be killed;
-  - the 10 s SIGKILL could interrupt libvirtd while it writes domain state.
+  - if libvirtd does not exit within 10 s of SIGTERM, the SIGKILL could interrupt it while it writes domain state.
 - **Required experiment:** on a staging compute with running VMs, run `docker restart nova_libvirt` and then
   `kolla-ansible -t nova reconfigure --limit <host>` with a nova-compute-only override. Record the QEMU PIDs
   (`pgrep -f qemu-kvm`), the cgroup of each QEMU PID (`/proc/<pid>/cgroup`), guest ping continuity, and the

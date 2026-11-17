@@ -237,9 +237,10 @@ sequenceDiagram
   on the next `deploy`/`reconfigure`/`deploy-containers` [CODE, LAB s14→s15].
 - **Restart and recreate are both full stop/start cycles.** A config change is applied only by stopping and starting
   the container; `kolla_docker` has no reload action. The only signal Kolla-Ansible sends to a running service is
-  SIGHUP to `nova_scheduler` (cell-cache refresh) on every `deploy`/`reconfigure`
-  (`roles/nova/tasks/refresh_scheduler_cell_cache.yml:10`, `ansible/nova.yml:140-156`), and it loads no new config
-  files. The handler calls `recreate_or_restart_container` (`kolla_docker.py:781-803`):
+  SIGHUP to `nova_scheduler` (cell-cache refresh). It is sent only on a `deploy`/`reconfigure` that runs the `nova`,
+  `nova-api` or `nova-refresh-scheduler-cell-cache` tag (or no tag) and whose `--limit`, if any, includes the
+  `nova-scheduler` hosts (`roles/nova/tasks/refresh_scheduler_cell_cache.yml:10`, `ansible/nova.yml:140-156`). It
+  loads no new config files. The handler calls `recreate_or_restart_container` (`kolla_docker.py:781-803`):
   - **recreate** when the image or parameters differ;
   - otherwise **restart** (`dc.stop(timeout=graceful_timeout)` then `dc.start`, `:892-904`).
 
@@ -378,7 +379,16 @@ How `kolla_docker` decides [CODE]:
    tells `kolla_set_configs`, inside the image, which files to copy from `/var/lib/kolla/config_files` (bind-mounted
    from `/etc/kolla/<service>/`) to their final location. It also names the command to start. With
    `config_strategy: COPY_ALWAYS` (`group_vars/all.yml:43`) the copy happens at every container start. That is why a
-   restart is enough to apply a config change, and why Kolla-Ansible never applies config by reloading a service.
+   restart is enough to apply a changed or added config file, and why Kolla-Ansible never applies config by reloading
+   a service. A restart does not apply a removal [CODE]. `kolla_set_configs` rewrites only the destinations listed in
+   the current `config.json` and skips an optional entry whose source is missing (kolla
+   `docker/base/set_configs.py:135-148`). A file whose entry was dropped (e.g. a removed Keystone policy file,
+   `roles/keystone/templates/keystone.json.j2:30-36`), or whose optional source is gone, keeps its old copy in the
+   container until the container is recreated, and `kolla_set_configs --check` does not flag it
+   (`set_configs.py:217-220`). Deleting a custom file such as `/etc/kolla/config/keystone/keystone-paste.ini` also
+   leaves its rendered copy in `/etc/kolla/keystone/` (`roles/keystone/tasks/config.yml:165-187`), which is copied in
+   again even after a recreate. The image-side start path and `--check` are described in
+   [annex/kolla-images.md §2-§3](../annex/kolla-images.md).
 
 ---
 

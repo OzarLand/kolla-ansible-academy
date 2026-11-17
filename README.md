@@ -33,6 +33,9 @@ Annexes:
 - [annex/factsheets/](annex/factsheets/README.md) — per-role fact sheets with `path:line` evidence: A infra/LB/OVN,
   B MariaDB/RabbitMQ/Keystone, C Glance/Placement/Cinder/Horizon/Heat, D Barbican/Octavia/Swift/Manila and
   compute-side roles, E host bootstrap and operational playbooks. Read the correction in docs/10 §3.
+- [annex/kolla-images.md](annex/kolla-images.md) — what the kolla images do at start and in one-shot containers:
+  `kolla_start`, `kolla_set_configs` and its `--check`, `KOLLA_BOOTSTRAP`/`KOLLA_UPGRADE`/`KOLLA_OSM` per image; read
+  from the kolla `ussuri-eol` image sources.
 - [annex/lab/](annex/lab/README.md) — the execution lab (real `site.yml` against simulated hosts), scenario results,
   and minimal reproductions of the Ansible behaviours Kolla depends on.
 
@@ -50,8 +53,8 @@ Annexes:
    for `reconfigure`/`upgrade` and `-e kolla_serial=N` for `deploy`, which ignores `ANSIBLE_SERIAL`. Only MariaDB
    (4 waves) and RabbitMQ (one by one) roll by themselves.
 5. **A service tag is never just that service.** For a service with a frontend it also runs the haproxy frontend
-   config (and can restart HAProxy). It runs the `common` role on every host of the play (memcached excepted) and, for
-   API services, Keystone registration and DB sync (docs/03 §3, docs/07 §E).
+   config (and can restart HAProxy). It runs the `common` role on every host of the play (memcached and multipathd
+   excepted) and, for API services, Keystone registration and DB sync (docs/03 §3, docs/07 §E).
 6. **`-t common` does nothing** (docs/03 §2.1, proven). Use `-t chrony` or a service tag to push fluentd/cron changes.
 7. **Global settings land in per-host files.** `enable_*`, RabbitMQ/memcached membership and passwords end up in
    compute-side configs, so small central changes cause fleet-wide restarts (docs/07 §I).
@@ -60,16 +63,18 @@ Annexes:
 9. **`--limit` does not contain everything.** Delegated tasks still run on `groups[x][0]` controllers, and all hosts'
    facts are gathered serially by the limited hosts (docs/06, docs/07 §G).
 10. **`--list-tasks` cannot predict a run.** Use `genconfig` plus `kolla_set_configs --check`, staging, or the lab
-    approach (docs/09 §1).
+    approach (docs/09 §1). `--check` compares only the files listed in `config.json`, not its `command` or
+    `permissions`: memcached lists no files, so a change to its command line never shows as drift. A new optional file
+    makes it exit 2, an error rather than drift ([annex/kolla-images.md §3](annex/kolla-images.md)).
 
 ## Where the final-objective questions are answered
 
 | Question | Short answer | Details |
 |---|---|---|
-| If I execute a specific tag, exactly what happens? | The tagged plays run on all their hosts. The haproxy frontend of that service, if it has one, is re-rendered. `common` runs on every host of the play (not for memcached). For API services, Keystone registration and DB-sync containers run (Neutron's DB sync only on `deploy` by default, not on `reconfigure`). Handlers restart drifted containers, plus their role siblings | docs/03 §3, docs/07 §E, annex/service-cards.md |
+| If I execute a specific tag, exactly what happens? | The tagged plays run on all their hosts. The haproxy frontend of that service, if it has one, is re-rendered. `common` runs on every host of the play (not for memcached or multipathd). For API services, Keystone registration and DB-sync containers run (Neutron's DB sync only on `deploy` by default, not on `reconfigure`). Handlers restart drifted containers, plus their role siblings | docs/03 §3, docs/07 §E, annex/service-cards.md |
 | Which OpenStack components are affected? | The tagged service, plus HAProxy (only if its frontend changed), plus fluentd/cron/kolla_toolbox (if `common` drifted) | docs/07 §E |
 | Which compute nodes will receive changes? | Every compute in the play's host patterns (`nova`, `nova-cell`, `neutron`, `openvswitch`, `chrony`, `iscsi`, …) runs the tasks. Restarts happen where drift exists, usually all or none, because inputs are global | docs/06 §2, docs/07 §A.3 |
-| Will containers restart or be recreated? | Restart (stop 10 s → start) on config drift. Recreate on image or parameter change. Never on no-change runs. Siblings in the same role restart too | docs/01 §4.3, docs/03 §2.4 |
+| Will containers restart or be recreated? | Restart (stop 10 s → start) on config drift. Recreate on image or parameter change. Never on no-change runs, except containers whose `config.json` has an entry that `kolla_set_configs --check` always reports as drift (e.g. `prometheus_server` once files exist under `/etc/kolla/config/prometheus/extras/`: that `preserve_properties` entry has no `perm`); they restart on every deploy/reconfigure. Siblings in the same role restart too | docs/01 §4.3, docs/03 §2.4, [annex/kolla-images.md §3](annex/kolla-images.md) |
 | Can running VMs be impacted? | Directly through `nova_libvirt` restarts (frequent, via loop-notify) and OVS/vswitchd or L3-agent restarts. VM survival across a libvirt restart needs a lab check | docs/05 §5, docs/08 R1/R6/R7, docs/10 Q1–Q4 |
 | What is the execution order? | `site.yml` play order (no dependency resolver); within a role: register → config → check → bootstrap → flush | docs/04 |
 | Which tasks can take hours with hundreds of computes? | Per-compute chains (≈46–80 executed remote module invocations per compute per run, ≈91 on a first deploy) multiplied by ⌈C/forks⌉ waves, serial fact gathering under `--limit`, image pulls (11 per compute), per-batch waits under `serial` | docs/06 §3–4 |
@@ -80,7 +85,7 @@ Annexes:
 
 | Phase | What was done |
 |---|---|
-| 1. Source exploration | Cloned `ussuri-eol`; read `tools/kolla-ansible`, `site.yml`, `nova.yml`, `gather-facts.yml`, `group_vars/all.yml`, the `kolla_docker`/`kolla_toolbox` modules, `merge_configs`, filters, and the `common`, `nova`, `nova-cell`, `neutron`, `openvswitch` and service-* helper roles in full |
+| 1. Source exploration | Cloned `ussuri-eol`; read `tools/kolla-ansible`, `site.yml`, `nova.yml`, `gather-facts.yml`, `group_vars/all.yml`, the `kolla_docker`/`kolla_toolbox` modules, `merge_configs`, filters, and the `common`, `nova`, `nova-cell`, `neutron`, `openvswitch` and service-* helper roles in full. Also read the kolla image repository (`ussuri-eol`) for the image start path and the one-shot containers (annex/kolla-images.md) |
 | 2. Static analysis | Generated tables of all plays, containers, roles and handlers (`tools/extract_kolla_inventory.py`). Five parallel source-reading passes produced the fact sheets, which were then spot-checked |
 | 3. Dependency mapping | Template references, transport URLs and group loops → docs/02 |
 | 4. Performance analysis | Per-host task profiles and scale runs in the lab → docs/06 |
@@ -89,7 +94,8 @@ Annexes:
 
 Evidence labels used everywhere:
 
-- **[CODE]** read in the source.
+- **[CODE]** read in the source: kolla-ansible, or the kolla image repository when the path has a `kolla` prefix
+  (e.g. kolla `docker/base/set_configs.py:407-410`).
 - **[ANSIBLE]** Ansible 2.9 semantics, verified.
 - **[LAB]** observed when executing the real playbooks.
 - **[HYPOTHESIS]** inferred.
@@ -102,6 +108,7 @@ README.md
 docs/            01–10 deliverables
 annex/
   generated-inventory.md
+  kolla-images.md
   factsheets/    A–E per-role evidence
   lab/           harness, results, minimal reproductions
 tools/

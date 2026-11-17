@@ -133,7 +133,7 @@ Default inventory: proxy is in `swift` (control); account, container and object 
 
 | Container | Group | Notes (`tasks/start.yml`) |
 |---|---|---|
-| `swift_rsyncd` | any of account, container or object | `:36-49`. Rsync daemon on port `swift_rsync_port` 10873 (`all.yml:502`, `templates/swift-rsyncd.json.j2:2`) |
+| `swift_rsyncd` | any of account, container or object | `:36-49`. Rsync daemon on port `swift_rsync_port` 10873 (`all.yml:502`, `templates/swift-rsyncd.json.j2:2`). It is the only swift image that fixes disk ownership at start: it chowns `/srv/node` and its top-level mount points to `swift:swift` (kolla `docker/swift/swift-rsyncd/extend_start.sh:3`). The other swift images have no `extend_start` |
 | `swift_account_server/auditor/replicator/reaper` (+ `_replication_server` if a separate replication net exists) | swift-account-server | `:51-127` |
 | `swift_container_server/auditor/replicator/updater` (+ replication server) | swift-container-server | `:129-206` |
 | `swift_object_server/auditor/replicator/updater/expirer` (+ replication server) | swift-object-server | `:208-301` |
@@ -150,7 +150,7 @@ Volumes: `/srv/node` with `:shared`, `/etc/kolla/swift` mounted at `/var/lib/kol
 ### 3.4 Task flow
 - **deploy** (`tasks/deploy.yml:1-10`): register (keystone service, user, and the `ResellerAdmin` role at `tasks/register.yml:9-19`) → config → start.yml → check.yml (sanity, default off).
   - **No task in the swift role has `notify:`** (a grep for `notify` in `ansible/roles/swift/tasks/` finds nothing). The only handler is a no-op `debug` (`handlers/main.yml:2-4`), triggered only by service-cert-copy.
-  - `start_container` recreates a container only when container properties differ (image, volumes, ...; `kolla_docker.py:809-813`). **So `deploy` does not apply swift config or ring changes to running containers** (HYPOTHESIS, high confidence; **NEEDS-LAB**).
+  - `start_container` recreates a container only when container properties differ (image, volumes, ...; `kolla_docker.py:809-813`). **So `deploy` does not apply swift config or ring changes to running containers** (HYPOTHESIS, high confidence; **NEEDS-LAB**). The image side supports this: `kolla_set_configs` copies config and rings into the container only at container start (kolla `docker/base/start.sh:8`, `docker/base/set_configs.py:391-393`), and no task notifies a handler. See [annex/kolla-images.md §2](../kolla-images.md).
 - **reconfigure** (`tasks/reconfigure.yml:1-101`) is a different, legacy flow:
   1. It builds the list of all swift containers, plus replication servers if `swift_has_replication_network` (`:2-30`).
   2. It **fails if any listed container is not running** (`:32-41`), so reconfigure cannot repair a crashed container.

@@ -476,6 +476,7 @@ docker_prune: {images: yes, images_filters: {label: kolla_version}, timeout: "{{
   default"). It is passed **only** by `upgrade` (`:430`) and `reconfigure` (`:439`) as `-e kolla_serial=${ANSIBLE_SERIAL}`.
   Because that `-e` is appended **after** the user's `--extra` options, Ansible's last-wins rule for extra-vars means
   **`kolla-ansible reconfigure -e kolla_serial=1` silently runs with `0`**. Use `ANSIBLE_SERIAL=1 kolla-ansible reconfigure`.
+  `kolla-ansible upgrade -e kolla_serial=1` is overridden the same way (`:430`); use `ANSIBLE_SERIAL=1` there too.
   For every other command, `-e kolla_serial=...` works. Plays that **ignore** `kolla_serial` are listed below.
   - `site.yml`: "Group hosts", "Check CentOS variant", prechecks, mariadb, rabbitmq, rabbitmq-outward (no `serial` key),
     and cyborg, whose play reads `serial: '{{ serial|default("0") }}'` (`site.yml:1028`). The two imported

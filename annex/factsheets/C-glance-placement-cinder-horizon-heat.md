@@ -4,7 +4,7 @@ All paths are relative to the repo root (`$SRC`). Unless marked otherwise, every
 - **HYPOTHESIS**: an inference from code plus general/upstream OpenStack behaviour. The code in this repo does not prove it.
 - **NEEDS-LAB**: has to be confirmed by running it.
 
-Behaviour inside the images (what `KOLLA_BOOTSTRAP`, `KOLLA_UPGRADE`, `KOLLA_OSM`, `GLANCE_DB_EXPAND` and similar variables actually run) is defined in the separate `kolla` images repo. That repo is **not** in this checkout, so every description of image-side behaviour is a HYPOTHESIS.
+Behaviour inside the images (what `KOLLA_BOOTSTRAP`, `KOLLA_UPGRADE`, `KOLLA_OSM`, `GLANCE_DB_EXPAND` and similar variables actually run) is defined in the separate `kolla` images repo. That repo is **not** in this checkout, but its `ussuri-eol` tag was read separately (see [annex/kolla-images.md](../kolla-images.md)). A statement that cites a kolla path, written as kolla `docker/...` (for example kolla `docker/glance/glance-api/extend_start.sh` or kolla `docker/base/set_configs.py`), is read from that source like any other code claim. Any description of image-side behaviour without such a citation remains a HYPOTHESIS.
 
 ---
 
@@ -99,7 +99,7 @@ HAProxy: client and server timeouts are **6h** (`defaults/main.yml:110-111`). In
 | `glance-api/glance-swift.conf` | merge: template → `glance-swift.conf` → `glance/glance-swift.conf` → `glance/<host>/...` (:107-124) | `glance_backend_swift` | Restart glance-api |
 | `glance-tls-proxy/glance-tls-proxy.cfg` | first_found: `glance/<host>/glance-tls-proxy.cfg` → `glance/glance-tls-proxy.cfg` → role template (:141-157) | TLS proxy | Restart glance-tls-proxy |
 
-`glance-api.json.j2:41-52` has `"permissions": [{"path": "/var/lib/glance", "owner": "glance:glance", "recurse": true}]`. HYPOTHESIS: kolla_set_configs runs a recursive chown over the **entire image store** at every container start. With a big NFS-backed `glance_file_datadir_volume` this could make starts slow (NEEDS-LAB).
+`glance-api.json.j2:41-52` has `"permissions": [{"path": "/var/lib/glance", "owner": "glance:glance", "recurse": true}]`. `/var/lib/glance` is the `glance_file_datadir_volume` mount (`defaults/main.yml:135`), which with the file backend is the **entire image store** (`filesystem_store_datadir = /var/lib/glance/images/`, `templates/glance-api.conf.j2:71`). kolla_set_configs walks it and calls `os.chown` on every directory and file, unconditionally (kolla `docker/base/set_configs.py:353-363,378-385`). It does this at every container start under the default `COPY_ALWAYS` (kolla `docker/base/start.sh:8`, `set_configs.py:391-393`; `ansible/group_vars/all.yml:43`), and only on a container's first start under `COPY_ONCE` (`:394-402`); see [annex/kolla-images.md §2](../kolla-images.md). HYPOTHESIS: with a big NFS-backed `glance_file_datadir_volume` this could make starts slow (NEEDS-LAB).
 
 ### 1.5 Handlers (`ansible/roles/glance/handlers/main.yml`)
 - `Restart glance-api container` (:2-17): recreate_or_restart. It passes `privileged`, `environment` (the proxy), volumes and dimensions.
@@ -112,7 +112,7 @@ HAProxy: client and server timeouts are **6h** (`defaults/main.yml:110-111`). In
 | `mysql_db glance` | `tasks/bootstrap.yml:2-15`, run_once, delegate `groups['glance-api'][0]`, unless `use_preconfigured_databases` | yes (idempotent) |
 | `mysql_user glance` with password and `ALL` on `glance.*` | `bootstrap.yml:17-34` | yes. HYPOTHESIS: the mysql_user module re-asserts the password each run. |
 | **Set GLOBAL `log_bin_trust_function_creators=1`** | `bootstrap_service.yml:2-16`, uses DB root creds | **yes, on every deploy/reconfigure** |
-| `bootstrap_glance` container, `KOLLA_BOOTSTRAP` (HYPOTHESIS: `glance-manage db_sync`) | `bootstrap_service.yml:18-36`, delegate `glance_api_hosts[0]` | **yes, so a schema sync runs on every reconfigure** |
+| `bootstrap_glance` container, `KOLLA_BOOTSTRAP`: `glance-manage db_sync` then `glance-manage db_load_metadefs` (kolla `docker/glance/glance-api/extend_start.sh:5-9`) | `bootstrap_service.yml:18-36`, delegate `glance_api_hosts[0]` | **yes, so a schema sync runs on every reconfigure** |
 | Set `log_bin_trust_function_creators=0` | `bootstrap_service.yml:38-52` | yes |
 | Keystone: service `glance`/`image`, 3 endpoints, user `glance` (admin in `service`) | `tasks/register.yml`; `defaults/main.yml:75-88` | yes (deploy/reconfigure); **not** on upgrade |
 
@@ -174,7 +174,7 @@ HAProxy: client and server timeouts are **6h** (`defaults/main.yml:110-111`). In
 | action | flow |
 |---|---|
 | deploy / reconfigure | `register.yml` → (clone) → `config.yml` → `check-containers.yml` → `bootstrap.yml` → flush (`tasks/deploy.yml:1-14`) |
-| upgrade | `register.yml` → (clone) → `config.yml` → `check-containers.yml` → `bootstrap.yml` (db sync with new image; old placement-api still running) → flush (all placement-api restart) → **`KOLLA_OSM` online data migrations** container (`tasks/upgrade.yml:1-34`) |
+| upgrade | `register.yml` → (clone) → `config.yml` → `check-containers.yml` → `bootstrap.yml` (`KOLLA_BOOTSTRAP` with the new image: `placement-manage db sync` **and** `db online_data_migrations`, kolla `docker/placement/placement-api/extend_start.sh:5-9`, while the old placement-api is still running; the image's `KOLLA_UPGRADE` branch, db sync only, `:11-15`, is not used) → flush (all placement-api restart) → **`KOLLA_OSM` online data migrations** container, which runs them a second time (`tasks/upgrade.yml:1-34`) |
 | deploy-containers | `check-containers.yml` |
 | pull / stop | service-images-pull / service-stop |
 | precheck | groups exist, port 8780 free if not running (`tasks/precheck.yml:1-27`) |
@@ -198,9 +198,9 @@ HAProxy: client and server timeouts are **6h** (`defaults/main.yml:110-111`). In
 
 ### 2.6 Bootstrap
 - `mysql_db placement` and `mysql_user` (`tasks/bootstrap.yml:2-34`) re-run on reconfigure.
-- `bootstrap_placement` with `KOLLA_BOOTSTRAP` (HYPOTHESIS: `placement-manage db sync`) runs once, delegated to `groups['placement-api'][0]` (`bootstrap_service.yml:2-20`). **It re-runs on every reconfigure.**
+- `bootstrap_placement` with `KOLLA_BOOTSTRAP` (kolla image: `placement-manage db sync` then `placement-manage db online_data_migrations`, kolla `docker/placement/placement-api/extend_start.sh:5-9`) runs once, delegated to `groups['placement-api'][0]` (`bootstrap_service.yml:2-20`). **It re-runs on every reconfigure.**
 - Keystone registration (service `placement`, 3 endpoints, user `placement`) happens in deploy, reconfigure **and upgrade** (`upgrade.yml:2`), unlike glance/cinder/heat.
-- Online data migrations (`KOLLA_OSM`) run **only** in upgrade (`upgrade.yml:16-34`).
+- Online data migrations: the separate `KOLLA_OSM` container runs **only** in upgrade (`upgrade.yml:16-34`). Because the bootstrap container above also runs `db online_data_migrations`, placement OSM also runs on every deploy/reconfigure (`deploy.yml:11`, `reconfigure.yml:2`) and twice in upgrade (bootstrap at `upgrade.yml:11`, then `KOLLA_OSM`).
 
 ### 2.7 Dependencies (`templates/placement.conf.j2`)
 - MariaDB `[placement_database]` with **`max_overflow = 1000` hard-coded** (:24-29).
@@ -212,7 +212,7 @@ HAProxy: client and server timeouts are **6h** (`defaults/main.yml:110-111`). In
 ### 2.8 Operational notes and the relation to nova
 - **Consumers authenticate as the placement user.** nova-api/conductor/scheduler (`roles/nova/templates/nova.conf.j2:169-179`) and **nova-compute on every compute host** (`roles/nova-cell/templates/nova.conf.j2:203-213`) use `username = {{ placement_keystone_user }}` / `password = {{ placement_keystone_password }}`, `valid_interfaces = internal`. Neutron does the same (`roles/neutron/templates/neutron.conf.j2:172-183`), as do zun and cyborg. Rotating `placement_keystone_password` therefore needs a reconfigure of placement **and** nova (all computes) **and** neutron. This dependency scales with the number of compute hosts.
 - HYPOTHESIS (upstream nova): during a placement-api outage or restart, scheduling fails with NoValidHost and the nova-compute resource tracker periodic task logs errors. With serial=0 every placement-api restarts in the same handler flush, so there is a short full outage.
-- The upgrade db sync runs while the old placement-api is still serving (no stop).
+- The upgrade db sync and online data migrations (bootstrap container) run while the old placement-api is still serving (no stop).
 
 ---
 
@@ -269,7 +269,7 @@ Four handlers (api :2-15, scheduler :17-30, volume :32-47, backup :49-63), all r
 
 ### 3.6 Bootstrap
 - `mysql_db cinder` and `mysql_user` run every deploy/reconfigure (`bootstrap.yml:2-34`).
-- `bootstrap_cinder` (`KOLLA_BOOTSTRAP`; HYPOTHESIS: `cinder-manage db sync`), run_once on `groups['cinder-api'][0]` (`bootstrap_service.yml:2-20`). **It re-runs on every reconfigure.**
+- `bootstrap_cinder` (`KOLLA_BOOTSTRAP`: `cinder-manage db sync`, kolla `docker/cinder/cinder-api/extend_start.sh:6-9`), run_once on `groups['cinder-api'][0]` (`bootstrap_service.yml:2-20`). **It re-runs on every reconfigure.**
 - Online data migrations (`KOLLA_OSM`) run only in upgrade.
 - Keystone: `cinderv2/volumev2` and `cinderv3/volumev3`, each with 3 `/vN/%(tenant_id)s` endpoints, plus user `cinder` (`defaults/main.yml:201-221`). Registered on deploy/reconfigure, not on upgrade.
 
@@ -344,7 +344,7 @@ Because the plugin flags live in the container environment, and `check-container
 `Restart horizon container` (`handlers/main.yml:2-16`): recreate_or_restart. It passes `environment`; there is no other logic.
 
 ### 4.6 Bootstrap
-- `horizon_backend_database: "{{ enable_murano | bool }}"` (`all.yml:982`). Only then does deploy/reconfigure create the DB and user and run `bootstrap_horizon` (`KOLLA_BOOTSTRAP`; HYPOTHESIS: Django `migrate`) (`tasks/bootstrap.yml`, `bootstrap_service.yml:2-20`). In that case **the bootstrap re-runs on every reconfigure**.
+- `horizon_backend_database: "{{ enable_murano | bool }}"` (`all.yml:982`). Only then does deploy/reconfigure create the DB and user and run `bootstrap_horizon` (`KOLLA_BOOTSTRAP`: Django `manage.py migrate --noinput`, then exits; kolla `docker/horizon/extend_start.sh:46-49`) (`tasks/bootstrap.yml`, `bootstrap_service.yml:2-20`). In that case **the bootstrap re-runs on every reconfigure**.
 - There is no keystone registration at all.
 
 ### 4.7 Dependencies (`templates/local_settings.j2`)
@@ -357,7 +357,7 @@ Because the plugin flags live in the container environment, and `check-container
 
 ### 4.8 Operational notes
 - HYPOTHESIS: a horizon restart does not log users out (sessions live in memcached), but a **memcached restart does**. With `balance source`, users stick to one backend. Restarting a node drops in-flight requests, including legacy image uploads that go through Horizon. Those are staged in `LOCAL_PATH=/tmp`, which is the **host's** `/tmp`.
-- HYPOTHESIS (image side): the container start runs collectstatic/compress (`COMPRESS_OFFLINE = True`, `local_settings.j2:13`; `FORCE_GENERATE` env), so horizon starts slowly. NEEDS-LAB.
+- Image side (kolla `docker/horizon/extend_start.sh`): every start syncs each `ENABLE_<PLUGIN>` dashboard file into `openstack_dashboard/local/enabled` (`:51-65,339-366`). `manage.py collectstatic --noinput --clear` and `compress --force` run **only** when `/var/lib/kolla/.settings.md5sum.txt` is missing, the md5 of `local_settings` + `custom_local_settings` + `local_settings.d` differs from it, a plugin file was just copied in or removed, or `FORCE_GENERATE=yes` (`:57-63,322-337,368-372`). kolla-ansible sets `FORCE_GENERATE` only when `horizon_dev_mode` is on (`defaults/main.yml:36,123`). The settings set `COMPRESS_OFFLINE = True` (`local_settings.j2:13`). `/var/lib/kolla` is not a volume (`defaults/main.yml:90-98`), so the hash file lives in the container layer. The handler restarts the container under `COPY_ALWAYS` (default, `all.yml:43`) and recreates it when image, env or volumes differ, or under `COPY_ONCE` (`kolla_docker.py:793-803`). HYPOTHESIS: the next start is slow after a recreate (new image, plugin flag change, `COPY_ONCE`) or a `local_settings`/`custom_local_settings` change, and not after a plain restart with unchanged settings. NEEDS-LAB: duration. See [annex/kolla-images.md §5](../kolla-images.md).
 - Horizon config is independent of host count except for the memcached list.
 
 ---
@@ -406,7 +406,7 @@ Three handlers: heat-api (:2-15), heat-api-cfn (:17-30), heat-engine (:32-45). A
 
 ### 5.6 Bootstrap
 - `mysql_db heat` and `mysql_user` (`tasks/bootstrap.yml:2-34`) run every deploy/reconfigure.
-- `bootstrap_heat` container (`bootstrap_service.yml:2-29`) gets `KOLLA_BOOTSTRAP` plus the **cloud admin credentials as env vars** (`OS_AUTH_URL`, `OS_USERNAME`, `OS_PASSWORD`, `OS_PROJECT_NAME`, …) and `HEAT_DOMAIN_ADMIN_PASSWORD`. HYPOTHESIS: the image creates `heat_user_domain` and the `heat_domain_admin` user and runs `heat-manage db_sync`. **It re-runs on every reconfigure.** NEEDS-LAB: whether it re-sets the domain-admin password if it changed in `passwords.yml` (`etc/kolla/passwords.yml:117`). The container is removed on exit (`kolla_docker.py:837-839`), so the admin password does not linger in `docker inspect` after success.
+- `bootstrap_heat` container (`bootstrap_service.yml:2-29`) gets `KOLLA_BOOTSTRAP` plus the **cloud admin credentials as env vars** (`OS_AUTH_URL`, `OS_USERNAME`, `OS_PASSWORD`, `OS_PROJECT_NAME`, …) and `HEAT_DOMAIN_ADMIN_PASSWORD`. The image runs `heat-manage db_sync`, then `openstack domain list`. Only if `heat_user_domain` is absent does it create the domain, the `heat_domain_admin` user (password `HEAT_DOMAIN_ADMIN_PASSWORD`) and that user's `admin` role on the domain (kolla `docker/heat/heat-api/extend_start.sh:5-17`). **It re-runs on every reconfigure** (and on upgrade, `tasks/upgrade.yml:6`), but once the domain exists it never touches the user. A changed `heat_domain_admin_password` (`etc/kolla/passwords.yml:117`) is therefore **not** pushed to Keystone, while `heat.conf` gets the new value (`templates/heat.conf.j2:12-13`). HYPOTHESIS: stack-domain operations then fail authentication. The check looks only at the domain name, so if a run fails partway and leaves the domain without the user or its role, no later run repairs it. The container is removed on exit (`kolla_docker.py:837-839`), so the admin password does not linger in `docker inspect` after success.
 - Keystone: services `heat/orchestration` (`/v1/%(tenant_id)s`) and `heat-cfn/cloudformation` (`/v1`); user `heat`; roles `heat_stack_owner` and `heat_stack_user`; **`heat_stack_owner` granted to the cloud admin user in the admin project** (`defaults/main.yml:148-177`; `tasks/register.yml:2-9`). This runs on deploy/reconfigure, not on upgrade.
 
 ### 5.7 Dependencies (`templates/heat.conf.j2`)
@@ -429,12 +429,12 @@ Three handlers: heat-api (:2-15), heat-api-cfn (:17-30), heat-engine (:32-45). A
 | role | keystone register | DB create/grant | bootstrap container (schema sync) on reconfigure | extra side effects on reconfigure | restarts (serial 0) |
 |---|---|---|---|---|---|
 | glance | yes | yes | **yes** (`KOLLA_BOOTSTRAP` on `glance_api_hosts[0]`) | **toggles GLOBAL `log_bin_trust_function_creators` 1→0**; optional sanity image | glance-api (and tls-proxy) on `glance_api_hosts` only (1 host with the file backend) |
-| placement | yes | yes | **yes** | – | all placement-api |
+| placement | yes | yes | **yes** (also runs online data migrations) | – | all placement-api |
 | cinder | yes | yes | **yes** | optional sanity volume | api, scheduler, **volume, backup on all storage hosts** at once if their config changed |
 | horizon | **no** | only if `horizon_backend_database` | only if `horizon_backend_database` | env-driven recreate when plugin flags change | all horizon |
 | heat | yes (also roles and a grant to admin) | yes | **yes** (with admin creds in env) | – | api, api-cfn, **all engines** |
 
-Online data migrations (`KOLLA_OSM`) run **only on `upgrade`**, for placement (`upgrade.yml:16-34`) and cinder (`upgrade.yml:16-34`). Glance's expand/migrate/contract runs only in the rolling path. A reconfigure with a bumped image tag therefore does db_sync without the OSM step. HYPOTHESIS: that is a partially executed upgrade.
+The separate online-data-migration container (`KOLLA_OSM`) runs **only on `upgrade`**, for placement (`upgrade.yml:16-34`) and cinder (`upgrade.yml:16-34`). Glance's expand/migrate/contract runs only in the rolling path. A reconfigure with a bumped image tag therefore runs cinder's `db sync` without its OSM step (kolla `docker/cinder/cinder-api/extend_start.sh:6-18`), while placement's bootstrap container runs both `db sync` and `db online_data_migrations` (kolla `docker/placement/placement-api/extend_start.sh:5-9`). HYPOTHESIS: for cinder that is a partially executed upgrade. See [annex/kolla-images.md §4](../kolla-images.md).
 
 ## 7. Things that scale with host count
 - memcached and rabbit host lists in every config (§0). Any membership change rewrites the config of all 5 services and restarts every container of every service.
@@ -453,4 +453,4 @@ Online data migrations (`KOLLA_OSM`) run **only on `upgrade`**, for placement (`
 7. Cinder RPC pinning after `kolla-ansible upgrade` (is a second restart needed?).
 8. Heat-engine restart with `CREATE_IN_PROGRESS` stacks: final state and recovery steps.
 9. Horizon restart: session survival (memcached) and start-up duration (collectstatic/compress).
-10. Whether `bootstrap_heat` updates the `heat_domain_admin` password when `heat_domain_admin_password` changes.
+10. Answered from kolla source: `bootstrap_heat` does **not** update the `heat_domain_admin` password once `heat_user_domain` exists (kolla `docker/heat/heat-api/extend_start.sh:10-14`; §5.6). Remaining NEEDS-LAB: how heat behaves after `heat_domain_admin_password` changes, when `heat.conf` gets the new value (`roles/heat/templates/heat.conf.j2:13`) but Keystone keeps the old one.

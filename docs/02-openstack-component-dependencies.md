@@ -90,18 +90,19 @@ flowchart TB
 
 Legend: **DB** = MariaDB through the VIP, **MQ** = RabbitMQ (all nodes listed), **MC** = memcached, **KS** = Keystone.
 A ✔ means the service's main config template references it [CODE, template grep in
-[annex/lab/README.md](../annex/lab/README.md) §5].
+[annex/lab/README.md](../annex/lab/README.md) §5]. What each bootstrap container runs inside the image is listed in
+[annex/kolla-images.md §4](../annex/kolla-images.md).
 
 | Service | DB | MQ | MC | KS | Other services referenced in config | Deploy-time actions | Notes (fact sheet) |
 |---|---|---|---|---|---|---|---|
 | **Keystone** | ✔ | ✔ (notifications) | ✔ | – | – | bootstrap container (db sync) **every deploy/reconfigure**; fernet keys distributed from first running node; admin bootstrap through `kolla_keystone_bootstrap` | B §3.6–3.10 |
-| **Glance** | ✔ | ✔ | ✔ | ✔ | Cinder (store), Ceph, Swift, Barbican | db sync on every deploy/reconfigure; toggles **global** MariaDB `log_bin_trust_function_creators` | C §1. With the file backend only `groups['glance-api'][0]` runs glance |
-| **Placement** | ✔ | ✔ (unused) | ✔ | ✔ | (Nova credentials in migration helper) | db sync on every deploy/reconfigure | C §2 |
+| **Glance** | ✔ | ✔ | ✔ | ✔ | Cinder (store), Ceph, Swift, Barbican | db sync + `db_load_metadefs` on every deploy/reconfigure (kolla `docker/glance/glance-api/extend_start.sh:5-9`); toggles **global** MariaDB `log_bin_trust_function_creators` | C §1. With the file backend only `groups['glance-api'][0]` runs glance |
+| **Placement** | ✔ | ✔ (unused) | ✔ | ✔ | (Nova credentials in migration helper) | db sync **and online data migrations** on every deploy/reconfigure (one `KOLLA_BOOTSTRAP` container, kolla `docker/placement/placement-api/extend_start.sh:5-9`) | C §2 |
 | **Nova** | ✔ | ✔ | ✔ (API side only) | ✔ | Glance, Neutron, Placement, Cinder, Barbican, Ceph | API/cell0/cell DB sync on every deploy/reconfigure; cell create/update; host discovery | [05](05-nova-deep-dive.md) |
 | **Neutron** | ✔ (server) | ✔ | ✔ | ✔ | Nova (notifications to Nova), Placement, OVN | DB, user and grants on every deploy/reconfigure; db sync container on **deploy only** while `neutron_enable_rolling_upgrade` is on (the default; `roles/neutron/tasks/bootstrap_service.yml:21-22`) | §4 below |
 | **Cinder** | ✔ | ✔ | ✔ | ✔ | Glance, Nova (uses **nova** credentials), Barbican, Swift (backup), Ceph; etcd (first etcd host only) | db sync on every deploy/reconfigure | C §3 |
 | **Horizon** | only if `horizon_backend_database` | – | ✔ (sessions) | ✔ | every enabled API (internal endpoint type) | no Keystone registration | C §4 |
-| **Heat** | ✔ | ✔ | ✔ | ✔ | every API used by templates (internal); instances need the **external** CFN endpoint | db sync on every deploy/reconfigure; heat domain admin setup | C §5 |
+| **Heat** | ✔ | ✔ | ✔ | ✔ | every API used by templates (internal); instances need the **external** CFN endpoint | db sync on every deploy/reconfigure; heat domain admin setup only when `heat_user_domain` does not exist yet (kolla `docker/heat/heat-api/extend_start.sh:8-14`): a changed `heat_domain_admin_password` reaches `heat.conf` (`roles/heat/templates/heat.conf.j2:13`) but is never applied in Keystone | C §5 |
 | **Barbican** | ✔ | ✔ | ✔ | ✔ | – | db sync on every deploy/reconfigure; `barbican_crypto_key` from `passwords.yml` | D §1 |
 | **Octavia** | ✔ | ✔ | ✔ | ✔ | Nova, Neutron, Glance (amphora image, flavor, network, secgroup — **all manual in Ussuri**) | db sync; no OpenStack resources created | D §2 |
 | **Swift** | – | ✔ | ✔ | ✔ | – | rings are operator-built; old-style role with no handlers | D §3 |
@@ -184,8 +185,11 @@ Runtime facts [CODE]:
   on such a host therefore deletes all router namespaces there, and the agent rebuilds them.
 - **Agent containers do not share the host PID namespace.** They have no `pid_mode` (`roles/neutron/defaults/main.yml`).
   Processes they spawn (dnsmasq, keepalived, haproxy for metadata) live in the container's PID namespace.
-  [HYPOTHESIS] They die with the container and are respawned by the agent on start. [NEEDS-LAB]: measure the DHCP
-  and router outage per agent restart.
+  [HYPOTHESIS] They die with the container and are respawned by the agent on start. Support for the L3 agent: its
+  wrapper starts `neutron-l3-agent` without `exec`, and dumb-init runs with `--single-child` (kolla
+  `docker/base/Dockerfile.j2:434`; `roles/neutron/templates/neutron-l3-agent-wrapper.sh.j2:14-18`), so the SIGTERM
+  of `docker stop` reaches bash, not the agent ([annex/kolla-images.md §2](../annex/kolla-images.md)).
+  [NEEDS-LAB]: measure the DHCP and router outage per agent restart.
 - **The OVS bridge layout is set in a post-config step.** It is ensured on every deploy/reconfigure by
   `kolla_ensure_openvswitch_configured` (`roles/openvswitch/tasks/post-config.yml:7-17`). The command reports
   `changed` only when it actually changes the bridge.
