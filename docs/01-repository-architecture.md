@@ -382,12 +382,12 @@ How `kolla_docker` decides [CODE]:
    restart is enough to apply a changed or added config file, and why Kolla-Ansible never applies config by reloading
    a service. A restart does not apply a removal [CODE]. `kolla_set_configs` rewrites only the destinations listed in
    the current `config.json` and skips an optional entry whose source is missing (kolla
-   `docker/base/set_configs.py:135-148`). A file whose entry was dropped (e.g. a removed Keystone policy file,
+   `docker/base/set_configs.py:135-148,310-315`). A file whose entry was dropped (e.g. a removed Keystone policy file,
    `roles/keystone/templates/keystone.json.j2:30-36`), or whose optional source is gone, keeps its old copy in the
    container until the container is recreated, and `kolla_set_configs --check` does not flag it
-   (`set_configs.py:217-220`). Deleting a custom file such as `/etc/kolla/config/keystone/keystone-paste.ini` also
-   leaves its rendered copy in `/etc/kolla/keystone/` (`roles/keystone/tasks/config.yml:165-187`), which is copied in
-   again even after a recreate. The image-side start path and `--check` are described in
+   (`set_configs.py:217-220,407-410`). Deleting a custom file such as `/etc/kolla/config/keystone/keystone-paste.ini`
+   also leaves its rendered copy in `/etc/kolla/keystone/` (`roles/keystone/tasks/config.yml:165-187`), which is
+   copied in again even after a recreate. The image-side start path and `--check` are described in
    [annex/kolla-images.md §2-§3](../annex/kolla-images.md).
 
 ---

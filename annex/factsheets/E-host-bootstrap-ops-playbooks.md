@@ -225,8 +225,13 @@ start** until someone runs `systemctl unmask docker`. Check after any failed run
   restarts. FACT: `kolla_docker` sets no container `StopTimeout` (grep for `stop_timeout|StopTimeout` in
   `ansible/library/kolla_docker.py` is empty). HYPOTHESIS: on a daemon restart, containers get Docker's default stop timeout
   (about 10 s), **not** `docker_graceful_timeout: 60` (`all.yml:154`), which only applies to `kolla_docker` stop actions.
-- HYPOTHESIS (Galera semantics): restarting Docker on all MariaDB hosts at once is a full-cluster stop. Galera does not
-  re-bootstrap itself, so `kolla-ansible mariadb_recovery` is likely needed. NEEDS-LAB.
+- HYPOTHESIS (Galera semantics): restarting Docker on all MariaDB hosts at once is a full-cluster stop. FACT: the kolla
+  image does not recover from it. The containers come back as plain `mysqld_safe` with every MariaDB host in
+  `gcomm://`, and the image's start path has no `grastate.dat` or `safe_to_bootstrap` handling and no new-cluster
+  decision (kolla `docker/mariadb/mariadb/extend_start.sh:28-58`; `ansible/roles/mariadb/templates/galera.cnf.j2:29`;
+  [annex/kolla-images.md §5.4](../kolla-images.md)). HYPOTHESIS: Galera does not re-form the cluster by itself, so
+  `kolla-ansible mariadb_recovery` is likely needed. The exception is a single MariaDB host: its `gcomm://` is empty,
+  which starts a new cluster on every start, so no recovery is needed. NEEDS-LAB.
 - Compute nodes: `nova_libvirt` runs with `pid_mode: host` and bind-mounts `/sys/fs/cgroup` (`nova-cell/defaults/main.yml:8,244`).
   Whether running QEMU processes survive the container restart depends on the cgroup placement of guests (machined slices
   versus the container cgroup). NEEDS-LAB. Note `tools/cleanup-containers:5-11`: "Docker will not be able to stop the
@@ -241,10 +246,16 @@ start** until someone runs `systemctl unmask docker`. Check after any failed run
   set live-restore in a supported way is `docker_custom_config: {"live-restore": true}`. HYPOTHESIS: the first run that adds it
   still restarts all containers, because the restart happens under the old config. Pre-seeding daemon.json by hand and running
   `systemctl reload docker` (live-restore can be reloaded) before bootstrap-servers would avoid that. NEEDS-LAB.
-- Interaction with `config_strategy: COPY_ALWAYS` (`all.yml:43`, passed as `KOLLA_CONFIG_STRATEGY` in `docker_common_options`,
-  `all.yml:162-163`). HYPOTHESIS: every container re-copies its config from `/etc/kolla/<svc>/` when it starts. A Docker restart
+- Interaction with `config_strategy: COPY_ALWAYS` (`all.yml:43`, passed as `KOLLA_CONFIG_STRATEGY` in
+  `docker_common_options`, `all.yml:162-163`). FACT (kolla image): every Kolla service container except
+  `bifrost_deploy` (which runs `/sbin/init`, kolla `docker/bifrost/bifrost-deploy/Dockerfile.j2:29-30`) runs
+  `kolla_set_configs` when it starts, and under `COPY_ALWAYS` that re-copies the files listed in its `config.json`
+  from `/etc/kolla/<svc>/` and rewrites `/run_command` (kolla `docker/base/start.sh:8`,
+  `docker/base/set_configs.py:319-329,391-393`; [annex/kolla-images.md §2](../kolla-images.md)). A Docker restart
   therefore **activates any config that was rendered but not yet applied**, for example by `kolla-ansible genconfig`
-  (`tools/kolla-ansible:458-461`) or a failed reconfigure.
+  (`tools/kolla-ansible:458-461`) or a failed reconfigure. Removals are not applied: destinations of entries dropped
+  from `config.json`, or of optional sources that are gone, stay in the container
+  ([annex/kolla-images.md §3.5](../kolla-images.md)).
 
 ---
 

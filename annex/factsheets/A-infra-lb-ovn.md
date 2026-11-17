@@ -24,12 +24,14 @@ Common mechanics that apply to every role below (all verified in code):
   is passed as `KOLLA_CONFIG_STRATEGY` in `docker_common_options` (`ansible/group_vars/all.yml:157-167`). With
   COPY_ALWAYS and no parameter drift, `recreate_or_restart_container` calls `restart_container`
   (`ansible/library/kolla_docker.py:781-801`), which does `dc.stop(name, timeout=graceful_timeout)` then `dc.start`
-  (`kolla_docker.py:892-904`). `docker_graceful_timeout: 60` (`ansible/group_vars/all.yml:154`).
+  (`kolla_docker.py:892-904`). `docker_graceful_timeout: 60` (`ansible/group_vars/all.yml:154`) arrives only through
+  `common_options`, which the module default `graceful_timeout: 10` overrides, so the effective timeout is 10 s
+  (`kolla_docker.py:991,1037-1047`; stop-timeout erratum in the [README](README.md)).
   **There is no "reload" path anywhere in scope.** The haproxy image ships a reload helper,
   `kolla_ensure_haproxy_latest_config` (kolla `docker/haproxy/Dockerfile.j2:20-21`,
-  `docker/haproxy/ensure_latest_config.sh:5-14`), but kolla-ansible ussuri never calls it (grep finds no caller). It
-  also signals `haproxy-systemd-wrapper`, which `haproxy_run.sh` does not start
-  (`ansible/roles/haproxy/templates/haproxy_run.sh.j2:9`).
+  `docker/haproxy/ensure_latest_config.sh:5-14`), but kolla-ansible ussuri never calls it (grep finds no caller). The
+  helper would not reload haproxy here anyway: it signals `haproxy-systemd-wrapper` (`:11`), which `haproxy_run.sh`
+  does not start (`ansible/roles/haproxy/templates/haproxy_run.sh.j2:9`).
 - **`kolla_serial` is only set for two actions.** The CLI passes it only for `upgrade` and `reconfigure`
   (`tools/kolla-ansible:430,439`), from `ANSIBLE_SERIAL`, which defaults to `0` = all hosts at once
   (`tools/kolla-ansible:236`).
@@ -193,13 +195,15 @@ None.
 
 ### 1.8 Operationally notable behaviour
 - **(A) Any change means a full restart of haproxy on all haproxy nodes at once, never a reload.**
-  - Every haproxy-relevant change goes to `Restart haproxy container`, which is `restart_container` (docker stop up to
-    60 s, then docker start). That includes a change in any one service's `services.d/<svc>.cfg`, a cert, haproxy.cfg
-    or haproxy_run.sh.
+  - Every haproxy-relevant change goes to `Restart haproxy container`, which is `restart_container` (docker stop with
+    SIGKILL after 10 s at the latest, see the stop-timeout erratum in the [README](README.md), then docker start).
+    That includes a change in any one service's `services.d/<svc>.cfg`, a cert, haproxy.cfg or haproxy_run.sh.
   - With the default `serial 0`, all haproxy hosts restart in the same handler step. Result: every API, MariaDB
     (through the VIP, `group_vars/all.yml:105`), RabbitMQ management, etc. sees dropped connections.
-  - HYPOTHESIS: the outage is a few seconds per run. Docker `stop` sends SIGTERM, which is an immediate stop for
-    haproxy, and established connections are cut. NEEDS-LAB to measure.
+  - HYPOTHESIS: the outage is a few seconds per run. `haproxy_run.sh` does not `exec` haproxy
+    (`haproxy_run.sh.j2:7-9`), so the SIGTERM of `docker stop`, which dumb-init forwards only to its direct child,
+    reaches bash, not haproxy ([annex/kolla-images.md §2.6](../kolla-images.md)). haproxy is killed when the container
+    stops, at the latest by the SIGKILL after 10 s, and established connections are cut. NEEDS-LAB to measure.
 - **(B) A haproxy restart can cause VIP failover or a VIP outage.**
   - keepalived tracks `check_alive` with `interval 2 fall 2 rise 10` (`keepalived.conf.j2:1-6`).
   - HYPOTHESIS: if haproxy is down for about 4 s or more on the VIP holder, keepalived goes to FAULT and drops the VIP.
@@ -790,7 +794,10 @@ The loop is `with_dict: project_services | select_services_enabled_and_mapped_to
   - A CA bundle change (e.g. a root CA rotation with `kolla_copy_ca_into_containers: yes`) therefore triggers
     `Restart keepalived container` on all haproxy hosts in parallel, together with the haproxy restart.
   - That is VIP-flap risk (HYPOTHESIS), even though `keepalived.json.j2` does not reference the CA files.
-  - HYPOTHESIS: the kolla image's start script consumes `config_files/ca-certificates` generically.
+  - The kolla image does install them: keepalived starts through `kolla_start`, which runs `kolla_copy_cacerts` at
+    every start. That script deletes the old `kolla-customca-*` entries and installs every file of
+    `/var/lib/kolla/config_files/ca-certificates/` (kolla `docker/base/start.sh:13`, `docker/base/copy_cacerts.sh:7-27`;
+    [annex/kolla-images.md §2.4](../kolla-images.md)).
 - **A CA or backend cert rotation restarts every container of every service using it** (whole fleet,
   per-play parallel).
 - It is a pure file copy, with no expiry check.

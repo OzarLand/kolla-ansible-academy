@@ -25,7 +25,8 @@ have no prefix and are relative to its `ansible/` directory (`roles/nova/tasks/b
   `KOLLA_UPGRADE`), [LAB s11] (`deploy` with a new tag: `bootstrap_placement` and `bootstrap_neutron` with
   `KOLLA_BOOTSTRAP`), [LAB s18] (no-tag `reconfigure`: 7 DB-sync one-shots, no `bootstrap_neutron`).
 - **`kolla_set_configs --check` was exercised**: the unmodified `set_configs.py` was run with Python 3.13 on a scratch
-  tree, outside a container, for each exit-code case of §3.3.
+  tree, outside a container, for exit codes 0, 1 and 2 of §3.3 (137 and the exec client error are `kolla_docker`
+  outcomes, read in source only).
 - **Not covered**: behaviour against real services and data, signal delivery, timing. These stay [HYPOTHESIS] or
   [NEEDS-LAB] and are listed in §7.
 
@@ -45,9 +46,13 @@ Every kolla image inherits from kolla `docker/base/Dockerfile.j2` [CODE]:
 - `/usr/local/bin/kolla_extend_start` is created empty by `touch` (`:446`). An image gets start logic only by
   overwriting it.
 - `/var/log/kolla` gets group `kolla` and mode 2775 (`:449-451`).
-- Service users are added to group `kolla` (kolla `docker/macros.j2:50`). Members of that group may run exactly two
-  commands as root without a password, keeping their environment: `kolla_set_configs` and `kolla_copy_cacerts` (kolla
-  `docker/base/sudoers:7,16,19`). The entry restricts no arguments, so `sudo kolla_set_configs --check` is allowed.
+- Service users are added to group `kolla` (kolla `docker/macros.j2:50`). The base `sudoers` lets members of that
+  group run two commands as root without a password, keeping their environment: `kolla_set_configs` and
+  `kolla_copy_cacerts` (kolla `docker/base/sudoers:7,16,19`). It also includes `/etc/sudoers.d` (`:21`), where many
+  images add entries of their own, e.g. cinder-volume's `chown -R` and `chmod` (kolla
+  `docker/cinder/cinder-volume/cinder_sudoers:2-5`) and mariadb's `kolla_security_reset` (kolla
+  `docker/mariadb/mariadb/mariadb_sudoers:1`). The `kolla_set_configs` entry restricts no arguments, so
+  `sudo kolla_set_configs --check` is allowed.
 - Kolla-Ansible passes `KOLLA_CONFIG_STRATEGY` to every container through `docker_common_options`
   (`group_vars/all.yml:43,162-163`; default `COPY_ALWAYS`).
 
@@ -74,8 +79,16 @@ flowchart TB
   OS -- "no" --> EX["exec CMD ARGS"]
 ```
 
-1. `set -o errexit; set -o xtrace` (kolla `docker/base/start.sh:2-3`). Any failing command ends the container,
-   including commands in the sourced `kolla_extend_start`.
+1. `set -o errexit; set -o xtrace` (kolla `docker/base/start.sh:2-3`). Any failing command ends the container, including
+   commands in the sourced `kolla_extend_start`. xtrace also echoes each command of that script, and of the
+   `kolla_<service>_extend_start` it sources (§2.5), to stderr with its variables expanded [CODE; checked in bash], so a
+   one-shot that puts a secret on a command line writes it there: heat's `--password ${HEAT_DOMAIN_ADMIN_PASSWORD}`
+   (kolla `docker/heat/heat-api/extend_start.sh:12`) and the MariaDB root password (kolla
+   `docker/mariadb/mariadb/extend_start.sh:23-25`). `kolla_docker` returns that stderr in the task result
+   (`library/kolla_docker.py:832-836,840-845,1070`), which Ansible prints on failure or with `-v`; `bootstrap_heat` and
+   `bootstrap_mariadb` set no `no_log` (`roles/heat/tasks/bootstrap_service.yml:2-29`,
+   `roles/mariadb/tasks/bootstrap_cluster.yml:2-23`), `upgrade_mariadb` does (`roles/mariadb/tasks/upgrade.yml:26`)
+   [CODE; display ANSIBLE].
 2. `sudo -E kolla_set_configs` (`:8`) runs as root whatever the image `USER`, copies the configuration (§2.3) and
    writes `config.json`'s `command` to `/run_command`.
 3. `CMD=$(cat /run_command)` (`:9`).
@@ -143,7 +156,8 @@ Most service families layer two scripts [CODE]. The service base image installs 
 `kolla_extend_start`, creates an empty `/usr/local/bin/kolla_<service>_extend_start`, and its last line sources that
 file (e.g. kolla `docker/cinder/cinder-base/Dockerfile.j2:73-79`, `docker/cinder/cinder-base/extend_start.sh:10`).
 The API image overwrites `kolla_<service>_extend_start` with the one-shot branches. On those images
-`kolla_extend_start` only prepares the log directory, and the DB commands are in `kolla_<service>_extend_start`.
+`kolla_extend_start` prepares the log directory (neutron-base also selects the iptables backend, §5), and the DB
+commands are in `kolla_<service>_extend_start`.
 Keystone, keystone-fernet, keystone-ssh, horizon, mariadb, rabbitmq, swift-rsyncd, keepalived, chrony, iscsid,
 fluentd, ovn-base, nova-libvirt and nova-ssh put everything in `kolla_extend_start` instead.
 
@@ -154,8 +168,9 @@ fluentd, ovn-base, nova-libvirt and nova-ssh put everything in `kolla_extend_sta
   not in these sources] In this mode dumb-init forwards `docker stop`'s SIGTERM only to that child. A comment in the
   mariadb image says the same in reverse: without `--single-child`, "the TERM signal is sent to all subprocesses"
   (kolla `docker/mariadb/mariadb/Dockerfile.j2:67-71`).
-- MariaDB overrides the entrypoint to `dumb-init --` without `--single-child`, because `mysqld_safe` ignores SIGTERM.
-  TERM then reaches `mysqld` (kolla `docker/mariadb/mariadb/Dockerfile.j2:65-76`).
+- MariaDB overrides the entrypoint to `dumb-init --` without `--single-child` (kolla
+  `docker/mariadb/mariadb/Dockerfile.j2:65-76`) [CODE]. Its comment gives the reason: `mysqld_safe` ignores SIGTERM,
+  and without `--single-child` TERM also reaches `mysqld` [HYPOTHESIS: dumb-init and mysqld_safe semantics].
 - Some Kolla-Ansible commands are shell wrappers that do not `exec` the service, so dumb-init's child is bash:
   `neutron-l3-agent-wrapper.sh` (`roles/neutron/templates/neutron-l3-agent-wrapper.sh.j2:14-18`), `start-ovs` and
   `start-ovsdb-server` (`roles/openvswitch/templates/start-ovs.j2:2`, `start-ovsdb-server.j2:11`) and
@@ -203,15 +218,17 @@ For each entry whose source glob matches something (`:213-235`) [CODE]:
   (`roles/memcached/templates/memcached.json.j2:2-3`).
 - Entries removed from `config.json`, and optional entries whose source no longer exists (`:219-220`), even while
   their old destination is still in the container.
-- Extra files in a destination directory, directory owners, and the mode and owner of the top-level destination.
+- Extra files in a destination directory, and the mode and owner of the destination directories themselves (for
+  subdirectories `_cmp_dir` checks the mode of a directory above the destination instead, §3.1). A file
+  destination's mode and owner are compared (§3.1).
 
 ### 3.3 Exit codes
 
 | Exit code | Raised when | What `kolla_docker` does | Day-2 meaning |
 |---|---|---|---|
-| 0 | Every listed entry matches. Also a manifest with empty `config_files`, and any difference confined to `command`, `permissions`, removed entries or optional entries without a source | no drift (`kolla_docker.py:566-567`) | "No drift" covers the listed files only. A `config.json`-only change written by `genconfig` is never applied by `deploy-containers` or a later run (§6 item 1) |
-| 1 | `ConfigFileBadState`: a listed file differs in content, mode or owner, or a non-optional destination is missing. Also `MissingRequiredSource` (a non-optional source matches nothing, `set_configs.py:217-218`) and `InvalidConfig` (bad JSON, no `command`, an entry without `owner`/`perm`; `:238-253,282,295`) | drift: the handler restarts the container (`kolla_docker.py:568-569`) | Usually real drift. For a missing source or an invalid `config.json` the restarted container then fails in `kolla_set_configs` and stops (errexit). `preserve_properties` entries and directory sources with subdirectories return 1 on every run |
-| 2 | Any other exception (`set_configs.py:430-432`): an optional entry whose source exists but whose destination is not in the container yet (`open()` raises at `:167`); a `config.json` that cannot be opened (`:291`, e.g. run as a service user); a uid or gid with no passwd or group entry | raises: the check task fails on that host (`kolla_docker.py:575-578,1071-1073`) | Real drift reported as an error, e.g. a newly rendered nova-compute `release` file (`roles/nova-cell/templates/nova-compute.json.j2:52-57`). The run fails instead of restarting the container |
+| 0 | Every listed entry matches. Also a manifest with empty `config_files`, and any difference confined to `command`, `permissions`, removed entries or optional entries without a source | no drift (`kolla_docker.py:566-567`) | "No drift" covers the listed files only. A `config.json`-only change written by `genconfig` makes neither `deploy-containers` nor a later run restart the container (§6 item 1) |
+| 1 | `ConfigFileBadState`: a listed file differs in content, mode or owner, or a non-optional destination is missing. Also `MissingRequiredSource` (a non-optional source matches nothing, `set_configs.py:217-218`) and `InvalidConfig` (bad JSON, no `command`, an entry without `owner`/`perm`; `:238-253,282,295`) | drift: the handler restarts the container (`kolla_docker.py:568-569`) | Usually real drift. For a missing source or an invalid `config.json` the restarted container then fails in `kolla_set_configs` at every start (errexit; [HYPOTHESIS] restart loop, §2.3). `preserve_properties` entries and directory sources with subdirectories return 1 on every run |
+| 2 | Any other exception (`set_configs.py:430-432`): an optional entry whose source exists but whose destination is not in the container yet (`open()` raises at `:167`); a `config.json` that cannot be opened (`:291`, e.g. run as a service user); a uid or gid with no passwd or group entry | raises: the check task fails on that host (`kolla_docker.py:575-578,1071-1073`) | Real drift reported as an error, e.g. a newly rendered nova-compute `release` file (`roles/nova-cell/templates/nova-compute.json.j2:52-57`). The run fails instead of restarting the container. Entries are checked in order and the first difference ends the check (`set_configs.py:407-410,427-429`), so if an entry listed before the optional one differs, the result is 1 and the restart also copies the new file |
 | 137 | the exec was killed because the container exited | drift (`kolla_docker.py:570-574`) | the container is unstable; Kolla restarts it |
 | none | `docker exec` fails with a client error (container stopped or restarting) | drift (`kolla_docker.py:552-558`) | a stopped container is restarted by the next run |
 
@@ -238,9 +255,14 @@ In an image with a service `USER` (e.g. `USER nova`, kolla `docker/nova/nova-com
   apply [CODE]. Stale files inside a listed directory destination go too, because the destination is deleted first.
 - Removals do not apply. The destinations of entries dropped from `config.json`, and of optional sources that are
   gone, are never deleted (kolla `docker/base/set_configs.py:135-148,310-315`). They stay in the container's writable
-  layer until the container is recreated, and `--check` does not flag them [CODE]. [HYPOTHESIS] A removed Keystone
-  policy file (`roles/keystone/templates/keystone.json.j2:30-36`) is therefore still read after the restart.
-- CA certificates are purged and re-added on every start (§2.4).
+  layer until the container is recreated; a destination on a volume survives recreates as well, e.g.
+  nova-compute's SASL `auth.conf` (`roles/nova-cell/templates/nova-compute.json.j2:58-64`), left behind when
+  `libvirt_enable_sasl` is turned off, is under `/var/lib/nova`, by default the `nova_compute` volume
+  (`roles/nova-cell/defaults/main.yml:293`, `group_vars/all.yml:967`). `--check` does not flag them [CODE].
+  [HYPOTHESIS] A removed Keystone policy file (`roles/keystone/templates/keystone.json.j2:30-36`) is therefore still
+  read after the restart.
+- CA certificates are purged and re-added on every start (§2.4). [HYPOTHESIS] When the last custom CA is removed, the
+  generated trust bundle probably keeps it (§2.4).
 - `COPY_ONCE`: `/configured` lives in the container layer, so only a recreate re-applies config. `kolla_docker`
   always recreates under `COPY_ONCE` (`library/kolla_docker.py:793-801`).
 
@@ -261,8 +283,10 @@ Kolla-Ansible starts one-shot containers with `kolla_docker` `start_container`, 
 `restart_policy: no`, a label such as `BOOTSTRAP` or `UPGRADE`, and a variable that selects a branch of the image's
 start script. The variables are sent with an empty value (`library/kolla_docker.py:758-760`) and every branch tests
 only whether they are set (`${!VAR[@]}`). The one-shot runs the whole of `kolla_start` first: `kolla_set_configs`
-with the service's own config, `kolla_copy_cacerts`, then the branch, which ends in `exit 0` before the service
-command (§2.2) [CODE].
+with the config directory mounted into it, `kolla_copy_cacerts`, then the branch, which ends in `exit 0` before the
+service command (§2.2) [CODE]. That directory is the service's own, except for Nova: its one-shots mount a dedicated
+`nova-api-bootstrap` or `nova-cell-bootstrap` directory whose `command` is `"false"`
+(`roles/nova/defaults/main.yml:116-117`, `roles/nova-cell/defaults/main.yml:303-304`).
 
 | Image | `KOLLA_BOOTSTRAP` | `KOLLA_UPGRADE` / other one-shot variables | Set by Kolla-Ansible (task, action) | Day-2 note |
 |---|---|---|---|---|
@@ -329,7 +353,7 @@ appears (kolla `docker/keystone/keystone-fernet/keystone_bootstrap.sh:35-41`). I
 | placement-api | root | Log dir and `placement-api.log`; `chown -R` only if the top-level owner differs (kolla `docker/placement/placement-base/extend_start.sh:3-13`); `kolla_httpd_setup` (`placement-api/extend_start.sh:23`) | – |
 | cinder-api | root | Log dir (kolla `docker/cinder/cinder-base/extend_start.sh:3-8`); `kolla_httpd_setup` (`cinder-api/extend_start.sh:20`) | – |
 | cinder-volume | cinder | Log dir; `sudo chown -R cinder:kolla` of `/var/lib/cinder` and `/etc/iscsi` only if the top-level owner differs, `chmod 2775` if needed (kolla `docker/cinder/cinder-volume/extend_start.sh:3-14`) | The recursive chown runs only on a fresh volume, so a restart stays cheap |
-| cinder-scheduler, cinder-backup | cinder | Log dir only (empty `kolla_cinder_extend_start`, kolla `docker/cinder/cinder-base/Dockerfile.j2:77`) | – |
+| cinder-scheduler, cinder-backup | cinder | Log dir only (empty `kolla_cinder_extend_start`, kolla `docker/cinder/cinder-base/Dockerfile.j2:78`) | – |
 | heat-api, heat-api-cfn, heat-engine | root (APIs), heat (engine) | Log dir (kolla `docker/heat/heat-base/extend_start.sh:3-8`); the two API images run `kolla_httpd_setup` (`heat-api/extend_start.sh:19`, `heat-api-cfn/extend_start.sh:3`) | – |
 | horizon | root | Settings symlinks, plugin files from `ENABLE_*`, conditional static-asset regeneration, log dir, `kolla_httpd_setup` (kolla `docker/horizon/extend_start.sh:24-42,51-388`; §5.2) | [HYPOTHESIS] Slow start after a recreate or a settings change |
 | barbican, octavia and manila images | barbican, octavia, manila (API images) | Log dir (barbican also chowns it, kolla `docker/barbican/barbican-base/extend_start.sh:4-13`). The API images call `kolla_httpd_setup`, a no-op as a service user (`barbican-api/Dockerfile.j2:48`, `octavia-api/Dockerfile.j2:78`, `manila-api/Dockerfile.j2:71`) | Worker images do the log-dir step only |
@@ -422,20 +446,25 @@ new-cluster decision [CODE: kolla `docker/mariadb/mariadb/extend_start.sh` has n
 
 ## 6. Day-2 consequences
 
-1. **`config.json`-only changes are never applied by a Kolla run.** `--check` ignores `command` and `permissions`,
-   so `deploy-containers` after `genconfig` sees no drift, and later runs do not either because the template task is
-   then unchanged. Memcached is the extreme case. The change applies at the next restart for another reason [CODE]
+1. **`config.json`-only changes written by `genconfig` never cause a restart.** A normal deploy or reconfigure
+   applies them, because the changed `config.json` template task notifies the restart handler (e.g.
+   `roles/memcached/tasks/config.yml:13-26`). After a separate `genconfig`, `--check` ignores `command` and
+   `permissions`, so `deploy-containers` sees no drift, and later runs do not restart for them either because the
+   template task is then unchanged. Memcached is the extreme case. The change applies at the next restart for another
+   reason [CODE]
    ([09 §1](../docs/09-practical-command-reference.md), [04 §4](../docs/04-deployment-execution-flow.md),
    [07 §H](../docs/07-day2-operational-impact.md)).
 2. **Some containers restart on every deploy/reconfigure.** A `preserve_properties` entry, such as prometheus
    `extras`, or a directory source with subdirectories makes `--check` exit 1 on every run [CODE; scratch run]
    ([03 §3](../docs/03-ansible-roles-and-tags-mapping.md)).
 3. **A new optional file fails the run.** `--check` exits 2 when an optional file is rendered for the first time
-   (e.g. nova-compute `release`), and the check-containers task fails on that host instead of restarting [CODE]
+   (e.g. nova-compute `release`) and no entry listed before it differs, and the check-containers task fails on that
+   host instead of restarting [CODE]
    ([08 §3](../docs/08-operational-risk-matrix.md), [09 §1](../docs/09-practical-command-reference.md)).
 4. **A restart does not remove a dropped file.** Destinations of entries removed from `config.json` stay in the
-   container until it is recreated, and `--check` does not report them. CA certificate files are the exception: they
-   are purged and re-added on every start (§2.4) [CODE; service effect HYPOTHESIS]
+   container until it is recreated, and on a volume even after that (§3.5); `--check` does not report them. CA
+   certificate files are the exception: they are purged and re-added on every start, although when the last custom
+   CA is removed the generated bundle probably keeps it (§2.4) [CODE; bundle and service effect HYPOTHESIS]
    ([01 §7](../docs/01-repository-architecture.md)).
 5. **Nova's online data migrations never run outside `upgrade`.** Deploy and reconfigure run the Nova bootstrap
    containers with `KOLLA_UPGRADE` (`api_db sync` + `db sync`, `db sync --local_cell`); the images' `KOLLA_BOOTSTRAP`

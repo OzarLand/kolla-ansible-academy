@@ -185,10 +185,12 @@ Runtime facts [CODE]:
   on such a host therefore deletes all router namespaces there, and the agent rebuilds them.
 - **Agent containers do not share the host PID namespace.** They have no `pid_mode` (`roles/neutron/defaults/main.yml`).
   Processes they spawn (dnsmasq, keepalived, haproxy for metadata) live in the container's PID namespace.
-  [HYPOTHESIS] They die with the container and are respawned by the agent on start. Support for the L3 agent: its
-  wrapper starts `neutron-l3-agent` without `exec`, and dumb-init runs with `--single-child` (kolla
-  `docker/base/Dockerfile.j2:434`; `roles/neutron/templates/neutron-l3-agent-wrapper.sh.j2:14-18`), so the SIGTERM
-  of `docker stop` reaches bash, not the agent ([annex/kolla-images.md §2](../annex/kolla-images.md)).
+  [HYPOTHESIS] They die with the container and are respawned by the agent on start. For the L3 agent the code is
+  consistent with this: its wrapper starts `neutron-l3-agent` without `exec`, and dumb-init runs with `--single-child`
+  (kolla `docker/base/Dockerfile.j2:434`; `roles/neutron/templates/neutron-l3-agent-wrapper.sh.j2:14-18`) [CODE].
+  [HYPOTHESIS] If dumb-init forwards SIGTERM only to its direct child (not shown in these sources), the SIGTERM of
+  `docker stop` reaches bash, not the agent, which gets no graceful shutdown
+  ([annex/kolla-images.md §2.6, §5.3](../annex/kolla-images.md)).
   [NEEDS-LAB]: measure the DHCP and router outage per agent restart.
 - **The OVS bridge layout is set in a post-config step.** It is ensured on every deploy/reconfigure by
   `kolla_ensure_openvswitch_configured` (`roles/openvswitch/tasks/post-config.yml:7-17`). The command reports

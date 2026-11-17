@@ -64,8 +64,13 @@ Annexes:
    facts are gathered serially by the limited hosts (docs/06, docs/07 §G).
 10. **`--list-tasks` cannot predict a run.** Use `genconfig` plus `kolla_set_configs --check`, staging, or the lab
     approach (docs/09 §1). `--check` compares only the files listed in `config.json`, not its `command` or
-    `permissions`: memcached lists no files, so a change to its command line never shows as drift. A new optional file
-    makes it exit 2, an error rather than drift ([annex/kolla-images.md §3](annex/kolla-images.md)).
+    `permissions`: memcached lists no files, so a change to its command line never shows as drift. A plain
+    `reconfigure` still applies it (the changed `config.json` notifies the restart handler), but once `genconfig` has
+    written it, no later run restarts the container for it; it takes effect at the next restart for another reason
+    (docs/09 §2.5). A newly rendered optional file whose destination is not yet in the container makes `--check`
+    exit 2, unless an entry listed before it already differs (then it exits 1 and the container restarts). Exit 2 is
+    real drift, but the check task fails instead of restarting the container
+    ([annex/kolla-images.md §3](annex/kolla-images.md)).
 
 ## Where the final-objective questions are answered
 

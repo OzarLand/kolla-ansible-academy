@@ -187,11 +187,12 @@ Facts [CODE]:
   QEMU processes are started by libvirtd *inside* this container.
 - **Persistent state lives on named volumes.** The `libvirtd` volume holds `/var/lib/libvirt` and the
   `nova_libvirt_qemu` volume holds domain XML in `/etc/libvirt/qemu`. Instance disks sit in
-  `nova_instance_datadir_volume` (`/var/lib/nova`). All of them survive a container recreate. The runtime state is
-  elsewhere. The host's `/run` is bind-mounted `:shared` (`defaults/main.yml:242`), so whatever libvirtd writes under
-  `/run` is on the host and survives a restart or recreate. [HYPOTHESIS] The image's `/var/run` is a symlink to `/run`,
-  so the running-domain state in `/var/run/libvirt` is on that bind mount and is lost only on a host reboot. The
-  Dockerfiles do not show this. The SASL DB, by contrast, stays in the container layer (see below).
+  `nova_instance_datadir_volume` (`/var/lib/nova`). All of them survive a container recreate. One more location
+  matters for a restart and is not a named volume. The host's `/run` is bind-mounted `:shared`
+  (`defaults/main.yml:242`), so whatever libvirtd writes under `/run` is on the host and survives a restart or
+  recreate. [HYPOTHESIS] The image's `/var/run` is a symlink to `/run`, so the running-domain state in
+  `/var/run/libvirt` is on that bind mount and is lost only on a host reboot. The Dockerfiles do not show this. The
+  SASL DB, by contrast, stays in the container layer (see below).
 - **The image start path is passive towards running guests.** `kolla_start` runs `kolla_set_configs`,
   `kolla_copy_cacerts` and the nova-libvirt `extend_start.sh`, then `exec`s `/usr/sbin/libvirtd --listen` (kolla
   `docker/base/start.sh:8-21`; `templates/nova-libvirt.json.j2:2`). `kolla_set_configs` deletes and rewrites only the
@@ -252,12 +253,23 @@ What happens to running VMs is **not provable by static analysis** [NEEDS-LAB]:
   - live migrations in flight fail;
   - attach/detach and snapshot operations in progress fail;
   - `virsh` and nova-compute calls fail until libvirtd is back;
-  - on cgroup v2 hosts, or Docker versions that clean up the container cgroup on stop, QEMU processes could be killed;
-  - if libvirtd does not exit within 10 s of SIGTERM, the SIGKILL could interrupt it while it writes domain state.
+  - on cgroup v2 hosts, or wherever QEMU is still in the container's cgroup at stop, QEMU processes could be killed;
+  - if libvirtd does not exit within 10 s of SIGTERM, it is killed with the container (SIGKILL to dumb-init, then
+    the cgroup kill described above), possibly while it writes domain state.
 - **Required experiment:** on a staging compute with running VMs, run `docker restart nova_libvirt` and then
   `kolla-ansible -t nova reconfigure --limit <host>` with a nova-compute-only override. Record the QEMU PIDs
   (`pgrep -f qemu-kvm`), the cgroup of each QEMU PID (`/proc/<pid>/cgroup`), guest ping continuity, and the
   `virsh list` state before and after. Run it on the exact kernel, cgroup version and Docker version of production.
+
+nova-compute start [CODE]: with the default `config_strategy: COPY_ALWAYS` (`group_vars/all.yml:43`), every start of
+`nova_compute`, a plain restart included, runs `kolla_set_configs`, and its `permissions` block chowns `/var/lib/nova`
+to `nova:nova` recursively: one `chown` per directory and file of the instance datadir
+(`roles/nova-cell/templates/nova-compute.json.j2:72-76`; kolla `docker/base/set_configs.py:378-385,391-393`). Under
+`COPY_ONCE` this happens only on the container's first start. A failed chown is only logged (kolla
+`docker/base/set_configs.py:359-363`). [HYPOTHESIS] With `enable_shared_var_lib_nova_mnt` (cinder NFS or Quobyte,
+`roles/nova-cell/defaults/main.yml:294,450`) the walk also enters the cinder shares still mounted under
+`/var/lib/nova/mnt`. Start time grows with the number of files, most on NFS-backed trees such as those shares
+([annex/kolla-images.md §6](../annex/kolla-images.md) item 10).
 
 nova-compute restart [HYPOTHESIS, upstream Nova]:
 

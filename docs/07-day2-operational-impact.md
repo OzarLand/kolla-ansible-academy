@@ -79,7 +79,7 @@ sequenceDiagram
 | Effect | Guaranteed by code | Depends on environment |
 |---|---|---|
 | nova-compute stop/start (10 s SIGKILL) | yes, when drift | [HYPOTHESIS] VMs unaffected; in-flight operations on that host fail or are left mid-task; the service is reported down only if the restart exceeds `service_down_time` |
-| libvirtd stop/start | yes, whenever nova-compute drifts | [NEEDS-LAB] VMs normally survive (QEMU moved to `machine.slice`, cgroup mounted rw, host `/run` bind mount, `pid_mode: host`). The image's start scripts do nothing to QEMU, cgroups or `/var/run/libvirt` [CODE, kolla `docker/base/start.sh`, `docker/nova/nova-libvirt/extend_start.sh`; [annex/kolla-images.md §5](../annex/kolla-images.md)]. The open questions are therefore libvirt and Docker behaviour: the stop (SIGKILL after 10 s) and libvirtd re-attaching to running domains when it starts. Live migrations in progress **fail**. Libvirt API calls fail for seconds. Run the experiment in 05 §5 before trusting this |
+| libvirtd stop/start | yes, whenever nova-compute drifts | [NEEDS-LAB] VMs normally survive (QEMU moved to `machine.slice`, cgroup mounted rw, host `/run` bind mount, `pid_mode: host`). The image's start scripts do nothing to QEMU, cgroups or `/var/run/libvirt` [CODE, kolla `docker/base/start.sh`, `docker/nova/nova-libvirt/extend_start.sh`; [annex/kolla-images.md §5](../annex/kolla-images.md)]. The open questions are therefore libvirt and Docker behaviour: the stop (SIGKILL if libvirtd is still running 10 s after SIGTERM) and libvirtd re-attaching to running domains when it starts. [HYPOTHESIS] Live migrations in progress **fail**, and libvirt API calls fail until libvirtd is back. Run the experiment in 05 §5 before trusting this |
 | nova-ssh stop/start | yes, with the above | resize / cold migration disk copies over port 8022 are interrupted |
 | Scheduling | API and scheduler restarts are parallel on all controllers (serial 0) | API calls fail during the restart window. The scheduler gets SIGHUP on every run (cell-cache refresh), which is harmless |
 | Host mapping | `discover_hosts` runs every time | harmless; maps any newly registered compute |
@@ -189,7 +189,12 @@ included `reconfigure.yml` tasks are filtered out because they do not carry the 
 - **What restarts:** any drift restarts **all three** containers on that host (loop-notify in
   `check-containers.yml`) [LAB s07: fluentd, cron, kolla_toolbox restarted on all nova hosts].
 - **Impact:**
-  - fluentd: log shipping gap; buffered logs are kept in the `fluentd_data` volume [HYPOTHESIS].
+  - fluentd: log shipping gap. The Elasticsearch and Monasca outputs buffer to files under `/var/lib/fluentd/data`,
+    the `fluentd_data` volume, which a restart or a recreate keeps (`roles/common/defaults/main.yml:93`;
+    `roles/common/templates/conf/output/01-es.conf.j2:26-27`, `02-monasca.conf.j2:13-14`). The tail read positions
+    are in `/var/run/<fluentd_binary>/`, on no volume (`roles/common/templates/conf/input/00-global.conf.j2:14`):
+    [HYPOTHESIS] they survive a config-only restart but are lost when the container is recreated (e.g. an image or
+    volume change) ([annex/kolla-images.md §5](../annex/kolla-images.md)).
   - cron: log rotation is delayed.
   - kolla_toolbox: no runtime impact on OpenStack. It matters only for Kolla's own tasks.
   - **No VM or API impact.**
@@ -261,8 +266,9 @@ Every host that runs at least one container whose image reference changed:
   - no RPC-pin reload plays;
   - no online data migrations, except Placement's: its bootstrap container (`KOLLA_BOOTSTRAP`,
     `roles/placement/tasks/bootstrap_service.yml:10-11`) runs `placement-manage db online_data_migrations` on every
-    deploy (kolla `docker/placement/placement-api/extend_start.sh:5-9`). Ironic's does the same with
-    `ironic_enable_rolling_upgrade: no`;
+    deploy (kolla `docker/placement/placement-api/extend_start.sh:5-9`). Ironic's does the same only with
+    `ironic_enable_rolling_upgrade: no` (default `yes`, `roles/ironic/defaults/main.yml:206`;
+    `roles/ironic/tasks/bootstrap_service.yml:16`, kolla `docker/ironic/ironic-api/extend_start.sh:5-9`);
   - RabbitMQ is not stopped cluster-wide, but restarted node by node;
   - Neutron (default `neutron_enable_rolling_upgrade: yes`): instead of expand → restart → contract
     (`roles/neutron/tasks/rolling_upgrade.yml:13-93`), `bootstrap_neutron` runs `neutron-db-manage … upgrade head` for
@@ -338,8 +344,11 @@ For an API service such as keystone, glance, cinder, heat or placement:
 - **Risks:** R8 (HAProxy restart), R19 (Keystone), R20 (glance file backend), R23 (`--limit` on a large inventory), R24
   (10 s SIGKILL).
 - **Verification:**
-  - before: `kolla-ansible -t <svc> genconfig`, then `kolla_set_configs --check` in each `<svc>` container and a diff of
-    `/etc/kolla/haproxy/services.d/<svc>*.cfg` against the previous version;
+  - before: `kolla-ansible -t <svc> genconfig`, then
+    `docker exec -u root <c> /usr/local/bin/kolla_set_configs --check; echo $?` in each `<svc>` container (without
+    `-u root` it exits 2 in images that run as a service user, e.g. glance-api;
+    [annex/kolla-images.md §3.4](../annex/kolla-images.md)) and a diff of `/etc/kolla/haproxy/services.d/<svc>*.cfg`
+    against the previous version;
   - after: `openstack endpoint list --service <name>` is unchanged for each Keystone service the role registers (each
     `name` in `<svc>_ks_services`, e.g. `cinderv2` and `cinderv3` for cinder, `heat` and `heat-cfn` for heat), the API
     answers through the VIP, the container start times show which hosts restarted, and
@@ -375,9 +384,9 @@ as such, and batch the compute side.
   - a Keystone API call to wait for compute registration.
 - **Facts:** gathered for all 12 hosts. The new compute itself runs the delegated `setup` loop sequentially
   (`gather-facts.yml:29-50`).
-- **Not touched:** existing computes. Controllers get no config writes or restarts, only delegated tasks: those listed
-  above, the fact gathering above (`setup` on all three controllers), and the Neutron DB and DB-user tasks
-  (`mysql_db`, `mysql_user` run through `kolla_toolbox`) on `control01`.
+- **Not touched:** existing computes, apart from the delegated `setup` above. Controllers get no config writes or
+  restarts, only delegated tasks: those listed above, the fact gathering above (`setup` on all three controllers), and
+  the Neutron DB and DB-user tasks (`mysql_db`, `mysql_user` run through `kolla_toolbox`) on `control01`.
 - **Caveats:**
   - Existing hosts' `/etc/hosts` is not updated (`bootstrap-servers --limit`).
   - With `libvirt_tls: true` (hostname-based migration), the other computes cannot resolve the new host until a

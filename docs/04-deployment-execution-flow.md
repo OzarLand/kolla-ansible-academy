@@ -211,10 +211,11 @@ separate "write the config" from "apply it", and to apply in controlled batches.
 through `kolla_set_configs --check` [CODE `kolla_docker.py:543-578`, kolla `docker/base/set_configs.py:160-235,407-410`;
 LAB s14 → s15]. Changes confined to `config.json` itself (`command`, `permissions`; e.g. every memcached setting,
 `roles/memcached/templates/memcached.json.j2:2-3`) are NOT detected. `deploy-containers` therefore does not apply them
-after `genconfig`, and a later `deploy`/`reconfigure` does not either: the `config.json` template task, the only config
-task that notifies the restart, is then unchanged (`roles/memcached/tasks/config.yml:13-26`). An `optional` file that
-newly appears, and whose destination does not exist in the container yet, makes the check exit 2 and the task fail [CODE
-kolla `docker/base/set_configs.py:162-167,430-432`, `kolla_docker.py:575-578`]. The lab stub hashes the whole config
+after `genconfig`, and a later `deploy`/`reconfigure` does not either: the config tasks that notify the restart, the
+`config.json` template task included (memcached's only one, `roles/memcached/tasks/config.yml:13-26`), are then
+unchanged. Such changes take effect only at the next restart for another reason. An `optional` file that newly appears,
+and whose destination does not exist in the container yet, makes the check exit 2 and the task fail [CODE kolla
+`docker/base/set_configs.py:162-167,430-432`, `kolla_docker.py:575-578`]. The lab stub hashes the whole config
 directory, `config.json` included, so it cannot show either case. See [07](07-day2-operational-impact.md) §H and
 [annex/kolla-images.md §3](../annex/kolla-images.md).
 
