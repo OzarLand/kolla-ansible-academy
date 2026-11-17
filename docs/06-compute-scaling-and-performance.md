@@ -278,8 +278,7 @@ What the measurements show:
 3. **Fact caching + setup filter.** This removes the O(N) serial delegated gathering under `--limit` and speeds the
    first play. All options are documented in Ussuri `ansible-tuning.rst`.
 4. **SSH pipelining** cuts the per-invocation constant that multiplies ≈46–80 invocations per compute (≈91 on a
-   first deploy). A longer
-   `ControlPersist` than the 60 s default avoids repeated handshakes on large fleets.
+   first deploy). A longer `ControlPersist` than the 60 s default avoids repeated handshakes on large fleets.
 5. **Size forks to the deploy host.** Templating of large Jinja templates (`nova.conf.j2`, `neutron.conf.j2`) happens
    on the deploy host, per compute.
 6. **Pre-pull images** (`kolla-ansible pull`) before upgrade windows, from a nearby registry.
