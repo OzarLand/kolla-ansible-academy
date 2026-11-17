@@ -122,7 +122,7 @@ Common mechanics that apply to every role below (all verified in code):
 | upgrade | `config-host.yml` → `config.yml` → **"Stopping all slave keepalived containers"** → `check-containers.yml` (`upgrade.yml:2-19`) | see 1.8 |
 | deploy-containers | `check-containers.yml` (`deploy-containers.yml:2`) | the loadbalancer block is **not** run (`site.yml:392`) |
 | pull | `service-images-pull` (`pull.yml:2-3`): pulls images from `haproxy_services` (via `lookup('vars', project_name + '_services')`, `ansible/roles/service-images-pull/tasks/main.yml:14`) | |
-| stop | `service-stop` with `haproxy_services` (`stop.yml:2-6`) | stops **both haproxy and keepalived on all haproxy hosts**, which takes down the VIP and every API. `skip_stop_containers` can exclude them (`ansible/roles/service-stop/tasks/main.yml:10-11`). |
+| stop | `service-stop` with `haproxy_services` (`stop.yml:2-6`) | stops **both haproxy and keepalived on all haproxy hosts**, so no API frontend runs; whether the VIP is then released is NOT AVAILABLE. `skip_stop_containers` can exclude them (`ansible/roles/service-stop/tasks/main.yml:10-11`). |
 | precheck | `precheck.yml` (939 lines, 79 tasks) | `service-precheck` group validation (2-6). Container facts (8-14). Whole-batch detection for the VIP checks (32-40, which skip when `--limit`/serial does not cover all haproxy hosts). Cert existence on localhost (42-74). External VIP iface present/active (76-86). VIPs not pingable (88-101, only when keepalived runs nowhere). Free ports (103-138). VIP in the same subnet as `api_interface` (141-153). `show stat` through the socket (155-164). Then one "free port" check per service on the VIP (166-939), skipped when that frontend already exists in `haproxy_stat`. |
 | check | `check.yml` is empty | |
 | config (genconfig) | `config.yml` only (no `config-host.yml`). The loadbalancer block **does** run (`'config'` is in the list, `site.yml:392`). | All handlers have `when: kolla_action != "config"` (`handlers/main.yml:16,36`), so nothing restarts. The next `deploy-containers` will detect drift through `kolla_set_configs --check` and restart. |
@@ -485,10 +485,11 @@ None.
     `horizon_backend_database` defaults to `enable_murano` (`group_vars/all.yml:982`).
 
 ### 3.8 Operationally notable
-- **A restart wipes all caches at once.** All memcached instances restart simultaneously (serial 0), so every cache is
-  wiped at the same time.
-  - NOT AVAILABLE: whether Horizon users are logged out (cache session backend), and whether the cold Keystone and
-    keystonemiddleware token-validation caches give a load spike on Keystone and the DB.
+- **All memcached instances restart at once.** FACT: they restart simultaneously (serial 0); the container mounts no
+  data volume (`defaults/main.yml:37-40`) and its command has no persistence option (`templates/memcached.json.j2:2`).
+  - NOT AVAILABLE: whether a restart therefore empties every cache at the same time, whether Horizon users are logged
+    out (cache session backend), and whether the cold Keystone and keystonemiddleware token-validation caches give a
+    load spike on Keystone and the DB.
   - Triggers are rare: a change of `api_interface_address`, port, memory or connection limit, or an image change on
     upgrade.
 - **Adding or removing a memcached host is expensive.** It changes the `memcache_servers` of almost every service
@@ -888,7 +889,7 @@ The loop is `with_dict: project_services | select_services_enabled_and_mapped_to
 |---|---|---|---|
 | haproxy | any `services.d`/haproxy.cfg/run.sh/pem/CA/config.json change, image change | all haproxy hosts | all APIs plus MariaDB and other VIP traffic; VIP failover: NOT AVAILABLE |
 | keepalived | keepalived.conf (inventory order!), config.json, CA copy, image change, **every upgrade (backups stopped)** | all haproxy hosts | VIP move or outage: NOT AVAILABLE |
-| memcached | config.json (IP, port, memory, limit), image | all memcached hosts | all caches flushed; Horizon logouts: NOT AVAILABLE |
+| memcached | config.json (IP, port, memory, limit), image | all memcached hosts | whether all caches are emptied and Horizon users logged out: NOT AVAILABLE |
 | chrony | chrony.conf (VIP, NTP servers, chrony-server membership), image | all hosts incl. computes | low |
 | ovn-nb/sb-db | config.json (IPs, seed host = `groups[...][0]`), image | all DB hosts | NB/SB API down; quorum re-election: NOT AVAILABLE |
 | ovn-northd | NB/SB host list, image | all northd hosts | logical-flow processing pause |

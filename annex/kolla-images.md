@@ -610,8 +610,9 @@ they use the same manifest.
     §3](../docs/08-operational-risk-matrix.md#3-pre-execution-checklist-applies-to-every-production-run) item 5, health
     gates).
 18. **SSH host keys of `nova_ssh` and `keystone_ssh` change on every recreate**, because `/etc/ssh` is on no volume.
-    This is harmless: the clients use `StrictHostKeyChecking no` (`roles/nova-cell/templates/ssh_config.j2:2-3`,
-    `roles/keystone/templates/ssh_config.j2:2`) [CODE] ([05
+    The clients set `StrictHostKeyChecking no` and keep no known-hosts file (`UserKnownHostsFile /dev/null`,
+    `roles/nova-cell/templates/ssh_config.j2:2-3`, `roles/keystone/templates/ssh_config.j2:2-3`) [CODE]; whether the
+    SSH client then accepts the new keys without failing is [NOT AVAILABLE: OpenSSH semantics] ([05
     §6](../docs/05-nova-deep-dive.md#6-live-migration-resize-and-consoles)).
 19. **The iSCSI initiator name is stable per `iscsi_info` volume** across restart and recreate [CODE]. [NOT AVAILABLE]
     Whether removing the volume produces a new IQN at the next start (the start script writes one when the file is

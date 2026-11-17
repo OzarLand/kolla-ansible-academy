@@ -172,8 +172,10 @@ marked [NOT AVAILABLE]:
 2. **RabbitMQ** with the cell vhost and user. All RPC between API, scheduler, conductor and compute uses it.
    [NOT AVAILABLE] Whether computes also report liveness over it, with the service heartbeat going through the
    conductor.
-3. **Keystone + memcached.** Every API request; nova-compute also needs Keystone to talk to Neutron, Placement,
-   Glance and Cinder.
+3. **Keystone + memcached.** The API-side `nova.conf` has `[keystone_authtoken]` with memcached as token cache
+   (`roles/nova/templates/nova.conf.j2:116-130`); nova-compute's `[cinder]`, `[neutron]` and `[placement]` sections
+   carry Keystone credentials (`roles/nova-cell/templates/nova.conf.j2:115,131,205`). [NOT AVAILABLE] Whether API
+   requests, and nova-compute's calls to those services, fail without Keystone.
 4. **Placement.** The scheduler's allocation candidates and nova-compute's resource-provider updates.
    [NOT AVAILABLE] Whether scheduling stops and computes log errors without it.
 5. **Cell mapping and host mapping.** `map_cell0`, `create_cell` and **`discover_hosts`**. The scheduler does not

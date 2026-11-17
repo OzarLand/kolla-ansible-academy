@@ -90,7 +90,8 @@ kolla-ansible -i multinode -t keystone reconfigure
     do not restart. Drifted hosts restart in parallel, so a change common to all hosts (globals, `keystone.conf`, a
     new image) restarts keystone on all keystone hosts at once.
 - **One-shot:** keystone db sync. Fernet keys are re-distributed.
-- **Impact:** short identity outage if restarted.
+- **Impact:** if restarted, keystone restarts on all drifted hosts at once; [NOT AVAILABLE] whether authentication
+  fails meanwhile, and for how long ([08 R19](08-operational-risk-matrix.md#1-matrix)).
 
 ### 2.2 Reconfigure Nova (control plane and computes)
 
@@ -287,9 +288,9 @@ kolla-ansible -i multinode destroy --yes-i-really-really-mean-it   # never on pr
 | `-t keystone reconfigure` | haproxy, control | keystone ×3, haproxy | keystone db sync | small |
 | `-t glance reconfigure` | haproxy, `glance-api` | glance-api, haproxy | db sync + metadefs load + MariaDB global flag toggle | small |
 | `-t placement reconfigure` | haproxy, control | placement-api, haproxy | db sync + online data migrations (one `bootstrap_placement` container) | small |
-| `-t nova reconfigure` | haproxy, control, **all computes** | all nova incl. **libvirt**, haproxy | 5 runs | number of computes |
-| `-t nova-api reconfigure` | haproxy, control | nova-api, scheduler, haproxy | 2 | small |
-| `-t nova-cell reconfigure` | haproxy (console-proxy frontends), control (conductor, consoles), **all computes** | conductor, consoles, compute, libvirt, ssh; haproxy if a console-proxy frontend changed | 2 + discovery | number of computes |
+| `-t nova reconfigure` | haproxy, control, **all computes** | all nova incl. **libvirt**, haproxy | 5 runs (those of `nova-api` and `nova-cell` below) | number of computes |
+| `-t nova-api reconfigure` | haproxy, control | nova-api, scheduler, haproxy | 2 (API DB sync, `map_cell0`) | small |
+| `-t nova-cell reconfigure` | haproxy (console-proxy frontends), control (conductor, consoles), **all computes** | conductor, consoles, compute, libvirt, ssh; haproxy if a console-proxy frontend changed | 3 (cell DB sync, `list_cells` ×2: cell lookup and discovery; `discover_hosts` itself is a `docker exec` into `nova_conductor`) | number of computes |
 | `-t neutron reconfigure` | haproxy, control, network, **all computes** | server, all agents, haproxy | none by default (neutron db sync is deploy-only while `neutron_enable_rolling_upgrade` is `yes`) | number of computes |
 | `-t openvswitch reconfigure` | network, **all computes** | openvswitch_db/vswitchd | – | number of computes |
 | `-t haproxy reconfigure` | haproxy | haproxy, keepalived, common | – | small |

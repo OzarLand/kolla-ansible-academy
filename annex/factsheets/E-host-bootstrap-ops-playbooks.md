@@ -316,7 +316,7 @@ Check after any failed run: `ls -l /etc/systemd/system/docker.service` should **
 {{ 'api' | kolla_address(host) }} {{ hostnames | unique | join(' ') }}
 ```
 - FACT: **it loops over all baremetal hosts**. Adding a host changes the managed block on **every** host bootstrap-servers runs
-  against. No handler or restart is attached, so a change is harmless in itself.
+  against. No handler or restart is attached, so a change restarts nothing by itself.
 - FACT: it needs facts for **all** baremetal hosts. `kolla_address` raises `FilterError("Interface ... not present on host ...")`
   when `hostvars[host]['ansible_facts']` lacks the interface (`kolla_ansible/kolla_address.py:88-95`). A host whose
   facts were never gathered (for example unreachable during fact gathering, with no fact cache) has an empty
@@ -330,7 +330,8 @@ Check after any failed run: `ls -l /etc/systemd/system/docker.service` should **
   clause uses (line 42 uses `| replace('-', '_')`).
 - With `--limit new-hosts`, only the limited hosts get the full list. **Existing hosts never learn the new names.** The docs
   require including all controllers in the limit for RabbitMQ (`doc/source/user/adding-and-removing-hosts.rst:22-29`). For
-  computes this is usually harmless because nova uses IPs (`nova.conf.d/libvirt.conf.j2:7-8`). **Exception:** with
+  computes, without `libvirt_tls` the libvirt connection and migration addresses are IPs
+  (`nova.conf.d/libvirt.conf.j2:7-8`). **Exception:** with
   `libvirt_tls`, `live_migration_inbound_addr = migration_hostname = ansible_facts.nodename`
   (`nova-cell/templates/nova.conf.d/libvirt.conf.j2:2-5`, `nova-cell/defaults/main.yml:423`). NOT AVAILABLE: whether
   live migration from old computes to a new compute then fails without name resolution. To make the new name resolvable

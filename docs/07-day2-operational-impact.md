@@ -117,7 +117,7 @@ sequenceDiagram
 
 | Change | Files rewritten | Restarted on controllers | Restarted on **every compute** | Source |
 |---|---|---|---|---|
-| none | – | none unless a notifying task reports changed | none unless a notifying task reports changed | restart handlers run only when a notifying task reports changed ([03 §2.4](03-ansible-roles-and-tags-mapping.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code)); [NOT AVAILABLE] whether every task reports unchanged on an unchanged cloud |
+| none | – | none unless a notifying task reports changed | none unless a notifying task reports changed | restart handlers run only when a notifying task reports changed ([03 §2.4](03-ansible-roles-and-tags-mapping.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code)), and `check-containers` reports changed only for a missing or stopped container, a differing compared parameter or a `kolla_set_configs --check` exit 1/137 (`kolla_docker.py:326-350, :480-484, :543-578`; [03 §3](03-ansible-roles-and-tags-mapping.md#3-what-a-tag-really-executes-master-table)); [NOT AVAILABLE] whether every task reports unchanged on an unchanged cloud |
 | `/etc/kolla/config/nova.conf` (global override) | `nova.conf` of every nova service | nova_api, nova_scheduler, nova_conductor, nova_novncproxy | **nova_compute, nova_libvirt, nova_ssh** | both `Copying over nova.conf` loops merge `{{ node_custom_config }}/nova.conf` (`roles/nova/tasks/config.yml:51-69`, `roles/nova-cell/tasks/config.yml:63-82`); [03 §2.4](03-ansible-roles-and-tags-mapping.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code) |
 | `/etc/kolla/config/nova/nova-compute.conf` | `nova-compute/nova.conf` only | – | **nova_compute, nova_libvirt, nova_ssh** (libvirt and ssh by loop-notify) | `roles/nova-cell/tasks/config.yml:63-82`; [03 §2.4](03-ansible-roles-and-tags-mapping.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code) |
 | `/etc/kolla/config/nova/nova-scheduler.conf` | `nova-scheduler/nova.conf` only | nova_scheduler **+ nova_api** (loop-notify) | – | `roles/nova/tasks/config.yml:51-69`; [03 §2.4](03-ansible-roles-and-tags-mapping.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code) |
@@ -205,7 +205,7 @@ runs on every reconfigure regardless (`bootstrap_service.yml:24-46`).
 | Component | On restart (code-guaranteed when drift) | Effect on existing connectivity (environment-dependent) |
 |---|---|---|
 | neutron-server | API unavailable during the stop/start, on all controllers at once | [NOT AVAILABLE] Whether existing traffic is unaffected, and whether port bindings and new instances fail during the window |
-| neutron-openvswitch-agent | container stop/start | [NOT AVAILABLE] Whether flows in OVS persist while the agent is down, whether the agent re-installs flows when it resyncs on start with the Ussuri defaults, and whether a VM loses packets during the agent restart |
+| neutron-openvswitch-agent | container stop/start | [NOT AVAILABLE] Whether flows in OVS persist while the agent is down, whether and how the agent resyncs and re-installs flows on start with the Ussuri defaults, and whether a VM loses packets during the agent restart |
 | neutron-l3-agent | stop/start; with `enable_neutron_agent_ha: yes` the wrapper **deletes all L3 namespaces** before start (`neutron-l3-agent-wrapper.sh.j2:5-12`) | [CODE] Without the HA cleanup nothing in the wrapper deletes namespaces, and `/run/netns` is shared with the host (`roles/neutron/defaults/main.yml:259`). [NOT AVAILABLE] Whether the namespaces then persist, whether keepalived/haproxy child processes die with the container, whether with the cleanup all routers on that node lose N-S/FIP connectivity until rebuilt, and whether HA routers fail over |
 | neutron-dhcp-agent | stop/start | [NOT AVAILABLE] Whether dnsmasq processes die with the container, whether VMs renewing leases in the window fail to renew, and whether new ports wait for the agent to come back |
 | neutron-metadata-agent | stop/start | [NOT AVAILABLE] Whether metadata requests (cloud-init) fail during the window |
@@ -272,8 +272,10 @@ reconfigured.**
     recreated (e.g. an image or volume change) ([annex/kolla-images.md
     §5](../annex/kolla-images.md#5-per-image-start-behaviour)).
   - cron: log rotation is delayed.
-  - kolla_toolbox: no runtime impact on OpenStack. It matters only for Kolla's own tasks.
-  - **No VM or API impact.**
+  - kolla_toolbox: no service template references it (`roles/*/templates`); Kolla's own tasks use it [CODE].
+  - **VM and API impact:** [NOT AVAILABLE]. None of the three is a container that [03
+    §3.1](03-ansible-roles-and-tags-mapping.md#31-per-tag-answers-files-vms-apis-networkingstorage-safety-prerequisites)
+    traces to running VMs [CODE].
 - **Hidden coupling:** enabling a service that appears in either list (most OpenStack services, e.g. barbican)
   changes `td-agent.conf` and/or `logrotate.conf` on *every* host ([01
   §5.1](01-repository-architecture.md#51-the-common-role-and-the-common_run-guard)). The common containers therefore
@@ -292,7 +294,8 @@ reconfigured.**
 - **Hosts, parallelism:** all reached hosts at once, unless batched.
 - **Interruption:** one stop/start per container (stop up to 10 s, [01
   §6](01-repository-architecture.md#6-custom-modules--container-lifecycle-via-kolla_docker)). Log shipping pauses, cron
-  rotation is delayed, and Kolla's own `kolla_toolbox` tasks wait. **No VM, API, network or storage impact.**
+  rotation is delayed, and Kolla's own `kolla_toolbox` tasks wait. [NOT AVAILABLE] Whether VMs, APIs, networking or
+  storage are affected ([§C.2](#c2-how-common-actually-reaches-hosts)).
 - **Risks:** [R2](08-operational-risk-matrix.md#1-matrix) (fleet-wide restarts after an `enable_*` change),
   [R25](08-operational-risk-matrix.md#1-matrix) (`-t common` mistaken for a reconfigure).
 - **Verification:**
@@ -423,13 +426,15 @@ For an API service such as keystone, glance, cinder, heat or placement:
 
 - **Interruption:** the service API is unavailable while its containers restart (up to 10 s stop, then start) on all
   its hosts at once. Add the HAProxy restart window if the frontend changed.
-- **VM impact:** none for these services. In-flight glance or cinder transfers are SIGKILLed after 10 s
-  ([R24](08-operational-risk-matrix.md#1-matrix)). The tags that [03
+- **VM impact:** these services restart none of the containers that [03
+  §3.1](03-ansible-roles-and-tags-mapping.md#31-per-tag-answers-files-vms-apis-networkingstorage-safety-prerequisites)
+  traces to running VMs [CODE]; any other effect on VMs is [NOT AVAILABLE]. In-flight glance or cinder transfers are
+  SIGKILLed after 10 s ([R24](08-operational-risk-matrix.md#1-matrix)). The tags that [03
   §3.1](03-ansible-roles-and-tags-mapping.md#31-per-tag-answers-files-vms-apis-networkingstorage-safety-prerequisites)
   marks as affecting running VMs are `nova`, `nova-cell`, `neutron`, `openvswitch` and `baremetal` (run by
   `bootstrap-servers`, not `reconfigure`; Docker restart, [R14](08-operational-risk-matrix.md#1-matrix)); for `ovn` and
-  `iscsi` it is [NOT AVAILABLE]. Running on computes is not the test: `chrony` runs on every compute and has no VM
-  impact.
+  `iscsi` it is [NOT AVAILABLE]. Running on computes is not the test: `chrony` runs on every compute but restarts none
+  of those containers.
 - **Risks:** [R8](08-operational-risk-matrix.md#1-matrix) (HAProxy restart),
   [R19](08-operational-risk-matrix.md#1-matrix) (Keystone), [R20](08-operational-risk-matrix.md#1-matrix) (glance file
   backend), [R23](08-operational-risk-matrix.md#1-matrix) (`--limit` on a large inventory),
@@ -491,9 +496,10 @@ task files:
   the Neutron DB and DB-user tasks (`mysql_db`, `mysql_user` run through `kolla_toolbox`) on `control01`.
 - **Caveats:**
   - Existing hosts' `/etc/hosts` is not updated (`bootstrap-servers --limit`).
-  - With `libvirt_tls: true` (hostname-based migration), the other computes cannot resolve the new host until a
+  - With `libvirt_tls: true` (hostname-based migration), the other computes' `/etc/hosts` lacks the new host until a
     full `bootstrap-servers` run, which carries its own Docker-restart risk
-    ([R14](08-operational-risk-matrix.md#1-matrix)).
+    ([R14](08-operational-risk-matrix.md#1-matrix)). [NOT AVAILABLE] Whether live migration to it fails meanwhile
+    ([fact sheet E §3](../annex/factsheets/E-host-bootstrap-ops-playbooks.md#3-etchosts-generation)).
 
 ---
 
