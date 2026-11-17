@@ -1,2 +1,0 @@
-- name: Restart svcb container
-  debug: msg="svcb handler"

@@ -1,2 +1,0 @@
-- name: COMMON task inside included file (fluentd/cron/toolbox config)
-  debug: msg="common work done on {{ inventory_hostname }}"

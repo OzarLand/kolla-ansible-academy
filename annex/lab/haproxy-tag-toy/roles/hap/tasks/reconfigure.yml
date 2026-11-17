@@ -1,3 +1,0 @@
-- debug: msg="HAP keepalived.conf changed"
-  changed_when: true
-  notify: Restart keepalived container

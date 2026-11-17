@@ -1,6 +1,0 @@
-- name: "Configure haproxy for svca"
-  import_role:
-    name: cfg
-  vars:
-    project_name: svca
-  tags: always

@@ -1,8 +1,0 @@
-- hosts: h1
-  gather_facts: false
-  vars:
-    project_name: ovs
-    ovsdpdk_services: {a: 1}
-  tasks:
-    - debug: msg="{{ item }}"
-      with_dict: "{{ lookup('vars', (kolla_role_name | default(project_name)) + '_services') }}"
