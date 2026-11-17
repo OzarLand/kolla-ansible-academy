@@ -1,0 +1,26 @@
+after 15 s: status restarting; restarts 7; last exit code 1
+neutron-netns-cleanup runs: 7
+neutron-l3-agent starts: 0
+# kolla_start 'Running command' lines (one per container start):
+2026-11-17T13:14:03.863176538Z Running command: '/usr/local/bin/neutron-l3-agent-wrapper.sh'
+2026-11-17T13:14:04.348288233Z Running command: '/usr/local/bin/neutron-l3-agent-wrapper.sh'
+2026-11-17T13:14:04.926638796Z Running command: '/usr/local/bin/neutron-l3-agent-wrapper.sh'
+2026-11-17T13:14:05.710288216Z Running command: '/usr/local/bin/neutron-l3-agent-wrapper.sh'
+2026-11-17T13:14:06.894492827Z Running command: '/usr/local/bin/neutron-l3-agent-wrapper.sh'
+2026-11-17T13:14:08.877275918Z Running command: '/usr/local/bin/neutron-l3-agent-wrapper.sh'
+2026-11-17T13:14:12.478152109Z Running command: '/usr/local/bin/neutron-l3-agent-wrapper.sh'
+# stand-in neutron-netns-cleanup log:
+1794921243.881312 neutron-netns-cleanup[18] start pid=18 ppid=7 pgid=1 sid=1 uid=42435 cg=/docker/70e1632d0dafeb92d86354535f77da572e45fdd50faec99938007e9baf8323eb argv=--config-file /etc/neutron/neutron.conf --config-file /etc/neutron/l3_agent.ini --config-file /etc/neutron/fwaas_driver.ini --force --agent-type l3
+1794921244.081947 neutron-netns-cleanup[18] cleanup done, exit 1
+1794921244.363529 neutron-netns-cleanup[17] start pid=17 ppid=7 pgid=1 sid=1 uid=42435 cg=/docker/70e1632d0dafeb92d86354535f77da572e45fdd50faec99938007e9baf8323eb argv=--config-file /etc/neutron/neutron.conf --config-file /etc/neutron/l3_agent.ini --config-file /etc/neutron/fwaas_driver.ini --force --agent-type l3
+1794921244.564240 neutron-netns-cleanup[17] cleanup done, exit 1
+1794921244.943783 neutron-netns-cleanup[17] start pid=17 ppid=7 pgid=1 sid=1 uid=42435 cg=/docker/70e1632d0dafeb92d86354535f77da572e45fdd50faec99938007e9baf8323eb argv=--config-file /etc/neutron/neutron.conf --config-file /etc/neutron/l3_agent.ini --config-file /etc/neutron/fwaas_driver.ini --force --agent-type l3
+1794921245.144881 neutron-netns-cleanup[17] cleanup done, exit 1
+1794921245.732327 neutron-netns-cleanup[17] start pid=17 ppid=7 pgid=1 sid=1 uid=42435 cg=/docker/70e1632d0dafeb92d86354535f77da572e45fdd50faec99938007e9baf8323eb argv=--config-file /etc/neutron/neutron.conf --config-file /etc/neutron/l3_agent.ini --config-file /etc/neutron/fwaas_driver.ini --force --agent-type l3
+1794921245.933326 neutron-netns-cleanup[17] cleanup done, exit 1
+1794921246.910511 neutron-netns-cleanup[17] start pid=17 ppid=7 pgid=1 sid=1 uid=42435 cg=/docker/70e1632d0dafeb92d86354535f77da572e45fdd50faec99938007e9baf8323eb argv=--config-file /etc/neutron/neutron.conf --config-file /etc/neutron/l3_agent.ini --config-file /etc/neutron/fwaas_driver.ini --force --agent-type l3
+1794921247.111542 neutron-netns-cleanup[17] cleanup done, exit 1
+1794921248.895299 neutron-netns-cleanup[17] start pid=17 ppid=7 pgid=1 sid=1 uid=42435 cg=/docker/70e1632d0dafeb92d86354535f77da572e45fdd50faec99938007e9baf8323eb argv=--config-file /etc/neutron/neutron.conf --config-file /etc/neutron/l3_agent.ini --config-file /etc/neutron/fwaas_driver.ini --force --agent-type l3
+1794921249.096427 neutron-netns-cleanup[17] cleanup done, exit 1
+1794921252.502338 neutron-netns-cleanup[17] start pid=17 ppid=7 pgid=1 sid=1 uid=42435 cg=/docker/70e1632d0dafeb92d86354535f77da572e45fdd50faec99938007e9baf8323eb argv=--config-file /etc/neutron/neutron.conf --config-file /etc/neutron/l3_agent.ini --config-file /etc/neutron/fwaas_driver.ini --force --agent-type l3
+1794921252.703596 neutron-netns-cleanup[17] cleanup done, exit 1

@@ -1,0 +1,13 @@
+PLAY [localhost] ***************************************************************
+TASK [Gathering Facts] *********************************************************
+Tuesday 17 November 2026  13:15:43 +0000 (0:00:00.044)       0:00:00.044 ****** 
+ok: [localhost]
+TASK [e3 hypothetical swift-rsyncd restart handler] ****************************
+Tuesday 17 November 2026  13:15:43 +0000 (0:00:00.571)       0:00:00.616 ****** 
+changed: [localhost]
+PLAY RECAP *********************************************************************
+localhost                  : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+Tuesday 17 November 2026  13:15:45 +0000 (0:00:01.401)       0:00:02.017 ****** 
+=============================================================================== 
+e3 hypothetical swift-rsyncd restart handler ---------------------------- 1.40s
+Gathering Facts --------------------------------------------------------- 0.57s

@@ -1,0 +1,14 @@
+nova-compute/base.json             template, Ussuri defaults + custom policy.yaml (nova_policy_file)
+nova-compute/nosasl.json           template, libvirt_enable_sasl: false (auth.conf entry dropped)
+nova-compute/nopolicy.json         template, nova_policy_file undefined (policy entry dropped)
+nova-compute/nosasl-nopolicy.json  template, both entries dropped
+nova-compute/perm.json             edit: nova.conf entry perm 0600 -> 0640
+nova-compute/owner.json            edit: nova.conf entry owner nova -> root:nova (shape of the libvirt_tls entries)
+nova-compute/cmd.json              edit: command "nova-compute" -> "nova-compute --e2-marker=command-v2"
+nova-compute/permsonly.json        edit: permissions /var/lib/nova owner nova:nova -> nova:kolla
+nova-compute/preserve.json         edit: + prometheus-style extras/* entry (preserve_properties, optional, no owner/perm)
+nova-compute/dir.json              edit: + haproxy services.d-style directory entry e2.d/ -> /etc/nova/e2.d (nova, 0700)
+nova-compute/invalid.json          edit: base with its closing brace removed (invalid JSON)
+memcached/v1.json                  template, port 18211, max_memory 64
+memcached/v2.json                  template, port 18212, max_memory 128
+heat-api/config.json               template, ubuntu, no TLS backend, no custom policy

@@ -1,0 +1,48 @@
+[
+ {
+  "task": "Running Heat bootstrap container",
+  "status": "failed",
+  "result": {
+   "changed": true,
+   "msg": "Container exited with non-zero return code 1",
+   "rc": 1,
+   "stdout": "heat-manage stand-in: 'db_sync' -> pretend success\nopenstack stand-in: created domain heat_user_domain\n",
+   "stderr": "+ sudo -E kolla_set_configs\nINFO:__main__:Loading config file at /var/lib/kolla/config_files/config.json\nINFO:__main__:Validating config file\nINFO:__main__:Kolla config strategy set to: COPY_ALWAYS\nINFO:__main__:Copying service configuration files\nINFO:__main__:Copying /var/lib/kolla/config_files/heat.conf to /etc/heat/heat.conf\nINFO:__main__:Setting permission for /etc/heat/heat.conf\nINFO:__main__:Copying /var/lib/kolla/config_files/wsgi-heat-api.conf to /etc/apache2/conf-enabled/wsgi-heat-api.conf\nINFO:__main__:Setting permission for /etc/apache2/conf-enabled/wsgi-heat-api.conf\nINFO:__main__:Writing out command to execute\n++ cat /run_command\n+ CMD='/usr/sbin/apache2 -DFOREGROUND'\n+ ARGS=\n+ sudo kolla_copy_cacerts\n+ [[ ! -n '' ]]\n+ . kolla_extend_start\n++ [[ ! -d /var/log/kolla/heat ]]\n++ mkdir -p /var/log/kolla/heat\n+++ stat -c %a /var/log/kolla/heat\n++ [[ 2755 != \\7\\5\\5 ]]\n++ chmod 755 /var/log/kolla/heat\n++ . /usr/local/bin/kolla_heat_extend_start\n+++ [[ -n 0 ]]\n+++ heat-manage db_sync\n++++ openstack domain list -f value -c Name\n+++ EXISTING_DOMAINS=\n+++ grep '^heat_user_domain$'\n+++ echo ''\n+++ openstack domain create heat_user_domain\n+++ openstack user create --domain heat_user_domain heat_domain_admin --password e3-FAKE-heat-domain-admin-pw\nInternal Server Error (HTTP 500) (Request-ID: req-e3-standin)\n",
+   "module_args(effective)": {
+    "action": "start_container",
+    "name": "e3_bootstrap_heat",
+    "image": "e3-heat-api:ussuri",
+    "graceful_timeout": 10,
+    "client_timeout": 120,
+    "restart_policy": "no",
+    "restart_retries": 10,
+    "detach": false,
+    "remove_on_exit": true,
+    "labels": {
+     "BOOTSTRAP": null
+    },
+    "environment": {
+     "KOLLA_CONFIG_STRATEGY": "COPY_ALWAYS",
+     "KOLLA_BOOTSTRAP": null,
+     "OS_AUTH_URL": "http://127.0.0.1:18335",
+     "OS_IDENTITY_API_VERSION": "3",
+     "OS_INTERFACE": "internal",
+     "OS_USERNAME": "admin",
+     "OS_PASSWORD": "e3-FAKE-keystone-admin-pw",
+     "OS_PROJECT_NAME": "admin",
+     "OS_REGION_NAME": "RegionOne",
+     "OS_CACERT": "",
+     "HEAT_DOMAIN_ADMIN_PASSWORD": "e3-FAKE-heat-domain-admin-pw",
+     "KOLLA_SERVICE_NAME": "e3-bootstrap-heat"
+    },
+    "volumes": [
+     "/home/user/kolla-ansible-day2/annex/lab/realdocker/e3-kolla-docker/work/etc-kolla/heat-api/:/var/lib/kolla/config_files/:ro",
+     "/etc/localtime:/etc/localtime:ro",
+     "/etc/timezone:/etc/timezone:ro",
+     "e3_kolla_logs:/var/log/kolla/"
+    ],
+    "api_version": "auto"
+   }
+  }
+ }
+]

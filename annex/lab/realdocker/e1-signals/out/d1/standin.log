@@ -1,0 +1,4 @@
+1794921263.715661467 ovsdb-tool[18] stub called: create /var/lib/openvswitch/conf.db
+1794921263.726144576 ovsdb-tool[23] stub called: needs-conversion /var/lib/openvswitch/conf.db
+1794921263.742386 ovsdb-server[26] start pid=26 ppid=7 pgid=1 sid=1 uid=0 cg=/docker/6287e11a8d168bc62ebe40e804e77aa357adb7837f7dc43c03d5b23f0d42fdcd argv=/var/lib/openvswitch/conf.db -vconsole:emer -vsyslog:err -vfile:info --remote=punix:/run/openvswitch/db.sock --remote=ptcp:18120:127.0.0.1 --remote=db:Open_vSwitch,Open_vSwitch,manager_options --log-file=/var/log/kolla/openvswitch/ovsdb-server.log --pidfile
+1794921263.742426 ovsdb-server[26] ready

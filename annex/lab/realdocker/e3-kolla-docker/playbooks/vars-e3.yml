@@ -1,0 +1,43 @@
+---
+# e3 overrides. Loaded by every play AFTER the real kolla-ansible group_vars/all.yml and role defaults, so
+# docker_common_options, config_strategy (COPY_ALWAYS), docker_graceful_timeout (60), docker_client_timeout (120),
+# docker_restart_policy (unless-stopped) and the rabbitmq_services / heat_services dicts are the real ones.
+# Only names (isolation prefix e3), host paths, images and fake secrets are changed here.
+
+node_config_directory: "{{ e3_work }}/etc-kolla"   # real default /etc/kolla (group_vars/all.yml:16)
+docker_registry_password:                          # as in etc/kolla/passwords.yml:23 (empty)
+
+# rabbitmq role (roles/rabbitmq/defaults/main.yml): container and volume are named after project_name
+# project_name and the role_rabbitmq_* values are role parameters in site.yml:541-553 ('Apply role rabbitmq')
+project_name: e3_rabbitmq
+role_rabbitmq_groups: rabbitmq
+role_rabbitmq_cluster_cookie: "{{ e3_cookie | default('e3-FAKE-cookie-A') }}"
+rabbitmq_image_full: "e3-rabbitmq:ussuri"
+rabbitmq_default_volumes:                          # roles/rabbitmq/defaults/main.yml:57-62, kolla_logs -> e3_kolla_logs
+  - "{{ node_config_directory }}/{{ project_name }}/:{{ container_config_directory }}/:ro"
+  - "/etc/localtime:/etc/localtime:ro"
+  - "{{ '/etc/timezone:/etc/timezone:ro' if ansible_facts.os_family == 'Debian' else '' }}"
+  - "{{ project_name }}:/var/lib/rabbitmq/"
+  - "e3_kolla_logs:/var/log/kolla/"
+
+# heat role (roles/heat/defaults/main.yml:85-90, dev-mode line evaluates to '' by default, kolla_logs -> e3_kolla_logs)
+heat_api_image_full: "e3-heat-api:ussuri"
+heat_api_default_volumes:
+  - "{{ node_config_directory }}/heat-api/:{{ container_config_directory }}/:ro"
+  - "/etc/localtime:/etc/localtime:ro"
+  - "{{ '/etc/timezone:/etc/timezone:ro' if ansible_facts.os_family == 'Debian' else '' }}"
+  - ""
+  - "e3_kolla_logs:/var/log/kolla/"
+openstack_auth:                                    # fake; nothing listens there
+  auth_url: "http://127.0.0.1:18335"
+  username: "admin"
+  password: "e3-FAKE-keystone-admin-pw"
+  project_name: "admin"
+  domain_name: "default"
+  user_domain_name: "default"
+heat_domain_admin_password: "e3-FAKE-heat-domain-admin-pw"
+
+# swift role (roles/swift/defaults/main.yml)
+swift_rsyncd_image_full: "e3-swift-rsyncd:ussuri"
+swift_devices_mount_point: "/srv/node"
+e3_swift_devices_host_dir: "{{ e3_work }}/srv-node"   # host side of the /srv/node bind (a shared bind mount)

@@ -1,0 +1,15 @@
+# /usr/bin/mysqld_safe of mariadb-server-10.1 1:10.1.48-0ubuntu0.18.04.1 (bionic), all 'trap' lines:
+927:trap '/usr/bin/mysqladmin --defaults-extra-file=/etc/mysql/debian.cnf refresh & wait' 1 # HUP
+928:trap '/usr/bin/mysqladmin --defaults-extra-file=/etc/mysql/debian.cnf shutdown' 2 3 15 # INT QUIT and TERM
+# e1-mariadb-upstreamtrap:ussuri (f3, f4): the same file after the e1 edit:
+927:trap '' 1 2 3 15  # e1 edit: the signal handling of upstream MariaDB scripts/mysqld_safe.sh:41
+# how mysqld is started (bionic mysqld_safe): eval_log_error, logging=file
+eval_log_error () {
+  local cmd="$1"
+  case $logging in
+    file) cmd="$cmd 2>&1 | "`shell_quote_string "$helper"`" $user log "`shell_quote_string "$err_log"` ;;
+    syslog)
+  else
+    #echo "Running mysqld: [$cmd]"
+    eval "$cmd"
+  fi

@@ -1,0 +1,1 @@
+docker run ... -v e1-openvswitch_db:/var/lib/openvswitch/ -v /home/user/kolla-ansible-day2/annex/lab/realdocker/e1-signals/work/d1/run-openvswitch:/run/openvswitch e1-ovsdb:ussuri

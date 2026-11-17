@@ -1,0 +1,35 @@
+[
+ {
+  "task": "Stopping rabbitmq containers",
+  "status": "ok",
+  "result": {
+   "changed": true,
+   "msg": "All items completed",
+   "results": [
+    {
+     "item": "rabbitmq",
+     "changed": true,
+     "failed": false,
+     "result": false,
+     "module_args(effective)": {
+      "action": "stop_container",
+      "name": "e3_rabbitmq",
+      "image": null,
+      "graceful_timeout": 10,
+      "client_timeout": 120,
+      "restart_policy": "unless-stopped",
+      "restart_retries": 10,
+      "detach": true,
+      "remove_on_exit": true,
+      "labels": {},
+      "environment": {
+       "KOLLA_CONFIG_STRATEGY": "COPY_ALWAYS"
+      },
+      "volumes": null,
+      "api_version": "auto"
+     }
+    }
+   ]
+  }
+ }
+]

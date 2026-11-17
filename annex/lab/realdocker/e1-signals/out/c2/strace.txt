@@ -1,0 +1,22 @@
+# strace -ttt -T -f (host pids; see tree.txt), t0=1794921242.267946672 t1=1794921242.418895402
+30013 1794921240.701024 wait4(-1,  <unfinished ...>
+30001 1794921240.701052 rt_sigtimedwait(~[RTMIN RT_1],  <unfinished ...>
+30001 1794921242.326672 <... rt_sigtimedwait resumed>{si_signo=SIGTERM, si_code=SI_USER, si_pid=0, si_uid=0}, NULL, 8) = 15 (SIGTERM) <1.625606>
+30001 1794921242.326858 kill(7 /* 30013 in strace's PID NS */, SIGTERM) = 0 <0.000076>
+30013 1794921242.330514 <... wait4 resumed>0x7ffc0d93ede0, 0, NULL) = ? ERESTARTSYS (To be restarted if SA_RESTART is set) <1.629482>
+30001 1794921242.330538 rt_sigtimedwait(~[RTMIN RT_1],  <unfinished ...>
+30013 1794921242.330612 --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=1 /* 30001 in strace's PID NS */, si_uid=42435} ---
+30013 1794921242.331066 +++ killed by SIGTERM +++
+30001 1794921242.331164 <... rt_sigtimedwait resumed>{si_signo=SIGCHLD, si_code=CLD_KILLED, si_pid=7 /* 30013 in strace's PID NS */, si_uid=42435, si_status=SIGTERM, si_utime=0, si_stime=0}, NULL, 8) = 17 (SIGCHLD) <0.000614>
+30001 1794921242.331232 wait4(-1, [{WIFSIGNALED(s) && WTERMSIG(s) == SIGTERM}], WNOHANG, NULL) = 7 <0.000059>
+30001 1794921242.334601 kill(7, SIGTERM) = -1 ESRCH (No such process) <0.000105>
+30001 1794921242.337295 exit_group(143) = ?
+30049 1794921242.337528 <... rt_sigtimedwait resumed> <unfinished ...>) = ?
+30047 1794921242.337572 <... rt_sigtimedwait resumed> <unfinished ...>) = ?
+30045 1794921242.337591 <... rt_sigtimedwait resumed> <unfinished ...>) = ?
+30044 1794921242.337609 <... rt_sigtimedwait resumed> <unfinished ...>) = ?
+30049 1794921242.338219 +++ killed by SIGKILL +++
+30047 1794921242.338228 +++ killed by SIGKILL +++
+30045 1794921242.338231 +++ killed by SIGKILL +++
+30044 1794921242.338693 +++ killed by SIGKILL +++
+30001 1794921242.338732 +++ exited with 143 +++

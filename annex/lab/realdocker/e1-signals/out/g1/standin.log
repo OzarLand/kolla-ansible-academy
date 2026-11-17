@@ -1,0 +1,12 @@
+1794921481.669896 e1-sigsvc[11749] start pid=11749 ppid=11736 pgid=11736 sid=11736 uid=0 cg=/docker/86cbb9460a12e102fc276406a0655a434a24cba375a99b9719417ef5bf0534dd argv=
+1794921481.670200 e1-sigsvc[11749] spawned e1-worker (child)
+1794921481.671128 e1-sigsvc[11749] spawned e1-daemon (daemon)
+1794921481.671200 e1-sigsvc[11749] ready
+1794921481.671645 e1-sigsvc[11749] signal SIGCHLD from pid=11765 uid=0 code=CLD_EXITED
+1794921481.690260 e1-daemon[11766] start pid=11766 ppid=11710 pgid=11765 sid=11765 uid=0 cg=/docker/86cbb9460a12e102fc276406a0655a434a24cba375a99b9719417ef5bf0534dd argv=--child --mode daemon --tag e1-g1
+1794921481.690288 e1-daemon[11766] ready
+1794921481.691876 e1-worker[11764] start pid=11764 ppid=11749 pgid=11736 sid=11736 uid=0 cg=/docker/86cbb9460a12e102fc276406a0655a434a24cba375a99b9719417ef5bf0534dd argv=--child --mode child --tag e1-g1
+1794921481.691913 e1-worker[11764] ready
+1794921484.542021 e1-sigsvc[11749] signal SIGTERM from pid=11736 uid=0 code=SI_USER
+1794921484.542057 e1-sigsvc[11749] graceful shutdown, exit 0 in 0.5 s
+1794921485.042867 e1-sigsvc[11749] exit 0

@@ -1,0 +1,19 @@
+PLAY [localhost] ***************************************************************
+TASK [Gathering Facts] *********************************************************
+Tuesday 17 November 2026  13:15:03 +0000 (0:00:00.050)       0:00:00.050 ****** 
+ok: [localhost]
+TASK [Check rabbitmq containers] ***********************************************
+Tuesday 17 November 2026  13:15:04 +0000 (0:00:00.598)       0:00:00.649 ****** 
+changed: [localhost] => (item={'key': 'rabbitmq', 'value': {'container_name': 'e3_rabbitmq', 'group': 'rabbitmq', 'enabled': True, 'image': 'e3-rabbitmq:ussuri', 'bootstrap_environment': {'KOLLA_BOOTSTRAP': None, 'KOLLA_CONFIG_STRATEGY': 'COPY_ALWAYS', 'RABBITMQ_CLUSTER_COOKIE': 'e3-FAKE-cookie-A', 'RABBITMQ_LOG_DIR': '/var/log/kolla/e3_rabbitmq'}, 'environment': {'KOLLA_CONFIG_STRATEGY': 'COPY_ALWAYS', 'RABBITMQ_CLUSTER_COOKIE': 'e3-FAKE-cookie-A', 'RABBITMQ_LOG_DIR': '/var/log/kolla/e3_rabbitmq'}, 'volumes': ['/home/user/kolla-ansible-day2/annex/lab/realdocker/e3-kolla-docker/work/etc-kolla/e3_rabbitmq/:/var/lib/kolla/config_files/:ro', '/etc/localtime:/etc/localtime:ro', '/etc/timezone:/etc/timezone:ro', 'e3_rabbitmq:/var/lib/rabbitmq/', 'e3_kolla_logs:/var/log/kolla/'], 'dimensions': {}, 'haproxy': {'rabbitmq_management': {'enabled': 'yes', 'mode': 'http', 'port': '15672', 'host_group': 'rabbitmq'}, 'rabbitmq_outward_management': {'enabled': False, 'mode': 'http', 'port': '15674', 'host_group': 'outward-rabbitmq'}, 'rabbitmq_outward_external': {'enabled': False, 'mode': 'tcp', 'external': True, 'port': '5674', 'host_group': 'outward-rabbitmq', 'frontend_tcp_extra': ['timeout client 1h'], 'backend_tcp_extra': ['timeout server 1h']}}}})
+RUNNING HANDLER [Restart rabbitmq container] ***********************************
+Tuesday 17 November 2026  13:15:05 +0000 (0:00:00.949)       0:00:01.599 ****** 
+ok: [localhost] => {
+    "msg": "e3: handler notified (not executed in this step)"
+}
+PLAY RECAP *********************************************************************
+localhost                  : ok=3    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+Tuesday 17 November 2026  13:15:05 +0000 (0:00:00.021)       0:00:01.621 ****** 
+=============================================================================== 
+Check rabbitmq containers ----------------------------------------------- 0.95s
+Gathering Facts --------------------------------------------------------- 0.60s
+Restart rabbitmq container ---------------------------------------------- 0.02s

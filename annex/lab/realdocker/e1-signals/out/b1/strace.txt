@@ -1,0 +1,15 @@
+# strace -ttt -T -f (host pids; see tree.txt), t0=1794921222.297653157 t1=1794921232.492057957
+28569 1794921220.736027 rt_sigtimedwait(~[RTMIN RT_1],  <unfinished ...>
+28569 1794921222.358367 <... rt_sigtimedwait resumed>{si_signo=SIGTERM, si_code=SI_USER, si_pid=0, si_uid=0}, NULL, 8) = 15 (SIGTERM) <1.622308>
+28569 1794921222.358833 kill(7 /* 28580 in strace's PID NS */, SIGTERM <unfinished ...>
+28580 1794921222.362065 <... rt_sigtimedwait resumed>{si_signo=SIGTERM, si_code=SI_USER, si_pid=1 /* 28569 in strace's PID NS */, si_uid=0}, {tv_sec=0, tv_nsec=200000000}, 8) = 15 (SIGTERM) <0.122253>
+28569 1794921222.362123 <... kill resumed>) = 0 <0.000109>
+28569 1794921222.362268 rt_sigtimedwait(~[RTMIN RT_1],  <unfinished ...>
+28569 1794921232.409063 <... rt_sigtimedwait resumed> <unfinished ...>) = ?
+28596 1794921232.409396 <... rt_sigtimedwait resumed> <unfinished ...>) = ?
+28580 1794921232.409480 <... rt_sigtimedwait resumed> <unfinished ...>) = ?
+28598 1794921232.409521 <... rt_sigtimedwait resumed> <unfinished ...>) = ?
+28598 1794921232.410102 +++ killed by SIGKILL +++
+28580 1794921232.410152 +++ killed by SIGKILL +++
+28596 1794921232.410545 +++ killed by SIGKILL +++
+28569 1794921232.410580 +++ killed by SIGKILL +++

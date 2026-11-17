@@ -1,0 +1,11 @@
+HOSTPID  NSPID   HPPID NSPPID NSPGID  NSSID    UID S CG  DEVICES-CGROUP         CMD
+  31302      1   31276      0      1      1  42435 S ctr /docker/a834649730fad7 dumb-init --single-child -- kolla_start
+  31314      7   31302      1      1      1  42435 S ctr /docker/a834649730fad7 /bin/bash /usr/local/bin/neutron-l3-agent-wrapper.sh
+  31329     18   31314      7      1      1  42435 S ctr /docker/a834649730fad7 /usr/bin/python3 /usr/local/bin/neutron-netns-cleanup --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/l3_agent.ini --config-file /e
+
+# docker exec e1-c4 ps -eo pid,ppid,pgid,sid,user,args  (container view; the ps line is the exec)
+    PID    PPID    PGID     SID USER     COMMAND
+      1       0       1       1 neutron  dumb-init --single-child -- kolla_start
+      7       1       1       1 neutron  /bin/bash /usr/local/bin/neutron-l3-agent-wrapper.sh
+     18       7       1       1 neutron  /usr/bin/python3 /usr/local/bin/neutron-netns-cleanup --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/l3_agent.ini --config-file /etc/neutron/fwaas_driver.ini --force --agent-type l3
+     19       0      19      19 neutron  ps -eo pid,ppid,pgid,sid,user,args

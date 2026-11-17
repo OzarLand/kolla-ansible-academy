@@ -1,0 +1,5 @@
+HOSTPID  NSPID   HPPID NSPPID NSPGID  NSSID    UID S CG  DEVICES-CGROUP         CMD
+  12144  12144   12119      0  12144  12144      0 S ctr /docker/f84c2f616c95e2 dumb-init --single-child -- kolla_start
+  12157  12157   12144  12144  12144  12144      0 S ctr /docker/f84c2f616c95e2 /usr/bin/python3 /usr/local/bin/e1-sigsvc
+  12173  12173   12157  12157  12144  12144      0 S ctr /docker/f84c2f616c95e2 /usr/bin/python3 /usr/local/bin/e1-worker --child --mode child --tag e1-g6
+  12175  12175   12119      0  12174  12174      0 S ctr /docker/f84c2f616c95e2 /usr/bin/python3 /usr/local/bin/e1-daemon --child --mode daemon --tag e1-g6

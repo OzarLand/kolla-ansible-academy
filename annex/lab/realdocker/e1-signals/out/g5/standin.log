@@ -1,0 +1,23 @@
+1794921542.913581 e1-sigsvc[13066] start pid=13066 ppid=13053 pgid=13053 sid=13053 uid=0 cg=/docker/dee8caba92f15c78db25a7220e399384e94a6c485f3fd47de035433143614161 argv=
+1794921542.914005 e1-sigsvc[13066] spawned e1-worker (child)
+1794921542.915169 e1-sigsvc[13066] spawned e1-qemu (escape)
+1794921542.915242 e1-sigsvc[13066] ready
+1794921542.915553 e1-sigsvc[13066] signal SIGCHLD from pid=13083 uid=0 code=CLD_EXITED
+1794921542.929937 e1-worker[13082] start pid=13082 ppid=13066 pgid=13053 sid=13053 uid=0 cg=/docker/dee8caba92f15c78db25a7220e399384e94a6c485f3fd47de035433143614161 argv=--child --mode child --tag e1-g5
+1794921542.929962 e1-worker[13082] ready
+1794921542.933893 e1-qemu[13084] start pid=13084 ppid=13028 pgid=13083 sid=13083 uid=0 cg=/docker/dee8caba92f15c78db25a7220e399384e94a6c485f3fd47de035433143614161 argv=--child --mode escape --tag e1-g5 --escape
+1794921542.948925 e1-qemu[13084] moved to /sys/fs/cgroup/blkio/e1-escape
+1794921542.949072 e1-qemu[13084] moved to /sys/fs/cgroup/cpu/e1-escape
+1794921542.949116 e1-qemu[13084] moved to /sys/fs/cgroup/cpuacct/e1-escape
+1794921542.949150 e1-qemu[13084] moved to /sys/fs/cgroup/cpuset/e1-escape
+1794921542.949182 e1-qemu[13084] moved to /sys/fs/cgroup/devices/e1-escape
+1794921542.949214 e1-qemu[13084] moved to /sys/fs/cgroup/freezer/e1-escape
+1794921542.949246 e1-qemu[13084] moved to /sys/fs/cgroup/memory/e1-escape
+1794921542.949280 e1-qemu[13084] moved to /sys/fs/cgroup/pids/e1-escape
+1794921542.949311 e1-qemu[13084] moved to /sys/fs/cgroup/systemd/e1-escape
+1794921542.949362 e1-qemu[13084] moved to /sys/fs/cgroup/unified/e1-escape
+1794921542.949416 e1-qemu[13084] now pid=13084 ppid=13028 pgid=13083 sid=13083 uid=0 cg=/e1-escape
+1794921542.949422 e1-qemu[13084] ready
+1794921544.160951 e1-sigsvc[13066] signal SIGTERM from pid=13053 uid=0 code=SI_USER
+1794921544.160974 e1-sigsvc[13066] graceful shutdown, exit 0 in 0.5 s
+1794921544.661571 e1-sigsvc[13066] exit 0

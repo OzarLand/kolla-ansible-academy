@@ -1,0 +1,2 @@
+# docker ps -a --filter name=e3_bootstrap_heat (after the failed task):
+# end

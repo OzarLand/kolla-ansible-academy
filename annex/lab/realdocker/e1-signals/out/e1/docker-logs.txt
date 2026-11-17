@@ -1,0 +1,29 @@
+2026-11-17T13:14:33.027641728Z + sudo -E kolla_set_configs
+2026-11-17T13:14:33.064040715Z INFO:__main__:Loading config file at /var/lib/kolla/config_files/config.json
+2026-11-17T13:14:33.064057279Z INFO:__main__:Validating config file
+2026-11-17T13:14:33.064070944Z INFO:__main__:Kolla config strategy set to: COPY_ALWAYS
+2026-11-17T13:14:33.064074950Z INFO:__main__:Copying service configuration files
+2026-11-17T13:14:33.064211837Z INFO:__main__:Copying /var/lib/kolla/config_files/haproxy_run.sh to /etc/haproxy/haproxy_run.sh
+2026-11-17T13:14:33.064821996Z INFO:__main__:Setting permission for /etc/haproxy/haproxy_run.sh
+2026-11-17T13:14:33.064969682Z INFO:__main__:Deleting /etc/haproxy/haproxy.cfg
+2026-11-17T13:14:33.065098971Z INFO:__main__:Copying /var/lib/kolla/config_files/haproxy.cfg to /etc/haproxy/haproxy.cfg
+2026-11-17T13:14:33.065283182Z INFO:__main__:Setting permission for /etc/haproxy/haproxy.cfg
+2026-11-17T13:14:33.065327816Z INFO:__main__:Creating directory /etc/haproxy/services.d
+2026-11-17T13:14:33.065464532Z INFO:__main__:Setting permission for /etc/haproxy/services.d
+2026-11-17T13:14:33.065522650Z INFO:__main__:Copying /var/lib/kolla/config_files/services.d/e1_web.cfg to /etc/haproxy/services.d/e1_web.cfg
+2026-11-17T13:14:33.065691836Z INFO:__main__:Setting permission for /etc/haproxy/services.d/e1_web.cfg
+2026-11-17T13:14:33.065833403Z INFO:__main__:Writing out command to execute
+2026-11-17T13:14:33.071116717Z ++ cat /run_command
+2026-11-17T13:14:33.071929846Z + CMD=/etc/haproxy/haproxy_run.sh
+2026-11-17T13:14:33.071940208Z + ARGS=
+2026-11-17T13:14:33.072009748Z + sudo kolla_copy_cacerts
+2026-11-17T13:14:33.078440941Z + [[ ! -n '' ]]
+2026-11-17T13:14:33.078453497Z + . kolla_extend_start
+2026-11-17T13:14:33.078455640Z + echo 'Running command: '\''/etc/haproxy/haproxy_run.sh'\'''
+2026-11-17T13:14:33.078457632Z + exec /etc/haproxy/haproxy_run.sh
+2026-11-17T13:14:33.078442372Z Running command: '/etc/haproxy/haproxy_run.sh'
+2026-11-17T13:14:33.080957609Z + find /etc/haproxy/services.d/ -mindepth 1 -print0
+2026-11-17T13:14:33.080968489Z + xargs -0 -Icfg echo -f cfg
+2026-11-17T13:14:33.080970483Z + xargs /usr/sbin/haproxy -W -db -p /run/haproxy.pid -f /etc/haproxy/haproxy.cfg
+2026-11-17T13:14:33.088009381Z [WARNING] 320/131433 (17) : [/usr/sbin/haproxy.main()] Cannot raise FD limit to 80034, limit is 20000.
+2026-11-17T13:14:33.088301314Z [WARNING] 320/131433 (17) : [/usr/sbin/haproxy.main()] FD limit (20000) too low for maxconn=40000/maxsock=80034. Please raise 'ulimit-n' to 80034 or more to avoid any trouble.

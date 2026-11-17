@@ -1,0 +1,14 @@
+# time relative to the start of `docker stop` (t0); docker stop returned at +10.194 s
+  +0.061 s  dumb-init(1)                         takes SIGTERM (sigwait/sigtimedwait), si_pid=0 SI_USER
+  +0.064 s  e1-sigsvc(7)                         takes SIGTERM (sigwait/sigtimedwait), si_pid=1 SI_USER
+  +0.064 s  dumb-init(1)                         calls kill(7, SIGTERM) = 0
+ +10.112 s  e1-daemon(20)                        killed by SIGKILL
+ +10.112 s  e1-sigsvc(7)                         killed by SIGKILL
+ +10.113 s  e1-worker(18)                        killed by SIGKILL
+ +10.113 s  dumb-init(1)                         killed by SIGKILL
+
+# fate of each process of the pre-stop table
+dumb-init(1)                 signals: takes SIGTERM (sigwait/sigtimedwait) from si_pid=0         end: killed by SIGKILL at +10.113 s
+e1-sigsvc(7)                 signals: takes SIGTERM (sigwait/sigtimedwait) from si_pid=1         end: killed by SIGKILL at +10.112 s
+e1-worker(18)                signals: none                                                       end: killed by SIGKILL at +10.113 s
+e1-daemon(20)                signals: none                                                       end: killed by SIGKILL at +10.112 s

@@ -1,0 +1,17 @@
+# time relative to the start of `docker stop` (t0); docker stop returned at +0.690 s
+  +0.059 s  dumb-init(12373)                     takes SIGTERM (sigwait/sigtimedwait), si_pid=12448 SI_USER
+  +0.059 s  e1-sigsvc(12385)                     takes SIGTERM (sigwait/sigtimedwait), si_pid=12373 SI_USER
+  +0.059 s  dumb-init(12373)                     calls kill(12385, SIGTERM) = 0
+  +0.566 s  e1-sigsvc(12385)                     exit_group(0)
+  +0.570 s  e1-sigsvc(12385)                     exited with 0
+  +0.570 s  dumb-init(12373)                     reaps child pid 12385 (exit 0)
+  +0.570 s  dumb-init(12373)                     calls kill(12385, SIGTERM) = -1 ESRCH
+  +0.570 s  dumb-init(12373)                     exit_group(0)
+  +0.570 s  dumb-init(12373)                     exited with 0
+  +0.611 s  e1-worker(12404)                     killed by SIGKILL
+
+# fate of each process of the pre-stop table
+dumb-init(12373)             signals: takes SIGTERM (sigwait/sigtimedwait) from si_pid=12448     end: exited with 0 at +0.570 s
+e1-sigsvc(12385)             signals: takes SIGTERM (sigwait/sigtimedwait) from si_pid=12373     end: exited with 0 at +0.570 s
+e1-worker(12404)             signals: none                                                       end: killed by SIGKILL at +0.611 s
+e1-qemu(12406)               signals: none                                                       end: no end seen by strace (survived, or not traced)

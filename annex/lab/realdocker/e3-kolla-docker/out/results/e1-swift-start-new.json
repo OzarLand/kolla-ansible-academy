@@ -1,0 +1,32 @@
+[
+ {
+  "task": "Starting swift-rsyncd container",
+  "status": "ok",
+  "result": {
+   "changed": true,
+   "result": false,
+   "module_args(effective)": {
+    "action": "start_container",
+    "name": "e3_swift_rsyncd",
+    "image": "e3-swift-rsyncd:ussuri",
+    "graceful_timeout": 10,
+    "client_timeout": 120,
+    "restart_policy": "unless-stopped",
+    "restart_retries": 10,
+    "detach": true,
+    "remove_on_exit": true,
+    "labels": {},
+    "environment": {
+     "KOLLA_CONFIG_STRATEGY": "COPY_ALWAYS",
+     "KOLLA_SERVICE_NAME": "e3-swift-rsyncd"
+    },
+    "volumes": [
+     "/home/user/kolla-ansible-day2/annex/lab/realdocker/e3-kolla-docker/work/etc-kolla/swift-rsyncd/:/var/lib/kolla/config_files/:ro",
+     "/home/user/kolla-ansible-day2/annex/lab/realdocker/e3-kolla-docker/work/srv-node:/srv/node:shared",
+     "/etc/localtime:/etc/localtime:ro"
+    ],
+    "api_version": "auto"
+   }
+  }
+ }
+]

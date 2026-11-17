@@ -1,0 +1,27 @@
+---
+# 'Starting swift-rsyncd container' from roles/swift/tasks/start.yml, verbatim except the HOST side of the
+# swift_devices_mount_point bind (lab dir instead of /srv/node; container side unchanged).
+- hosts: localhost
+  gather_facts: true
+  gather_subset: [min]
+  vars_files:
+    - "{{ kolla_ansible_src }}/ansible/group_vars/all.yml"
+    - "{{ kolla_ansible_src }}/ansible/roles/rabbitmq/defaults/main.yml"
+    - "{{ kolla_ansible_src }}/ansible/roles/heat/defaults/main.yml"
+    - "{{ kolla_ansible_src }}/ansible/roles/swift/defaults/main.yml"
+    - vars-e3.yml
+  tasks:
+    - name: Starting swift-rsyncd container
+      become: true
+      kolla_docker:
+        action: "start_container"
+        common_options: "{{ docker_common_options }}"
+        image: "{{ swift_rsyncd_image_full }}"
+        name: "e3_swift_rsyncd"
+        volumes:
+          - "{{ node_config_directory }}/swift-rsyncd/:{{ container_config_directory }}/:ro"
+          - "{{ e3_swift_devices_host_dir }}:{{ swift_devices_mount_point }}:shared"
+          - "/etc/localtime:/etc/localtime:ro"
+      when: inventory_hostname in groups['swift-account-server'] or
+            inventory_hostname in groups['swift-container-server'] or
+            inventory_hostname in groups['swift-object-server']

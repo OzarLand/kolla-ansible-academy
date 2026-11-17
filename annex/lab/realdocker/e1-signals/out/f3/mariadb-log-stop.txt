@@ -1,0 +1,7 @@
+# mariadb.log written during the stop (46 lines; decisive lines kept)
+2026-11-17 13:16:51 140289465693952 [Note] /usr/sbin/mysqld: Normal shutdown
+2026-11-17 13:16:51 140289230497536 [Note] WSREP: Shifting SYNCED -> CLOSED (TO: 8436)
+2026-11-17 13:16:53 140289465693952 [Note] InnoDB: Starting shutdown...
+2026-11-17 13:16:55 140289465693952 [Note] InnoDB: Shutdown completed; log sequence number 7175998
+2026-11-17 13:16:55 140289465693952 [Note] /usr/sbin/mysqld: Shutdown complete
+261117 13:16:55 mysqld_safe mysqld from pid file /var/lib/mysql/mariadb.pid ended

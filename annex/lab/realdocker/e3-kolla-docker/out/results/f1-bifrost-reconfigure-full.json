@@ -1,0 +1,9 @@
+[
+ {
+  "task": "Ensuring the containers up",
+  "status": "failed",
+  "result": {
+   "msg": "The conditional check 'not container_state.Running' failed. The error was: error while evaluating conditional (not container_state.Running): 'dict object' has no attribute 'Running'"
+  }
+ }
+]

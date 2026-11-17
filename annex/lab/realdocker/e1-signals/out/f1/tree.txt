@@ -1,0 +1,11 @@
+HOSTPID  NSPID   HPPID NSPPID NSPGID  NSSID    UID S CG  DEVICES-CGROUP         CMD
+   2341      1    2315      0      1      1  42434 S ctr /docker/fb380b173397de dumb-init -- kolla_start
+   2353      7    2341      1      7      7  42434 S ctr /docker/fb380b173397de /bin/bash /usr/bin/mysqld_safe
+   2830    237    2353      7      7      7  42434 S ctr /docker/fb380b173397de /usr/sbin/mysqld --basedir=/usr --datadir=/var/lib/mysql/ --plugin-dir=/usr/lib/x86_64-linux-gnu/mariadb18/plugin --wsrep_provider=/usr/lib/galera/lib
+
+# docker exec e1-f1 ps -eo pid,ppid,pgid,sid,user,args  (container view; the ps line is the exec)
+    PID    PPID    PGID     SID USER     COMMAND
+      1       0       1       1 mysql    dumb-init -- kolla_start
+      7       1       7       7 mysql    /bin/bash /usr/bin/mysqld_safe
+    237       7       7       7 mysql    /usr/sbin/mysqld --basedir=/usr --datadir=/var/lib/mysql/ --plugin-dir=/usr/lib/x86_64-linux-gnu/mariadb18/plugin --wsrep_provider=/usr/lib/galera/libgalera_smm.so --wsrep_on=ON --log-error=/var/log/kolla/mariadb/mariadb.log --pid-file=/var/lib/mysql/mariadb.pid --port=18130 --wsrep_start_position=00000000-0000-0000-0000-000000000000:-1
+    288       0     288     288 mysql    ps -eo pid,ppid,pgid,sid,user,args

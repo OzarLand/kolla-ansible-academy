@@ -1,0 +1,50 @@
+# strace -ttt -T -f (host pids; see tree.txt), t0=1794921357.097447883 t1=1794921367.334607596
+6744  1794921355.535608 rt_sigtimedwait([HUP QUIT ALRM TERM TSTP],  <unfinished ...>
+6175  1794921355.535983 wait4(-1,  <unfinished ...>
+6156  1794921355.536001 rt_sigtimedwait(~[RTMIN RT_1], {si_signo=SIGTERM, si_code=SI_USER, si_pid=0, si_uid=0}, NULL, 8) = 15 (SIGTERM) <1.617171>
+6156  1794921357.153248 kill(7 /* 6175 in strace's PID NS */, SIGTERM) = 0 <0.000074>
+6175  1794921357.155930 <... wait4 resumed>0x7ffc39ea1e00, 0, NULL) = ? ERESTARTSYS (To be restarted if SA_RESTART is set) <1.619935>
+6156  1794921357.155973 rt_sigtimedwait(~[RTMIN RT_1],  <unfinished ...>
+6175  1794921357.155995 --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=1 /* 6156 in strace's PID NS */, si_uid=42434} ---
+6175  1794921357.156139 wait4(-1,  <unfinished ...>
+6156  1794921367.195939 <... rt_sigtimedwait resumed> <unfinished ...>) = ?
+6175  1794921367.196140 <... wait4 resumed> <unfinished ...>) = ?
+6712  1794921367.196350 +++ killed by SIGKILL +++
+6744  1794921367.196819 <... rt_sigtimedwait resumed> <unfinished ...>) = ?
+6736  1794921367.196932 +++ killed by SIGKILL +++
+6726  1794921367.197006 +++ killed by SIGKILL +++
+6721  1794921367.197030 +++ killed by SIGKILL +++
+6719  1794921367.197034 +++ killed by SIGKILL +++
+6725  1794921367.197036 +++ killed by SIGKILL +++
+6716  1794921367.197048 +++ killed by SIGKILL +++
+6715  1794921367.197051 +++ killed by SIGKILL +++
+6711  1794921367.197101 +++ killed by SIGKILL +++
+6709  1794921367.197104 +++ killed by SIGKILL +++
+6175  1794921367.197106 +++ killed by SIGKILL +++
+6710  1794921367.197108 +++ killed by SIGKILL +++
+6825  1794921367.197185 +++ killed by SIGKILL +++
+6748  1794921367.197187 +++ killed by SIGKILL +++
+6747  1794921367.197189 +++ killed by SIGKILL +++
+6746  1794921367.197190 +++ killed by SIGKILL +++
+6745  1794921367.197192 +++ killed by SIGKILL +++
+6744  1794921367.197193 +++ killed by SIGKILL +++
+6743  1794921367.197195 +++ killed by SIGKILL +++
+6742  1794921367.197196 +++ killed by SIGKILL +++
+6741  1794921367.197198 +++ killed by SIGKILL +++
+6740  1794921367.197199 +++ killed by SIGKILL +++
+6739  1794921367.197201 +++ killed by SIGKILL +++
+6737  1794921367.197202 +++ killed by SIGKILL +++
+6735  1794921367.197204 +++ killed by SIGKILL +++
+6734  1794921367.197205 +++ killed by SIGKILL +++
+6733  1794921367.197207 +++ killed by SIGKILL +++
+6724  1794921367.197208 +++ killed by SIGKILL +++
+6723  1794921367.197210 +++ killed by SIGKILL +++
+6722  1794921367.197211 +++ killed by SIGKILL +++
+6720  1794921367.197213 +++ killed by SIGKILL +++
+6718  1794921367.197214 +++ killed by SIGKILL +++
+6717  1794921367.197216 +++ killed by SIGKILL +++
+6714  1794921367.197217 +++ killed by SIGKILL +++
+6713  1794921367.197219 +++ killed by SIGKILL +++
+6738  1794921367.246762 +++ killed by SIGKILL +++
+6707  1794921367.246790 +++ killed by SIGKILL +++
+6156  1794921367.246809 +++ killed by SIGKILL +++

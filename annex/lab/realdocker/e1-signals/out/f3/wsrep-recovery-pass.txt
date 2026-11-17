@@ -1,0 +1,3 @@
+# /tmp/wsrep_recovery.XHkqvW, read through an open handle after mysqld_safe deleted it
+2026-11-17 13:16:57 140487637490816 [Note] WSREP: Recovered position: 236f6654-e289-11f1-b0a1-4bdf886eb484:8436
+(19 lines in the recovery log; only crash-recovery lines are kept here)

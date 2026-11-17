@@ -1,0 +1,3 @@
+docker stop -t 10 e1-f2 took 10.237 s (wall clock around the CLI call)
+container exit code 137; OOMKilled false; started 2026-11-17T13:15:48.527562452Z; finished 2026-11-17T13:16:07.250388652Z; restarts 0
+SURVIVORS: none (all 3 processes of the pre-stop table are gone)

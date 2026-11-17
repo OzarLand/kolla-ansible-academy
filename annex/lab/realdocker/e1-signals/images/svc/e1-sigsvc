@@ -1,0 +1,195 @@
+#!/usr/bin/python3
+"""e1 stand-in daemon for the signal tests. It is NOT a real OpenStack service.
+
+It logs every catchable signal it receives together with the sender (si_pid is
+given in the receiver's PID namespace; 0 means the sender is outside it), then
+behaves like a daemon that shuts down gracefully on SIGTERM (or ignores it).
+The process name is the basename of argv[0], so the same file is installed
+under several names (neutron-l3-agent, ovs-vswitchd, e1-keepalived, ...).
+
+Top-level behaviour comes from the environment (inherited by every process):
+  E1_TAG       marker appended to the argv of spawned children (host-side lookup)
+  E1_TERM      exit (default) | ignore      what to do on SIGTERM
+  E1_GRACE     seconds between SIGTERM and exit (default 0.5)
+  E1_SPAWN     comma list: name (plain child), name@daemon (double fork +
+               setsid, like keepalived/haproxy/radvd daemonize), name@escape
+               (daemon that then moves itself to the e1-escape cgroup)
+  E1_DAEMON_STDIO  devnull (default: daemons point stdin/out/err at /dev/null, as
+               daemon(3) does) | keep (daemons keep the container's stdio pipes)
+Children are started with --child and never spawn anything themselves.
+The name neutron-netns-cleanup is a one-shot: it runs E1_CLEANUP_SECS
+seconds (default 1), logging signals, and exits E1_CLEANUP_RC (default 0).
+Python 3.6 compatible (bionic).
+"""
+import os
+import signal
+import sys
+import time
+
+LOGDIR = os.environ.get('E1_LOGDIR', '/var/log/kolla/e1')
+NAME = os.path.basename(sys.argv[0])
+CHILD = '--child' in sys.argv
+ESCAPE = '--escape' in sys.argv
+TAG = os.environ.get('E1_TAG', 'e1')
+# Every signal a process can catch, except the glibc-internal 32/33.
+SIGS = [s for s in range(1, 32) if s not in (signal.SIGKILL, signal.SIGSTOP)]
+SI_CODES = {0: 'SI_USER', 0x80: 'SI_KERNEL', -1: 'SI_QUEUE', -6: 'SI_TKILL',
+            1: 'CLD_EXITED', 2: 'CLD_KILLED', 3: 'CLD_DUMPED'}
+
+
+def signame(n):
+    try:
+        return signal.Signals(n).name
+    except ValueError:
+        return 'SIG%d' % n
+
+
+_logf = None
+
+
+def log(msg):
+    global _logf
+    if _logf is None:
+        os.makedirs(LOGDIR, exist_ok=True)
+        _logf = open(os.path.join(LOGDIR, NAME + '.log'), 'a', buffering=1)
+    _logf.write('%.6f %s[%d] %s\n' % (time.time(), NAME, os.getpid(), msg))
+    _logf.flush()
+
+
+def heartbeat():
+    try:
+        os.makedirs(os.path.join(LOGDIR, 'hb'), exist_ok=True)
+        with open(os.path.join(LOGDIR, 'hb', '%s.%d' % (NAME, os.getpid())), 'w') as f:
+            f.write('%.6f\n' % time.time())
+    except OSError:
+        pass
+
+
+def cgroup_line():
+    try:
+        with open('/proc/self/cgroup') as f:
+            for line in f:
+                if ':devices:' in line:
+                    return line.strip().split(':', 2)[2]
+    except OSError:
+        pass
+    return '?'
+
+
+def ids():
+    return 'pid=%d ppid=%d pgid=%d sid=%d uid=%d cg=%s' % (
+        os.getpid(), os.getppid(), os.getpgid(0), os.getsid(0), os.getuid(), cgroup_line())
+
+
+def escape_cgroup():
+    """Move this process out of the container cgroup, like systemd-machined
+    moves a QEMU process to machine.slice. Needs the host /sys/fs/cgroup
+    bind-mounted rw (nova_libvirt mounts it) and the e1-escape cgroups that
+    run.sh creates on the host."""
+    base = '/sys/fs/cgroup'
+    for ctrl in sorted(os.listdir(base)):
+        d = os.path.join(base, ctrl, 'e1-escape')
+        if not os.path.isdir(d):
+            continue
+        try:
+            with open(os.path.join(d, 'cgroup.procs'), 'w') as f:
+                f.write(str(os.getpid()))
+            log('moved to %s' % d)
+        except OSError as e:
+            log('could not move to %s: %s' % (d, e))
+
+
+def spawn(spec):
+    name, _, mode = spec.partition('@')
+    mode = mode or 'child'
+    path = '/usr/local/bin/' + name
+    argv = [path, '--child', '--mode', mode, '--tag', TAG]
+    if mode == 'escape':
+        argv.append('--escape')
+    pid = os.fork()
+    if pid == 0:
+        try:
+            if mode in ('daemon', 'escape'):
+                os.setsid()
+                if os.fork() > 0:
+                    os._exit(0)
+                if os.environ.get('E1_DAEMON_STDIO', 'devnull') != 'keep':
+                    fd = os.open('/dev/null', os.O_RDWR)
+                    for n in (0, 1, 2):
+                        os.dup2(fd, n)
+            os.execv(path, argv)
+        finally:
+            os._exit(127)
+    if mode in ('daemon', 'escape'):
+        os.waitpid(pid, 0)  # reap the intermediate process, as a daemonizing parent does
+    log('spawned %s (%s)' % (name, mode))
+
+
+def reap():
+    while True:
+        try:
+            pid, status = os.waitpid(-1, os.WNOHANG)
+        except ChildProcessError:
+            return
+        if pid == 0:
+            return
+        if os.WIFSIGNALED(status):
+            log('reaped child %d: killed by %s' % (pid, signame(os.WTERMSIG(status))))
+        else:
+            log('reaped child %d: exit %d' % (pid, os.WEXITSTATUS(status)))
+
+
+def describe(info):
+    return '%s from pid=%d uid=%d code=%s' % (
+        signame(info.si_signo), info.si_pid, info.si_uid,
+        SI_CODES.get(info.si_code, str(info.si_code)))
+
+
+def main():
+    signal.pthread_sigmask(signal.SIG_BLOCK, SIGS)
+    log('start %s argv=%s' % (ids(), ' '.join(sys.argv[1:])))
+    if ESCAPE:
+        escape_cgroup()
+        log('now %s' % ids())
+
+    if NAME == 'neutron-netns-cleanup':
+        secs = float(os.environ.get('E1_CLEANUP_SECS', '1'))
+        rc = int(os.environ.get('E1_CLEANUP_RC', '0'))
+        end = time.time() + secs
+        while time.time() < end:
+            info = signal.sigtimedwait(SIGS, 0.2)
+            heartbeat()
+            if info is not None:
+                log('signal ' + describe(info))
+                if info.si_signo in (signal.SIGTERM, signal.SIGINT):
+                    log('exit 143 (default action of a python script without handler)')
+                    sys.exit(143)
+        log('cleanup done, exit %d' % rc)
+        sys.exit(rc)
+
+    term = 'exit' if CHILD else os.environ.get('E1_TERM', 'exit')
+    grace = 0.1 if CHILD else float(os.environ.get('E1_GRACE', '0.5'))
+    if not CHILD:
+        for spec in filter(None, os.environ.get('E1_SPAWN', '').split(',')):
+            spawn(spec)
+    log('ready')
+    while True:
+        info = signal.sigtimedwait(SIGS, 0.2)
+        heartbeat()
+        if info is None:
+            continue
+        log('signal ' + describe(info))
+        if info.si_signo == signal.SIGCHLD:
+            reap()
+        elif info.si_signo == signal.SIGTERM:
+            if term == 'ignore':
+                log('ignoring SIGTERM')
+            else:
+                log('graceful shutdown, exit 0 in %.1f s' % grace)
+                time.sleep(grace)
+                log('exit 0')
+                sys.exit(0)
+
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,12 @@
+1794921486.611405 neutron-l3-agent[11963] start pid=11963 ppid=11948 pgid=11936 sid=11936 uid=42435 cg=/docker/40c71f6ab8575885531ca36fa737525ae4ee08366bbb962d21b2063198907373 argv=--config-file /etc/neutron/neutron.conf --config-file /etc/neutron/neutron_vpnaas.conf --config-file /etc/neutron/l3_agent.ini --config-file /etc/neutron/fwaas_driver.ini
+1794921486.611800 neutron-l3-agent[11963] spawned e1-rootwrap-daemon (child)
+1794921486.612897 neutron-l3-agent[11963] spawned e1-keepalived (daemon)
+1794921486.614285 neutron-l3-agent[11963] spawned e1-haproxy-ns (daemon)
+1794921486.614356 neutron-l3-agent[11963] ready
+1794921486.614676 neutron-l3-agent[11963] signal SIGCHLD from pid=11965 uid=42435 code=CLD_EXITED
+1794921486.628398 e1-rootwrap-daemon[11964] start pid=11964 ppid=11963 pgid=11936 sid=11936 uid=42435 cg=/docker/40c71f6ab8575885531ca36fa737525ae4ee08366bbb962d21b2063198907373 argv=--child --mode child --tag e1-g2
+1794921486.628427 e1-rootwrap-daemon[11964] ready
+1794921486.630582 e1-keepalived[11966] start pid=11966 ppid=11911 pgid=11965 sid=11965 uid=42435 cg=/docker/40c71f6ab8575885531ca36fa737525ae4ee08366bbb962d21b2063198907373 argv=--child --mode daemon --tag e1-g2
+1794921486.630611 e1-keepalived[11966] ready
+1794921486.633994 e1-haproxy-ns[11968] start pid=11968 ppid=11911 pgid=11967 sid=11967 uid=42435 cg=/docker/40c71f6ab8575885531ca36fa737525ae4ee08366bbb962d21b2063198907373 argv=--child --mode daemon --tag e1-g2
+1794921486.634032 e1-haproxy-ns[11968] ready

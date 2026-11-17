@@ -1,0 +1,25 @@
+2026-11-17T13:18:54.265671113Z + sudo -E kolla_set_configs
+2026-11-17T13:18:54.305441275Z INFO:__main__:Loading config file at /var/lib/kolla/config_files/config.json
+2026-11-17T13:18:54.305457726Z INFO:__main__:Validating config file
+2026-11-17T13:18:54.305459672Z INFO:__main__:Kolla config strategy set to: COPY_ALWAYS
+2026-11-17T13:18:54.305461062Z INFO:__main__:Copying service configuration files
+2026-11-17T13:18:54.305462491Z INFO:__main__:Writing out command to execute
+2026-11-17T13:18:54.311967236Z ++ cat /run_command
+2026-11-17T13:18:54.312924404Z + CMD=/usr/local/bin/e1-sigsvc
+2026-11-17T13:18:54.312937274Z + ARGS=
+2026-11-17T13:18:54.312939148Z + sudo kolla_copy_cacerts
+2026-11-17T13:18:54.319216964Z + [[ ! -n '' ]]
+2026-11-17T13:18:54.319229365Z + . kolla_extend_start
+2026-11-17T13:18:54.319231406Z ++ [[ ! -d /var/log/kolla/neutron ]]
+2026-11-17T13:18:54.319232996Z ++ mkdir -p /var/log/kolla/neutron
+2026-11-17T13:18:54.320951695Z +++ stat -c %a /var/log/kolla/neutron
+2026-11-17T13:18:54.322359786Z ++ [[ 755 != \7\5\5 ]]
+2026-11-17T13:18:54.322368758Z ++ [[ ubuntu == \c\e\n\t\o\s ]]
+2026-11-17T13:18:54.322370252Z ++ export UPDATE_ALTERNATIVES=/usr/bin/update-alternatives
+2026-11-17T13:18:54.322371309Z ++ UPDATE_ALTERNATIVES=/usr/bin/update-alternatives
+2026-11-17T13:18:54.322484843Z ++ /usr/bin/update-alternatives --query iptables
+2026-11-17T13:18:54.323304477Z update-alternatives: error: no alternatives for iptables
+2026-11-17T13:18:54.323521795Z ++ . /usr/local/bin/kolla_neutron_extend_start
+2026-11-17T13:18:54.323531093Z + echo 'Running command: '\''/usr/local/bin/e1-sigsvc'\'''
+2026-11-17T13:18:54.323544582Z Running command: '/usr/local/bin/e1-sigsvc'
+2026-11-17T13:18:54.323550144Z + exec /usr/local/bin/e1-sigsvc

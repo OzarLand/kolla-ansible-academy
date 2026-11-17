@@ -1,0 +1,5 @@
+#!/bin/bash
+# e1 stub for modprobe: the sandbox kernel has no openvswitch module and no /lib/modules.
+mkdir -p /var/log/kolla/e1
+echo "$(date +%s.%N) modprobe[$$] stub called: $*" >> /var/log/kolla/e1/modprobe.log
+exit 0

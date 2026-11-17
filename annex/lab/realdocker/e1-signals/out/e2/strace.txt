@@ -1,0 +1,22 @@
+# strace -ttt -T -f (host pids; see tree.txt), t0=1794921288.495129723 t1=1794921288.654354615
+32527 1794921286.924901 wait4(-1,  <unfinished ...>
+32513 1794921286.924974 rt_sigtimedwait(~[RTMIN RT_1], {si_signo=SIGTERM, si_code=SI_USER, si_pid=0, si_uid=0}, NULL, 8) = 15 (SIGTERM) <1.629858>
+32513 1794921288.554965 kill(7 /* 32527 in strace's PID NS */, SIGTERM <unfinished ...>
+32527 1794921288.558479 <... wait4 resumed>0x7ffd273c1efc, 0, NULL) = ? ERESTARTSYS (To be restarted if SA_RESTART is set) <1.633532>
+32513 1794921288.558497 <... kill resumed>) = 0 <0.000102>
+32527 1794921288.558523 --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=1 /* 32513 in strace's PID NS */, si_uid=0} ---
+32513 1794921288.558601 rt_sigtimedwait(~[RTMIN RT_1],  <unfinished ...>
+32527 1794921288.558933 kill(14 /* 32538 in strace's PID NS */, SIGTERM) = 0 <0.000215>
+32538 1794921288.562157 --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=7 /* 32527 in strace's PID NS */, si_uid=0} ---
+32527 1794921288.562514 wait4(-1,  <unfinished ...>
+32538 1794921288.564380 +++ killed by SIGTERM +++
+32527 1794921288.564543 <... wait4 resumed>[{WIFSIGNALED(s) && WTERMSIG(s) == SIGTERM}], 0, NULL) = 14 <0.002021>
+32527 1794921288.567830 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_KILLED, si_pid=14, si_uid=42454, si_status=SIGTERM, si_utime=0, si_stime=0} ---
+32527 1794921288.571187 wait4(-1, 0x7ffd273c1efc, 0, NULL) = -1 ECHILD (No child processes) <0.000053>
+32527 1794921288.572305 exit_group(143) = ?
+32527 1794921288.572751 +++ exited with 143 +++
+32513 1794921288.572857 <... rt_sigtimedwait resumed>{si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=7 /* 32527 in strace's PID NS */, si_uid=0, si_status=143, si_utime=0, si_stime=1 /* 0.01 s */}, NULL, 8) = 17 (SIGCHLD) <0.014242>
+32513 1794921288.572980 wait4(-1, [{WIFEXITED(s) && WEXITSTATUS(s) == 143}], WNOHANG, NULL) = 7 <0.000061>
+32513 1794921288.577202 kill(7, SIGTERM) = -1 ESRCH (No such process) <0.000088>
+32513 1794921288.581442 exit_group(143) = ?
+32513 1794921288.582072 +++ exited with 143 +++

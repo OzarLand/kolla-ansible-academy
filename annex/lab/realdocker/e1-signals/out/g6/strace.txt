@@ -1,0 +1,15 @@
+# strace -ttt -T -f (host pids; see tree.txt), t0=1794921493.854884675 t1=1794921504.073394233
+12144 1794921492.290238 rt_sigtimedwait(~[RTMIN RT_1],  <unfinished ...>
+12144 1794921493.911283 <... rt_sigtimedwait resumed>{si_signo=SIGTERM, si_code=SI_USER, si_pid=12217, si_uid=0}, NULL, 8) = 15 (SIGTERM) <1.621033>
+12144 1794921493.911338 kill(12157, SIGTERM <unfinished ...>
+12157 1794921493.911354 <... rt_sigtimedwait resumed>{si_signo=SIGTERM, si_code=SI_USER, si_pid=12144, si_uid=0}, {tv_sec=0, tv_nsec=200000000}, 8) = 15 (SIGTERM) <0.044237>
+12144 1794921493.911414 <... kill resumed>) = 0 <0.000072>
+12144 1794921493.911429 rt_sigtimedwait(~[RTMIN RT_1],  <unfinished ...>
+12175 1794921503.953849 <... rt_sigtimedwait resumed> <unfinished ...>) = ?
+12157 1794921503.953874 <... rt_sigtimedwait resumed> <unfinished ...>) = ?
+12144 1794921503.953887 <... rt_sigtimedwait resumed> <unfinished ...>) = ?
+12173 1794921503.953927 <... rt_sigtimedwait resumed> <unfinished ...>) = ?
+12173 1794921503.954469 +++ killed by SIGKILL +++
+12175 1794921503.954575 +++ killed by SIGKILL +++
+12157 1794921503.954610 +++ killed by SIGKILL +++
+12144 1794921503.954934 +++ killed by SIGKILL +++

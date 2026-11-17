@@ -1,0 +1,21 @@
+# time relative to the start of `docker stop` (t0); docker stop returned at +0.151 s
+  +0.059 s  dumb-init(1)                         takes SIGTERM (sigwait/sigtimedwait), si_pid=0 SI_USER
+  +0.059 s  dumb-init(1)                         calls kill(7, SIGTERM) = 0
+  +0.063 s  neutron-l3-agent-wrapper.sh(7)       receives SIGTERM (handler or default action), si_pid=1 SI_USER
+  +0.063 s  neutron-l3-agent-wrapper.sh(7)       killed by SIGTERM
+  +0.063 s  dumb-init(1)                         reaps child pid 7 (killed by SIGTERM)
+  +0.067 s  dumb-init(1)                         calls kill(7, SIGTERM) = -1 ESRCH
+  +0.069 s  dumb-init(1)                         exit_group(143)
+  +0.070 s  e1-haproxy-ns(24)                    killed by SIGKILL
+  +0.070 s  e1-keepalived(22)                    killed by SIGKILL
+  +0.070 s  e1-rootwrap-daemon(20)               killed by SIGKILL
+  +0.071 s  neutron-l3-agent(19)                 killed by SIGKILL
+  +0.071 s  dumb-init(1)                         exited with 143
+
+# fate of each process of the pre-stop table
+dumb-init(1)                 signals: takes SIGTERM (sigwait/sigtimedwait) from si_pid=0         end: exited with 143 at +0.071 s
+neutron-l3-agent-wrapper.sh(7) signals: receives SIGTERM (handler or default action) from si_pid=1 end: killed by SIGTERM at +0.063 s
+neutron-l3-agent(19)         signals: none                                                       end: killed by SIGKILL at +0.071 s
+e1-rootwrap-daemon(20)       signals: none                                                       end: killed by SIGKILL at +0.070 s
+e1-keepalived(22)            signals: none                                                       end: killed by SIGKILL at +0.070 s
+e1-haproxy-ns(24)            signals: none                                                       end: killed by SIGKILL at +0.070 s

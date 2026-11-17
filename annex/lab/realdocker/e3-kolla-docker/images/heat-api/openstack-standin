@@ -1,0 +1,10 @@
+#!/bin/bash
+# e3 STAND-IN for the openstack CLI, enough for kolla heat-api extend_start.sh's KOLLA_BOOTSTRAP branch:
+# "domain list" returns no domain, "domain create" succeeds, "user create" fails the way a Keystone HTTP 500 does,
+# so the bootstrap container exits non-zero right after the command line that carries --password.
+case "$1 $2" in
+  "domain list")   exit 0 ;;
+  "domain create") echo "openstack stand-in: created domain $3"; exit 0 ;;
+  "user create")   echo "Internal Server Error (HTTP 500) (Request-ID: req-e3-standin)" >&2; exit 1 ;;
+  *)               echo "openstack stand-in: unexpected arguments: $*" >&2; exit 2 ;;
+esac

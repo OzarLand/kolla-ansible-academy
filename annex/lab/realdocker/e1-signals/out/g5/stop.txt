@@ -1,0 +1,16 @@
+# 30 s after 'docker stop -t 10 e1-g5' was started:
+docker stop is still running (pid 13118)
+SURVIVORS (same host pid and start time as before the stop; NSPPID -1 = not computed):
+HOSTPID  NSPID   HPPID NSPPID NSPGID  NSSID    UID S CG  DEVICES-CGROUP         CMD
+  13084  13084   13028     -1  13083  13083      0 S OUT /e1-escape             /usr/bin/python3 /usr/local/bin/e1-qemu --child --mode escape --tag e1-g5 --escape
+# fds 0-2 of e1-qemu (host pid 13084), and the shim's fds on the same pipes:
+fd 0 -> /dev/null
+fd 1 -> pipe:[308212]
+fd 2 -> pipe:[308213]
+parent of e1-qemu: 13028 /usr/bin/containerd-shim-runc-v2 -namespace moby -id dee8caba92f15c78db25a
+shim fd 3 -> pipe:[308212]
+shim fd 15 -> pipe:[308213]
+[13:19:34] killed leftover e1-g5 process 13084
+# after SIGKILL of the escaped e1-qemu:
+docker stop returned 0.079 s after the kill, 30.250 s after it was started
+container exit code 0; finished 2026-11-17T13:19:04.678535345Z (the init exit)

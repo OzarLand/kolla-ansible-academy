@@ -1,0 +1,42 @@
+# Test (b): restart (kolla_docker restart_container = stop -t 10 + start) and recreate, container e2-b-nova_compute
+# config dir on host: auth.conf config.json nova.conf policy.yaml release 
+## b0 initial start: base config.json (policy + auth.conf entries), release present
+/run_command: nova-compute
+service process: /bin/bash /usr/bin/nova-compute
+nova.conf in container: # e2 stand-in nova.conf, revision 1
+  nova:nova 600 /etc/nova/nova.conf
+  nova:nova 600 /etc/nova/policy.yaml
+  nova:nova 600 /etc/nova/release
+  nova:nova 600 /var/lib/nova/.config/libvirt/auth.conf
+--check as root: rc 0 INFO:__main__:Validating config file 
+## b1 host: nova.conf revision 2 and config.json command changed; --check before restart: rc 1 ERROR:__main__:The content of source file(/var/lib/kolla/config_files/nova.conf) and dest file(/etc/nova/nova.conf) are not equal. ERROR:__main__:ConfigFileBadState: Following files are in bad state: ['/var/lib/kolla/config_files/
+## b1 after restart
+/run_command: nova-compute --e2-marker=command-v2
+service process: /bin/bash /usr/bin/nova-compute --e2-marker=command-v2
+nova.conf in container: # e2 stand-in nova.conf, revision 2
+  nova:nova 600 /etc/nova/nova.conf
+  nova:nova 600 /etc/nova/policy.yaml
+  nova:nova 600 /etc/nova/release
+  nova:nova 600 /var/lib/nova/.config/libvirt/auth.conf
+--check as root: rc 0 INFO:__main__:Validating config file 
+## b2 host: config.json without the auth.conf and policy entries (files left on the host, as kolla-ansible does), release deleted on the host; host dir: auth.conf config.json nova.conf policy.yaml 
+## b2 after restart
+/run_command: nova-compute
+service process: /bin/bash /usr/bin/nova-compute
+nova.conf in container: # e2 stand-in nova.conf, revision 2
+  nova:nova 600 /etc/nova/nova.conf
+  nova:nova 600 /etc/nova/policy.yaml
+  nova:nova 600 /etc/nova/release
+  nova:nova 600 /var/lib/nova/.config/libvirt/auth.conf
+--check as root: rc 0 INFO:__main__:Validating config file 
+## b3 after recreate (docker rm + docker run, same volumes e2-b-*)
+/run_command: nova-compute
+service process: /bin/bash /usr/bin/nova-compute
+nova.conf in container: # e2 stand-in nova.conf, revision 2
+  nova:nova 600 /etc/nova/nova.conf
+  cannot stat '/etc/nova/policy.yaml': No such file or directory
+  cannot stat '/etc/nova/release': No such file or directory
+  nova:nova 600 /var/lib/nova/.config/libvirt/auth.conf
+--check as root: rc 0 INFO:__main__:Validating config file 
+  recreate start log: INFO:__main__:Copying service configuration files
+  recreate start log: INFO:__main__:Copying /var/lib/kolla/config_files/nova.conf to /etc/nova/nova.conf

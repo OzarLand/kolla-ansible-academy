@@ -1,0 +1,3 @@
+#!/bin/bash
+# Stand-in for heat-manage (experiment e2): prints only its first argument.
+echo "heat-manage-standin: '$1' ok"

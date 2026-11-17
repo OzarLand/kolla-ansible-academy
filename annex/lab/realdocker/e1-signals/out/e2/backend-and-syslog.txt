@@ -1,0 +1,5 @@
+# backend log (epoch s)
+1794921283.900512 GET /slow from 127.0.0.1:56664: start, 81920 bytes over 20 s
+1794921288.910864 GET /slow from 127.0.0.1:56664: write failed after 20480 bytes: [Errno 32] Broken pipe
+# haproxy log lines received on the syslog sink (UDP 18114) during the test
+(none)

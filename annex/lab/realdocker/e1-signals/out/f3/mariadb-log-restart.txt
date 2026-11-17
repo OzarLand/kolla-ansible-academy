@@ -1,0 +1,10 @@
+# mariadb.log written at the restart (83 lines; decisive lines kept)
+261117 13:16:57 mysqld_safe Starting mysqld daemon with databases from /var/lib/mysql/
+261117 13:16:57 mysqld_safe WSREP: Running position recovery with --disable-log-error  --pid-file='/var/lib/mysql//vm-recover.pid'
+261117 13:17:00 mysqld_safe WSREP: Recovered position 236f6654-e289-11f1-b0a1-4bdf886eb484:8436
+2026-11-17 13:17:00 140463849184384 [Note] WSREP: Passing config to GCS: base_dir = /var/lib/mysql/; base_host = 127.0.0.1; base_port = 18131; cert.log_conflicts = no; debug = no; 
+2026-11-17 13:17:00 140463849184384 [Note] WSREP: start_prim is enabled, turn off pc_recovery
+2026-11-17 13:17:00 140463849184384 [Note] WSREP: SST complete, seqno: 8436
+2026-11-17 13:17:00 140463849184384 [Note] InnoDB:  Percona XtraDB (http://www.percona.com) 5.6.49-89.0 started; log sequence number 7176008
+2026-11-17 13:17:00 140463849184384 [Note] /usr/sbin/mysqld: ready for connections.
+2026-11-17 13:17:00 140463848863488 [Note] WSREP: Synchronized with group, ready for connections

@@ -1,0 +1,9 @@
+#!/bin/bash
+# e1 stub for ovsdb-tool: only what kolla's start scripts call (create, needs-conversion, convert).
+mkdir -p /var/log/kolla/e1
+echo "$(date +%s.%N) ovsdb-tool[$$] stub called: $*" >> /var/log/kolla/e1/ovsdb-tool.log
+case "$1" in
+  create) touch "$2" ;;
+  needs-conversion) echo no ;;
+esac
+exit 0

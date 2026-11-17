@@ -1,0 +1,14 @@
+# stand-in rabbitmq-server log (e3_kolla_logs volume): every start and every signal received
+1794921228.945 pid=7 start ppid=1 rabbitmq.conf='# e3 placeholder rabbitmq.conf v1' env_cookie='e3-FAKE-cookie-A' file_cookie='e3-FAKE-cookie-A'
+1794921232.948 pid=7 got SIGTERM -> ignored, still running
+1794921243.180 pid=6 start ppid=1 rabbitmq.conf='# e3 placeholder rabbitmq.conf v1' env_cookie='e3-FAKE-cookie-A' file_cookie='e3-FAKE-cookie-A'
+1794921244.646 pid=6 got SIGTERM -> ignored, still running
+1794921254.837 pid=7 start ppid=1 rabbitmq.conf='# e3 placeholder rabbitmq.conf v1' env_cookie='e3-FAKE-cookie-A' file_cookie='e3-FAKE-cookie-A'
+1794921256.336 pid=7 got SIGTERM -> ignored, still running
+1794921276.563 pid=7 start ppid=1 rabbitmq.conf='# e3 placeholder rabbitmq.conf v1' env_cookie='e3-FAKE-cookie-A' file_cookie='e3-FAKE-cookie-A'
+1794921278.093 pid=7 got SIGTERM -> ignored, still running
+1794921292.330 pid=7 start ppid=1 rabbitmq.conf='# e3 placeholder rabbitmq.conf v1' env_cookie='e3-FAKE-cookie-A' file_cookie='e3-FAKE-cookie-A'
+1794921308.969 pid=7 got SIGTERM -> ignored, still running
+1794921319.167 pid=7 start ppid=1 rabbitmq.conf='# e3 placeholder rabbitmq.conf v2' env_cookie='e3-FAKE-cookie-A' file_cookie='e3-FAKE-cookie-A'
+1794921322.531 pid=7 got SIGTERM -> ignored, still running
+1794921333.050 pid=7 start ppid=1 rabbitmq.conf='# e3 placeholder rabbitmq.conf v2' env_cookie='e3-FAKE-cookie-B' file_cookie='e3-FAKE-cookie-A'

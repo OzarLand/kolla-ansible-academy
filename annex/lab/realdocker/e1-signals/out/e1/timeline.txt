@@ -1,0 +1,19 @@
+# time relative to the start of `docker stop` (t0); docker stop returned at +0.151 s
+  +0.060 s  dumb-init(1)                         takes SIGTERM (sigwait/sigtimedwait), si_pid=0 SI_USER
+  +0.060 s  dumb-init(1)                         calls kill(6, SIGTERM) = 0
+  +0.066 s  haproxy_run.sh(6)                    receives SIGTERM (handler or default action), si_pid=1 SI_USER
+  +0.066 s  haproxy_run.sh(6)                    killed by SIGTERM
+  +0.067 s  dumb-init(1)                         reaps child pid 6 (killed by SIGTERM)
+  +0.072 s  dumb-init(1)                         calls kill(6, SIGTERM) = -1 ESRCH
+  +0.077 s  dumb-init(1)                         exit_group(143)
+  +0.077 s  xargs(15)                            killed by SIGKILL
+  +0.078 s  haproxy(17)                          killed by SIGKILL
+  +0.079 s  haproxy(18)                          killed by SIGKILL
+  +0.079 s  dumb-init(1)                         exited with 143
+
+# fate of each process of the pre-stop table
+dumb-init(1)                 signals: takes SIGTERM (sigwait/sigtimedwait) from si_pid=0         end: exited with 143 at +0.079 s
+haproxy_run.sh(6)            signals: receives SIGTERM (handler or default action) from si_pid=1 end: killed by SIGTERM at +0.066 s
+xargs(15)                    signals: none                                                       end: killed by SIGKILL at +0.077 s
+haproxy(17)                  signals: none                                                       end: killed by SIGKILL at +0.078 s
+haproxy(18)                  signals: none                                                       end: killed by SIGKILL at +0.079 s

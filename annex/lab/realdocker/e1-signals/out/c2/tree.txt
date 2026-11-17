@@ -1,0 +1,17 @@
+HOSTPID  NSPID   HPPID NSPPID NSPGID  NSSID    UID S CG  DEVICES-CGROUP         CMD
+  30001      1   29976      0      1      1  42435 S ctr /docker/50e662d2c3182c dumb-init --single-child -- kolla_start
+  30013      7   30001      1      1      1  42435 S ctr /docker/50e662d2c3182c /bin/bash /usr/local/bin/neutron-l3-agent-wrapper.sh
+  30044     19   30013      7      1      1  42435 S ctr /docker/50e662d2c3182c /usr/bin/python3 /usr/local/bin/neutron-l3-agent --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/neutron_vpnaas.conf --config-file 
+  30045     20   30044     19      1      1  42435 S ctr /docker/50e662d2c3182c /usr/bin/python3 /usr/local/bin/e1-rootwrap-daemon --child --mode child --tag e1-c2
+  30047     22   30001      1     21     21  42435 S ctr /docker/50e662d2c3182c /usr/bin/python3 /usr/local/bin/e1-keepalived --child --mode daemon --tag e1-c2
+  30049     24   30001      1     23     23  42435 S ctr /docker/50e662d2c3182c /usr/bin/python3 /usr/local/bin/e1-haproxy-ns --child --mode daemon --tag e1-c2
+
+# docker exec e1-c2 ps -eo pid,ppid,pgid,sid,user,args  (container view; the ps line is the exec)
+    PID    PPID    PGID     SID USER     COMMAND
+      1       0       1       1 neutron  dumb-init --single-child -- kolla_start
+      7       1       1       1 neutron  /bin/bash /usr/local/bin/neutron-l3-agent-wrapper.sh
+     19       7       1       1 neutron  /usr/bin/python3 /usr/local/bin/neutron-l3-agent --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/neutron_vpnaas.conf --config-file /etc/neutron/l3_agent.ini --config-file /etc/neutron/fwaas_driver.ini
+     20      19       1       1 neutron  /usr/bin/python3 /usr/local/bin/e1-rootwrap-daemon --child --mode child --tag e1-c2
+     22       1      21      21 neutron  /usr/bin/python3 /usr/local/bin/e1-keepalived --child --mode daemon --tag e1-c2
+     24       1      23      23 neutron  /usr/bin/python3 /usr/local/bin/e1-haproxy-ns --child --mode daemon --tag e1-c2
+     25       0      25      25 neutron  ps -eo pid,ppid,pgid,sid,user,args

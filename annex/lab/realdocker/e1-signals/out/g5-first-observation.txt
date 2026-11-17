@@ -1,0 +1,18 @@
+# Manual record from the first, unbounded version of g3 (before the stand-in daemons redirected stdio to /dev/null):
+# the escaped e1-qemu kept the container stdout/stderr pipes; docker stop -t 10 e1-g3 was still blocked after ~9 min.
+# The kill below was issued by hand (the process was e1-owned, checked by its --tag e1-g3). g5 reproduces this with a 30 s bound.
+# 2026-11-17T12:53:26Z docker stop -t 10 e1-g3 has been running for       08:58
+  PID  PPID     ELAPSED STAT COMMAND
+  820     1       09:01 Sl   /usr/bin/containerd-shim-runc-v2 -namespace moby -id 6f641ac7f674fd6aba16301ad98a0b2f5142eb5e44ad42a792dec29dcd3a28f5 -address /var/run/docker/containerd/containerd.sock
+  876   820       09:01 S    /usr/bin/python3 /usr/local/bin/e1-qemu --child --mode escape --tag e1-g3 --escape
+  905 31709       08:58 Sl   docker stop -t 10 e1-g3
+# e1-g3 container processes 847 (dumb-init) 859 (e1-sigsvc) 874 (e1-worker): 0 left
+# fds of the escaped e1-qemu (876):
+0 -> /dev/null
+1 -> pipe:[128827]
+2 -> pipe:[128828]
+3 -> /var/log/kolla/e1/e1-qemu.log
+# shim fds for those pipes:
+shim fd 3 -> pipe:[128827]
+shim fd 15 -> pipe:[128828]
+docker stop returned 0.053 s after SIGKILL of the escaped process

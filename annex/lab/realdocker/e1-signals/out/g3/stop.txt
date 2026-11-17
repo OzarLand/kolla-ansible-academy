@@ -1,0 +1,5 @@
+docker stop -t 10 e1-g3 took 0.690 s (wall clock around the CLI call)
+container exit code 0; OOMKilled false; started 2026-11-17T13:18:25.376795576Z; finished 2026-11-17T13:18:28.927752991Z; restarts 0
+SURVIVORS (same host pid and start time as before the stop; NSPPID -1 = not computed):
+HOSTPID  NSPID   HPPID NSPPID NSPGID  NSSID    UID S CG  DEVICES-CGROUP         CMD
+  12406  12406       1     -1  12405  12405      0 S OUT /e1-escape             /usr/bin/python3 /usr/local/bin/e1-qemu --child --mode escape --tag e1-g3 --escape

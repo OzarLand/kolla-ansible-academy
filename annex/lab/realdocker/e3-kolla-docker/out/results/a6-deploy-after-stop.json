@@ -1,0 +1,110 @@
+[
+ {
+  "task": "Check rabbitmq containers",
+  "status": "ok",
+  "result": {
+   "changed": true,
+   "msg": "All items completed",
+   "results": [
+    {
+     "item": "rabbitmq",
+     "changed": true,
+     "failed": false,
+     "result": true,
+     "module_args(effective)": {
+      "action": "compare_container",
+      "name": "e3_rabbitmq",
+      "image": "e3-rabbitmq:ussuri",
+      "graceful_timeout": 10,
+      "client_timeout": 120,
+      "restart_policy": "unless-stopped",
+      "restart_retries": 10,
+      "detach": true,
+      "remove_on_exit": true,
+      "labels": {},
+      "environment": {
+       "KOLLA_CONFIG_STRATEGY": "COPY_ALWAYS",
+       "RABBITMQ_CLUSTER_COOKIE": "e3-FAKE-cookie-A",
+       "RABBITMQ_LOG_DIR": "/var/log/kolla/e3_rabbitmq"
+      },
+      "volumes": [
+       "/home/user/kolla-ansible-day2/annex/lab/realdocker/e3-kolla-docker/work/etc-kolla/e3_rabbitmq/:/var/lib/kolla/config_files/:ro",
+       "/etc/localtime:/etc/localtime:ro",
+       "/etc/timezone:/etc/timezone:ro",
+       "e3_rabbitmq:/var/lib/rabbitmq/",
+       "e3_kolla_logs:/var/log/kolla/"
+      ],
+      "api_version": "auto"
+     }
+    }
+   ]
+  }
+ },
+ {
+  "task": "Creating rabbitmq volume",
+  "status": "ok",
+  "result": {
+   "changed": false,
+   "result": false,
+   "module_args(effective)": {
+    "action": "create_volume",
+    "name": "e3_rabbitmq",
+    "image": null,
+    "graceful_timeout": 10,
+    "client_timeout": 120,
+    "restart_policy": "unless-stopped",
+    "restart_retries": 10,
+    "detach": true,
+    "remove_on_exit": true,
+    "labels": {},
+    "environment": {
+     "KOLLA_CONFIG_STRATEGY": "COPY_ALWAYS"
+    },
+    "volumes": null,
+    "api_version": "auto"
+   }
+  }
+ },
+ {
+  "task": "Running RabbitMQ bootstrap container",
+  "status": "skipped",
+  "result": {
+   "changed": false,
+   "skip_reason": "Conditional result was False"
+  }
+ },
+ {
+  "task": "Restart rabbitmq container",
+  "status": "ok",
+  "result": {
+   "changed": true,
+   "result": false,
+   "module_args(effective)": {
+    "action": "recreate_or_restart_container",
+    "name": "e3_rabbitmq",
+    "image": "e3-rabbitmq:ussuri",
+    "graceful_timeout": 10,
+    "client_timeout": 120,
+    "restart_policy": "unless-stopped",
+    "restart_retries": 10,
+    "detach": true,
+    "remove_on_exit": true,
+    "labels": {},
+    "environment": {
+     "KOLLA_CONFIG_STRATEGY": "COPY_ALWAYS",
+     "RABBITMQ_CLUSTER_COOKIE": "e3-FAKE-cookie-A",
+     "RABBITMQ_LOG_DIR": "/var/log/kolla/e3_rabbitmq",
+     "KOLLA_SERVICE_NAME": "e3-rabbitmq"
+    },
+    "volumes": [
+     "/home/user/kolla-ansible-day2/annex/lab/realdocker/e3-kolla-docker/work/etc-kolla/e3_rabbitmq/:/var/lib/kolla/config_files/:ro",
+     "/etc/localtime:/etc/localtime:ro",
+     "/etc/timezone:/etc/timezone:ro",
+     "e3_rabbitmq:/var/lib/rabbitmq/",
+     "e3_kolla_logs:/var/log/kolla/"
+    ],
+    "api_version": "auto"
+   }
+  }
+ }
+]
