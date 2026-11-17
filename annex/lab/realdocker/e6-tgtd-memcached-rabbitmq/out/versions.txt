@@ -1,0 +1,8 @@
+date (UTC): 2026-11-17T14:11:10Z
+docker: server 29.9.2 client 29.9.2; cgroup v1 cgroupfs, storage overlayfs, kernel 6.18.44-fc-v553
+runc: runc runc version 1.5.2
+strace (host): strace -- version 6.8
+e6-tgtd:ussuri sha256:d126b8faff59: dumb-init 1.2.1-1; tgt 1:1.0.72-1ubuntu1; 
+e6-memcached:ussuri sha256:3873bd922596: dumb-init 1.2.1-1; memcached 1.5.6-0ubuntu1.2; 
+e6-rabbitmq:ussuri sha256:2c00b2ecd041: dumb-init 1.2.1-1; erlang-base 1:20.2.2+dfsg-1ubuntu2; rabbitmq-server 3.6.10-1ubuntu0.5; 
+rendered config (kolla-ansible templates): /run/e6-lab/cfg, copied to out/cfg/

@@ -1,0 +1,22 @@
+
+### kolla creates the volume, then runs the bootstrap container only because the volume is new
+(roles/rabbitmq/tasks/bootstrap.yml:2-8,26)
+e6_rabbitmq
+
+### bootstrap one-shot: KOLLA_BOOTSTRAP= RABBITMQ_CLUSTER_COOKIE=cookieA
+exit code 0
+# docker logs, from the sourced kolla_extend_start on (xtrace):
++ . kolla_extend_start
+++ : /var/log/kolla/rabbitmq
+++ [[ -n 0 ]]
+++ [[ -e /var/lib/rabbitmq/.erlang.cookie ]]
+++ echo cookieA
+++ chmod 400 /var/lib/rabbitmq/.erlang.cookie
+++ exit 0
+
+### volume content after the bootstrap
+total 12
+drwxr-xr-x 2 rabbitmq rabbitmq 4096 Nov 17 14:12 .
+drwxr-xr-x 1 root     root     4096 Nov 17 14:12 ..
+-r-------- 1 rabbitmq rabbitmq    8 Nov 17 14:12 .erlang.cookie
+content of .erlang.cookie: cookieA

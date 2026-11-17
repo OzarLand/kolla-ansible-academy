@@ -1,0 +1,36 @@
+################ c3: after the move  (13:56:31.241 UTC)
+container /e4_nova_libvirt id=05b7924c7a0d status=running started=2026-11-17T13:56:28.168348179Z pid_mode=host
+[init] pid 20834 comm=dumb-init ppid=20809(containerd-shim) uid=0 nspid=20834
+    cgroup /docker/05b7924c7a0d                                 <- name=systemd,pids,blkio,freezer,devices,memory,cpuset,cpuacct,cpu,unified(v2)
+    ns mnt=mnt:[4026532264] pid=pid:[4026531836]  root=/  exe=/usr/bin/dumb-init
+[init's child] pid 20846 comm=libvirtd ppid=20834(dumb-init) uid=0 nspid=20846
+    cgroup /docker/05b7924c7a0d                                 <- name=systemd,pids,blkio,freezer,devices,memory,cpuset,cpuacct,cpu,unified(v2)
+    ns mnt=mnt:[4026532264] pid=pid:[4026531836]  root=/  exe=/usr/sbin/libvirtd
+[qemu e4-vm-c3] pid 21054 comm=qemu-system-x86 ppid=20809(containerd-shim) uid=42436 nspid=21054
+    cgroup /e4-machine                                          <- name=systemd,pids,blkio,freezer,devices,memory,cpuset,cpuacct,cpu
+    cgroup /docker/05b7924c7a0d                                 <- unified(v2)
+    ns mnt=mnt:[4026532264] pid=pid:[4026531836]  root=/  exe=/usr/bin/qemu-system-x86_64
+[qemu e4-vm-c3] inside this container's cgroup /docker/05b7924c7a0d? name=systemd=out pids=out blkio=out freezer=out devices=out memory=out cpuset=out cpuacct=out cpu=out unified=IN
+    pids under unified:/docker/05b7924c7a0d (what cgroup.kill kills): 20834 20846 21054
+    pids under devices:/docker/05b7924c7a0d (what runc <= 1.1 GetAllPids lists): 20834 20846
+--- virsh list --all
+ Id    Name                           State
+----------------------------------------------------
+ 1     e4-vm-c3                       running
+--- virsh domstate e4-vm-c3 --reason: running (booted)
+--- host /run/e4-lab/hostrun/libvirt/qemu: e4-vm-c3.pid e4-vm-c3.xml 
+################ c3-restart: after docker restart -t 10  (13:56:36.687 UTC)
+container /e4_nova_libvirt id=05b7924c7a0d status=running started=2026-11-17T13:56:32.903979712Z pid_mode=host
+[init] pid 21315 comm=dumb-init ppid=21289(containerd-shim) uid=0 nspid=21315
+    cgroup /docker/05b7924c7a0d                                 <- name=systemd,pids,blkio,freezer,devices,memory,cpuset,cpuacct,cpu,unified(v2)
+    ns mnt=mnt:[4026532264] pid=pid:[4026531836]  root=/  exe=/usr/bin/dumb-init
+[init's child] pid 21326 comm=libvirtd ppid=21315(dumb-init) uid=0 nspid=21326
+    cgroup /docker/05b7924c7a0d                                 <- name=systemd,pids,blkio,freezer,devices,memory,cpuset,cpuacct,cpu,unified(v2)
+    ns mnt=mnt:[4026532264] pid=pid:[4026531836]  root=/  exe=/usr/sbin/libvirtd
+[qemu e4-vm-c3] pid 21054: GONE (no /proc/21054)
+--- virsh list --all
+ Id    Name                           State
+----------------------------------------------------
+ -     e4-vm-c3                       shut off
+--- virsh domstate e4-vm-c3 --reason: shut off (crashed)
+--- host /run/e4-lab/hostrun/libvirt/qemu: 

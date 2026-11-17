@@ -1,0 +1,18 @@
+### $RUNDIR (the host's /run/openvswitch stand-in) while vswitchd is stopped
+total 8
+srwxr-x--- 1 root root 0 13:48:57 db.sock
+srwxr-x--- 1 root root 0 13:49:48 e5-br-sec.mgmt
+srwxr-x--- 1 root root 0 13:49:48 e5-br-sec.snoop
+srwxr-x--- 1 root root 0 13:49:48 e5-br-std.mgmt
+srwxr-x--- 1 root root 0 13:49:48 e5-br-std.snoop
+srwxr-x--- 1 root root 0 13:49:48 ovs-vswitchd.18.ctl
+-rw-r--r-- 1 root root 3 13:49:48 ovs-vswitchd.pid
+srwxr-x--- 1 root root 0 13:48:57 ovsdb-server.28.ctl
+-rw-r--r-- 1 root root 3 13:48:57 ovsdb-server.pid
+### host links e5-* while vswitchd is stopped
+e5-br-sec        DOWN           02:52:cf:6a:79:49 <BROADCAST,PROMISC> 
+e5-br-std        DOWN           a2:cc:d3:dc:4c:40 <BROADCAST,PROMISC> 
+e5-v1a@if326     UP             8a:5c:dd:86:a3:56 <BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP> 
+e5-v2a@if328     UP             e2:fe:8c:2e:74:da <BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP> 
+e5-v3a@if330     UP             a6:e5:ac:b4:c0:bf <BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP> 
+e5-v4a@if332     UP             f2:92:c8:19:8a:50 <BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP> 

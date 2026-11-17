@@ -1,0 +1,4 @@
+$ docker stop -t 10 e4_nova_libvirt -> rc=0, 0.18 s, output: e4_nova_libvirt 
+b-recreate: after docker stop, before rm: qemu 14758 GONE, container status exited exit=0
+$ docker rm -f e4_nova_libvirt -> rc=0, 0.05 s, output: e4_nova_libvirt 
+$ run_ctr -> rc=0, 0.17 s

@@ -1,0 +1,12 @@
+# strace -T -f -e trace=rt_sigtimedwait,kill,exit_group[,...] -e signal=all on the host; times relative
+# to T0 (return time for completed syscalls); "thread N" = another thread of the daemon (host tid)
+   +0.033 s  dumb-init(1)           rt_sigtimedwait(~[RTMIN RT_1], {si_signo=SIGTERM, si_code=SI_USER, si_pid=0, si_uid=0}, NULL, 8) = 15 (SIGTERM)  [returned; entry -0.503 s]
+   +0.033 s  dumb-init(1)           kill(7, SIGTERM) = 0  [returned; entry +0.033 s]
+   +0.033 s  start-ovsdb-ser(7)     --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=1, si_uid=0} ---
+   +0.033 s  dumb-init(1)           rt_sigtimedwait(~[RTMIN RT_1],  <unfinished ...>
+   +0.033 s  start-ovsdb-ser(7)     +++ killed by SIGTERM +++
+   +0.033 s  dumb-init(1)           <... rt_sigtimedwait resumed>{si_signo=SIGCHLD, si_code=CLD_KILLED, si_pid=7, si_uid=0, si_status=SIGTERM, si_utime=0, si_stime=0}, NULL, 8) = 17 (SIGCHLD)
+   +0.034 s  dumb-init(1)           kill(7, SIGTERM) = -1 ESRCH (No such process)  [returned; entry +0.034 s]
+   +0.034 s  dumb-init(1)           exit_group(143) = ?
+   +0.035 s  ovsdb-server(28)       +++ killed by SIGKILL +++
+   +0.036 s  dumb-init(1)           +++ exited with 143 +++

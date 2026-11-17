@@ -1,0 +1,10 @@
+
+### RabbitMQ 3.8 cross-check (mirror.gcr.io/library/rabbitmq:3.8, docker-library image, entrypoint bypassed)
+image sha256:5e859a09297f
+$ grep -rl RABBITMQ_CLUSTER_COOKIE /opt/rabbitmq /usr/local/bin /etc/rabbitmq /usr/lib/erlang
+grep: /usr/lib/erlang: No such file or directory
+(rc 2)
+base64(md5(cookieA)) = sSSsIdHgVeGNtySBy9s1uw==; base64(md5(cookieB)) = dsHKrI2JKtSrv7Ay+1C18g==
+beam.smp environment: RABBITMQ_CLUSTER_COOKIE=cookieB
+$ rabbitmqctl eval 'erlang:get_cookie().'
+cookieA

@@ -1,0 +1,10 @@
+# e4 summary: one line per step; "monitor" = virsh suspend + resume through the libvirtd running after the step
+a    docker restart -t 10           qemu pid 13570   GONE              virsh domstate: shut off (crashed)     monitor: suspend+resume failed: error: Requested operation is not valid: domain is not running
+b    recreate (stop, rm -f, run)    qemu pid 14758   GONE              virsh domstate: shut off (crashed)     monitor: suspend+resume failed: error: Requested operation is not valid: domain is not running
+c1   docker restart -t 10           qemu pid 15990   ALIVE (same pid)  virsh domstate: running (booted)       monitor: suspend+resume OK
+c1   recreate (stop, rm -f, run)    qemu pid 15990   ALIVE (same pid)  virsh domstate: running (unpaused)     monitor: suspend+resume OK
+c2   docker restart -t 10           qemu pid 17886   ALIVE (same pid)  virsh domstate: Error response from daemon: container 680b3a0ca948 is not running  monitor: suspend+resume failed: Error response from daemon: container 680b3a0ca948 is not running
+c2   recreate (stop, rm -f, run)    qemu pid 17886   ALIVE (same pid)  virsh domstate: running (booted)       monitor: suspend+resume OK
+c3   docker restart -t 10           qemu pid 21054   GONE              virsh domstate: shut off (crashed)     monitor: suspend+resume failed: error: Requested operation is not valid: domain is not running
+d1   docker restart -t 10           qemu pid 22321   GONE              virsh domstate: shut off (crashed)     monitor: suspend+resume failed: error: Requested operation is not valid: domain is not running
+d2   docker restart -t 10           qemu pid 23502   GONE              virsh domstate: shut off (crashed)     monitor: suspend+resume failed: error: Requested operation is not valid: domain is not running

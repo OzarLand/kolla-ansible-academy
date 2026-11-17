@@ -1,0 +1,17 @@
+date: 2026-11-17T13:48:56Z
+docker client 29.9.2 server 29.9.2
+cgroup v1 driver cgroupfs storage overlayfs runc v1.5.2-0-g29dd3dc2 containerd b7a25261e029d68978bbf290df0a62fc819b3c51
+kernel 6.18.44-fc-v553; openvswitch kernel module: absent (/sys/module/openvswitch missing); /lib/modules on host: absent; IPv6: absent
+strace 6.8
+image reallab/base:ussuri sha256:891f52f2b6a9
+image e5-openvswitch-base:ussuri sha256:7c5500e1ca24
+image e5-openvswitch-db-server:ussuri sha256:dd2a59574096
+image e5-openvswitch-vswitchd:ussuri sha256:eb6a7d73e332
+image e5-peer:ussuri sha256:d73f6b2afa91
+package bash 4.4.18-2ubuntu1.3
+package dumb-init 1.2.1-1
+package kmod 24-1ubuntu3.5
+package openvswitch-common 2.9.8-0ubuntu0.18.04.5
+package openvswitch-switch 2.9.8-0ubuntu0.18.04.5
+package python3-openvswitch 2.9.8-0ubuntu0.18.04.5
+sources: kolla 9107c5f kolla-ansible 8a94fe9

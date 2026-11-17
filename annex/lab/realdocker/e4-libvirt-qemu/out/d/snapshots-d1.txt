@@ -1,0 +1,42 @@
+################ d1: before  (13:56:41.897 UTC)
+container /e4_nova_libvirt id=cfa9dc81bad7 status=running started=2026-11-17T13:56:38.734925179Z pid_mode=
+[init] pid 22072 comm=dumb-init ppid=22044(containerd-shim) uid=0 nspid=22072,1
+    cgroup /docker/cfa9dc81bad7                                 <- name=systemd,pids,blkio,freezer,devices,memory,cpuset,cpuacct,cpu,unified(v2)
+    ns mnt=mnt:[4026532264] pid=pid:[4026532267]  root=/  exe=/usr/bin/dumb-init
+[init's child] pid 22084 comm=libvirtd ppid=22072(dumb-init) uid=0 nspid=22084,7
+    cgroup /docker/cfa9dc81bad7                                 <- name=systemd,pids,blkio,freezer,devices,memory,cpuset,cpuacct,cpu,unified(v2)
+    ns mnt=mnt:[4026532264] pid=pid:[4026532267]  root=/  exe=/usr/sbin/libvirtd
+[init's child] pid 22321 comm=qemu-system-x86 ppid=22072(dumb-init) uid=42436 nspid=22321,123
+    cgroup /docker/cfa9dc81bad7                                 <- name=systemd,pids,unified(v2)
+    cgroup /machine/qemu-1-e4-vm-d1.libvirt-qemu                <- blkio,freezer,devices,memory
+    cgroup /machine/qemu-1-e4-vm-d1.libvirt-qemu/emulator       <- cpuset,cpuacct,cpu
+    ns mnt=mnt:[4026532264] pid=pid:[4026532267]  root=/  exe=/usr/bin/qemu-system-x86_64
+[qemu e4-vm-d1] pid 22321 comm=qemu-system-x86 ppid=22072(dumb-init) uid=42436 nspid=22321,123
+    cgroup /docker/cfa9dc81bad7                                 <- name=systemd,pids,unified(v2)
+    cgroup /machine/qemu-1-e4-vm-d1.libvirt-qemu                <- blkio,freezer,devices,memory
+    cgroup /machine/qemu-1-e4-vm-d1.libvirt-qemu/emulator       <- cpuset,cpuacct,cpu
+    ns mnt=mnt:[4026532264] pid=pid:[4026532267]  root=/  exe=/usr/bin/qemu-system-x86_64
+[qemu e4-vm-d1] inside this container's cgroup /docker/cfa9dc81bad7? name=systemd=IN pids=IN blkio=out freezer=out devices=out memory=out cpuset=out cpuacct=out cpu=out unified=IN
+    pids under unified:/docker/cfa9dc81bad7 (what cgroup.kill kills): 22072 22084 22321
+    pids under devices:/docker/cfa9dc81bad7 (what runc <= 1.1 GetAllPids lists): 22072 22084
+--- virsh list --all
+ Id    Name                           State
+----------------------------------------------------
+ 1     e4-vm-d1                       running
+--- virsh domstate e4-vm-d1 --reason: running (booted)
+--- host /run/e4-lab/hostrun/libvirt/qemu: e4-vm-d1.pid e4-vm-d1.xml 
+################ d1-restart: after docker restart -t 10  (13:56:46.904 UTC)
+container /e4_nova_libvirt id=cfa9dc81bad7 status=running started=2026-11-17T13:56:43.612864886Z pid_mode=
+[init] pid 22531 comm=dumb-init ppid=22506(containerd-shim) uid=0 nspid=22531,1
+    cgroup /docker/cfa9dc81bad7                                 <- name=systemd,pids,blkio,freezer,devices,memory,cpuset,cpuacct,cpu,unified(v2)
+    ns mnt=mnt:[4026532264] pid=pid:[4026532267]  root=/  exe=/usr/bin/dumb-init
+[init's child] pid 22544 comm=libvirtd ppid=22531(dumb-init) uid=0 nspid=22544,7
+    cgroup /docker/cfa9dc81bad7                                 <- name=systemd,pids,blkio,freezer,devices,memory,cpuset,cpuacct,cpu,unified(v2)
+    ns mnt=mnt:[4026532264] pid=pid:[4026532267]  root=/  exe=/usr/sbin/libvirtd
+[qemu e4-vm-d1] pid 22321: GONE (no /proc/22321)
+--- virsh list --all
+ Id    Name                           State
+----------------------------------------------------
+ -     e4-vm-d1                       shut off
+--- virsh domstate e4-vm-d1 --reason: shut off (crashed)
+--- host /run/e4-lab/hostrun/libvirt/qemu: 

@@ -1,0 +1,3 @@
+c2 after recreate: qemu mnt ns mnt:[4026532264], new libvirtd 20063 mnt ns mnt:[4026532268]
+[qemu] pid 17886 root mount: overlay upperdir=/var/lib/docker/containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/1409/fs (ABSENT on the host)
+[new libvirtd] pid 20063 root mount: overlay upperdir=/var/lib/docker/containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/1411/fs (exists on the host)

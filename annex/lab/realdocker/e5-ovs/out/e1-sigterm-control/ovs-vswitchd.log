@@ -1,0 +1,8 @@
+2026-11-17T13:50:34.464Z|00001|fatal_signal(revalidator9)|WARN|terminating with signal 15 (Terminated)
+2026-11-17T13:50:34.820Z|00001|vlog|INFO|opened log file /var/log/kolla/openvswitch/ovs-vswitchd.log
+2026-11-17T13:50:34.821Z|00002|ovs_numa|INFO|Discovered 4 CPU cores on NUMA node 0
+2026-11-17T13:50:34.821Z|00003|ovs_numa|INFO|Discovered 1 NUMA nodes and 4 CPU cores
+2026-11-17T13:50:34.821Z|00004|reconnect|INFO|unix:/run/openvswitch/db.sock: connecting...
+2026-11-17T13:50:34.821Z|00005|reconnect|INFO|unix:/run/openvswitch/db.sock: connected
+2026-11-17T13:50:34.828Z|00007|ofproto_dpif|INFO|netdev@ovs-netdev: VLAN header stack length probed as 1
+2026-11-17T13:50:34.828Z|00008|ofproto_dpif|INFO|netdev@ovs-netdev: MPLS label stack length probed as 3

@@ -1,0 +1,11 @@
+62,65d61
+<  cookie=0xe5000001, table=0, n_packets=40, n_bytes=3864, priority=100,in_port=2 actions=output:1
+<  cookie=0xe5000002, table=0, n_packets=40, n_bytes=3864, priority=100,in_port=1 actions=output:2
+<  cookie=0xe5000003, table=0, n_packets=1, n_bytes=42, priority=1 actions=drop
+<  cookie=0xe5000017, table=23, n_packets=0, n_bytes=0, priority=0 actions=drop
+68,70c64
+<  cookie=0xe5000011, table=0, n_packets=0, n_bytes=0, priority=200,dl_type=0x88cc actions=drop
+<  cookie=0xe5000012, table=0, n_packets=47, n_bytes=4606, priority=100,ip,in_port=2,nw_dst=10.55.2.0/24 actions=NORMAL
+<  cookie=0x0, table=0, n_packets=49, n_bytes=4690, priority=0 actions=NORMAL
+---
+>  cookie=0x0, table=0, n_packets=20, n_bytes=1848, priority=0 actions=NORMAL

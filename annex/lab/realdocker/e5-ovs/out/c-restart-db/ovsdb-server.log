@@ -1,0 +1,6 @@
+2026-11-17T13:50:25.706Z|00001|vlog|INFO|opened log file /var/log/kolla/openvswitch/ovsdb-server.log
+2026-11-17T13:50:25.709Z|00002|ovsdb_server|INFO|ovsdb-server (Open vSwitch) 2.9.8
+2026-11-17T13:50:26.876Z|00003|jsonrpc|WARN|unix#3: receive error: Connection reset by peer
+2026-11-17T13:50:26.876Z|00004|reconnect|WARN|unix#3: connection dropped (Connection reset by peer)
+2026-11-17T13:50:30.637Z|00005|jsonrpc|WARN|unix#10: receive error: Connection reset by peer
+2026-11-17T13:50:30.637Z|00006|reconnect|WARN|unix#10: connection dropped (Connection reset by peer)

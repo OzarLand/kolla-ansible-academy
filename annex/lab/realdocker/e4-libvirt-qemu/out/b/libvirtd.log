@@ -1,0 +1,6 @@
+13:53:51.766 14591: info : libvirt version: 4.0.0, package: 1ubuntu8.21 (Marc Deslauriers <marc.deslauriers@ubuntu.com> Wed, 20 Apr 2022 13:18:06 -0400)
+13:53:51.766 14591: error : virDBusGetSystemBus:109 : internal error: Unable to get DBus system bus connection: Failed to connect to socket /var/run/dbus/system_bus_socket: No such file or directory
+13:53:52.599 14575: error : virDBusGetSystemBus:109 : internal error: Unable to get DBus system bus connection: Failed to connect to socket /var/run/dbus/system_bus_socket: No such file or directory
+13:53:56.802 15102: info : libvirt version: 4.0.0, package: 1ubuntu8.21 (Marc Deslauriers <marc.deslauriers@ubuntu.com> Wed, 20 Apr 2022 13:18:06 -0400)
+13:53:56.802 15102: error : virDBusGetSystemBus:109 : internal error: Unable to get DBus system bus connection: Failed to connect to socket /var/run/dbus/system_bus_socket: No such file or directory
+13:53:57.213 15140: error : qemuMonitorOpenUnix:385 : failed to connect to monitor socket: No such process

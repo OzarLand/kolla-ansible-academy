@@ -1,0 +1,88 @@
+#!/usr/bin/python3
+"""e7 stand-in daemon. It is NOT a real OpenStack service.
+
+Installed as nova-scheduler, heat-engine and nova-manage (the name is the basename of argv[0]).
+It logs every catchable signal it receives, with the sender's PID as seen in the receiver's PID namespace
+(1 = dumb-init; 0 = a sender outside the namespace, e.g. the kernel or a host process), and writes a heartbeat
+file every 0.1 s, so a host-side script can tell:
+  - whether and when the service received SIGTERM,
+  - when it stopped running (SIGKILL cannot be caught; the heartbeat stops),
+  - whether the same process survived a Docker daemon restart (no new "start" line, heartbeat continuous).
+
+Environment (lab-only knobs, not Kolla variables):
+  E7_TERM          exit (default) | ignore      what to do on SIGTERM (exit: like an oslo service that shuts down)
+  E7_GRACE         seconds between SIGTERM and exit (default 0.3)
+  E7_ONESHOT_SECS  nova-manage only: run time before exit 0 (default 1)
+Log: /var/log/kolla/<project>/e7-<KOLLA_SERVICE_NAME>[.nova-manage].log (+ .hb heartbeat file).
+Python 3.6 compatible (bionic).
+"""
+import os
+import signal
+import sys
+import time
+
+NAME = os.path.basename(sys.argv[0])
+PROJECT = NAME.split('-')[0]
+SVC = os.environ.get('KOLLA_SERVICE_NAME', NAME)
+ONESHOT = NAME == 'nova-manage'
+LOGDIR = '/var/log/kolla/' + PROJECT
+LOG = os.path.join(LOGDIR, 'e7-%s%s.log' % (SVC, '.nova-manage' if ONESHOT else ''))
+HB = LOG + '.hb'
+TERM = os.environ.get('E7_TERM', 'exit')
+GRACE = float(os.environ.get('E7_GRACE', '0.3'))
+SIGS = [s for s in range(1, 32) if s not in (signal.SIGKILL, signal.SIGSTOP)]
+CODES = {0: 'SI_USER', 0x80: 'SI_KERNEL', -1: 'SI_QUEUE', -6: 'SI_TKILL', 1: 'CLD_EXITED', 2: 'CLD_KILLED'}
+
+
+def signame(n):
+    try:
+        return signal.Signals(n).name
+    except ValueError:
+        return 'SIG%d' % n
+
+
+def log(msg):
+    os.makedirs(LOGDIR, exist_ok=True)
+    with open(LOG, 'a') as f:
+        f.write('%.6f %s pid=%d %s\n' % (time.time(), NAME, os.getpid(), msg))
+
+
+def heartbeat():
+    with open(HB, 'w') as f:
+        f.write('%.6f %d\n' % (time.time(), os.getpid()))
+
+
+def main():
+    signal.pthread_sigmask(signal.SIG_BLOCK, SIGS)
+    log('start ppid=%d uid=%d args=%s term=%s' % (os.getppid(), os.getuid(), ' '.join(sys.argv[1:]) or '-',
+                                                 TERM if not ONESHOT else 'default'))
+    deadline = None
+    end = time.time() + float(os.environ.get('E7_ONESHOT_SECS', '1')) if ONESHOT else None
+    while True:
+        heartbeat()
+        now = time.time()
+        if deadline is not None and now >= deadline:
+            log('exit 0 after SIGTERM')
+            sys.exit(0)
+        if end is not None and now >= end:
+            log('done, exit 0')
+            sys.exit(0)
+        info = signal.sigtimedwait(SIGS, 0.1)
+        if info is None:
+            continue
+        sig = info.si_signo
+        log('got %s from pid=%d code=%s' % (signame(sig), info.si_pid, CODES.get(info.si_code, info.si_code)))
+        if sig in (signal.SIGTERM, signal.SIGINT):
+            if ONESHOT:
+                log('exit 143 (default action of SIGTERM)')
+                sys.exit(143)
+            if TERM == 'ignore':
+                log('ignoring %s' % signame(sig))
+            elif deadline is None:
+                deadline = time.time() + GRACE
+        elif sig == signal.SIGHUP:
+            log('SIGHUP: stand-in "reload" (nova-scheduler refreshes its cell cache on SIGHUP)')
+
+
+if __name__ == '__main__':
+    main()

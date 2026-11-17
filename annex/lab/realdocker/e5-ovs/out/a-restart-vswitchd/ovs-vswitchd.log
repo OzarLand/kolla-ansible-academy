@@ -1,0 +1,26 @@
+2026-11-17T13:49:15.452Z|00001|vlog|INFO|opened log file /var/log/kolla/openvswitch/ovs-vswitchd.log
+2026-11-17T13:49:15.453Z|00002|ovs_numa|INFO|Discovered 4 CPU cores on NUMA node 0
+2026-11-17T13:49:15.453Z|00003|ovs_numa|INFO|Discovered 1 NUMA nodes and 4 CPU cores
+2026-11-17T13:49:15.453Z|00004|reconnect|INFO|unix:/run/openvswitch/db.sock: connecting...
+2026-11-17T13:49:15.453Z|00005|reconnect|INFO|unix:/run/openvswitch/db.sock: connected
+2026-11-17T13:49:15.459Z|00007|ofproto_dpif|INFO|netdev@ovs-netdev: VLAN header stack length probed as 1
+2026-11-17T13:49:15.459Z|00008|ofproto_dpif|INFO|netdev@ovs-netdev: MPLS label stack length probed as 3
+2026-11-17T13:49:15.462Z|00012|ofproto_dpif|INFO|netdev@ovs-netdev: Max sample nesting level probed as 10
+2026-11-17T13:49:15.473Z|00022|bridge|INFO|bridge e5-br-sec: added interface e5-br-sec on port 65534
+2026-11-17T13:49:15.473Z|00023|dpif_netlink|WARN|Generic Netlink family 'ovs_datapath' does not exist. The Open vSwitch kernel module is probably not loaded.
+2026-11-17T13:49:15.473Z|00024|bridge|INFO|bridge e5-br-sec: added interface e5-v2a on port 1
+2026-11-17T13:49:15.473Z|00025|bridge|INFO|bridge e5-br-sec: added interface e5-v1a on port 2
+2026-11-17T13:49:15.473Z|00026|bridge|INFO|bridge e5-br-sec: added interface e5-patch-std on port 3
+2026-11-17T13:49:15.473Z|00027|bridge|INFO|bridge e5-br-std: added interface e5-patch-sec on port 1
+2026-11-17T13:49:15.473Z|00028|bridge|INFO|bridge e5-br-std: added interface e5-v3a on port 2
+2026-11-17T13:49:15.473Z|00029|bridge|INFO|bridge e5-br-std: added interface e5-v4a on port 3
+2026-11-17T13:49:15.473Z|00030|bridge|INFO|bridge e5-br-std: added interface e5-br-std on port 65534
+2026-11-17T13:49:15.473Z|00031|bridge|INFO|bridge e5-br-sec: using datapath ID 00000252cf6a7949
+2026-11-17T13:49:15.473Z|00032|connmgr|INFO|e5-br-sec: added service controller "punix:/var/run/openvswitch/e5-br-sec.mgmt"
+2026-11-17T13:49:15.473Z|00033|bridge|INFO|bridge e5-br-std: using datapath ID 0000a2ccd3dc4c40
+2026-11-17T13:49:15.473Z|00034|connmgr|INFO|e5-br-std: added service controller "punix:/var/run/openvswitch/e5-br-std.mgmt"
+2026-11-17T13:49:15.475Z|00035|bridge|INFO|ovs-vswitchd (Open vSwitch) 2.9.8
+2026-11-17T13:49:25.476Z|00036|memory|INFO|66096 kB peak resident set size after 10.0 seconds
+2026-11-17T13:49:25.476Z|00037|memory|INFO|handlers:2 ports:8 revalidators:2 rules:9 udpif keys:6
+2026-11-17T13:49:27.968Z|00038|connmgr|INFO|e5-br-sec<->unix#6: 4 flow_mods in the last 0 s (4 adds)
+2026-11-17T13:49:28.047Z|00039|connmgr|INFO|e5-br-std<->unix#8: 2 flow_mods in the last 0 s (2 adds)

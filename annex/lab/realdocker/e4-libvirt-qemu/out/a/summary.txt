@@ -1,0 +1,1 @@
+a    docker restart -t 10           qemu pid 13570   GONE              virsh domstate: shut off (crashed)     monitor: suspend+resume failed: error: Requested operation is not valid: domain is not running

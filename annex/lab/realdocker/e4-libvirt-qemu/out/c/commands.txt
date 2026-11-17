@@ -1,0 +1,46 @@
+moved 15990 to /sys/fs/cgroup/systemd/e4-machine
+moved 15990 to /sys/fs/cgroup/pids/e4-machine
+moved 15990 to /sys/fs/cgroup/blkio/e4-machine
+moved 15990 to /sys/fs/cgroup/freezer/e4-machine
+moved 15990 to /sys/fs/cgroup/devices/e4-machine
+moved 15990 to /sys/fs/cgroup/memory/e4-machine
+moved 15990 to /sys/fs/cgroup/cpuset/e4-machine
+moved 15990 to /sys/fs/cgroup/cpuacct/e4-machine
+moved 15990 to /sys/fs/cgroup/cpu/e4-machine
+moved 15990 to /sys/fs/cgroup/unified/e4-machine
+$ docker restart -t 10 e4_nova_libvirt -> rc=0, 0.25 s, output: e4_nova_libvirt 
+$ docker stop -t 10 e4_nova_libvirt -> rc=0, 0.19 s, output: e4_nova_libvirt 
+c1-recreate: after docker stop, before rm: qemu 15990 ALIVE, container status exited exit=0
+$ docker rm -f e4_nova_libvirt -> rc=0, 0.05 s, output: e4_nova_libvirt 
+$ run_ctr -> rc=0, 0.19 s
+$ docker exec e4_nova_libvirt virsh -c qemu:///system destroy e4-vm-c1 -> rc=0, 1.28 s, output: Domain e4-vm-c1 destroyed 
+c1: after virsh destroy through the new libvirtd: qemu 15990 GONE
+moved 17886 to /sys/fs/cgroup/unified/e4-machine
+$ docker restart -t 10 e4_nova_libvirt -> rc=1, 4.40 s, output: Error response from daemon: Cannot restart container e4_nova_libvirt: could not delete stale containerd task object: failed to delete task: failed to delete task: unable to destroy container: unable to remove container's cgroup: Failed to remove paths: map[name=systemd:/sys/fs/cgroup/systemd/docker/680b3a0ca948 pids:/sys/fs/cgroup/pids/docker/680b3a0ca948] 
+$ docker stop -t 10 e4_nova_libvirt -> rc=0, 0.02 s, output: e4_nova_libvirt 
+$ docker start e4_nova_libvirt -> rc=1, 2.18 s, output: Error response from daemon: could not delete stale containerd task object: failed to delete task: failed to delete task: unable to destroy container: unable to remove container's cgroup: Failed to remove paths: map[name=systemd:/sys/fs/cgroup/systemd/docker/680b3a0ca948 pids:/sys/fs/cgroup/pids/docker/680b3a0ca948] failed to start containers: e4_nova_libvirt 
+$ docker stop -t 10 e4_nova_libvirt -> rc=0, 0.02 s, output: e4_nova_libvirt 
+$ docker start e4_nova_libvirt -> rc=1, 2.19 s, output: Error response from daemon: could not delete stale containerd task object: failed to delete task: failed to delete task: unable to destroy container: unable to remove container's cgroup: Failed to remove paths: map[name=systemd:/sys/fs/cgroup/systemd/docker/680b3a0ca948 pids:/sys/fs/cgroup/pids/docker/680b3a0ca948] failed to start containers: e4_nova_libvirt 
+$ docker stop -t 10 e4_nova_libvirt -> rc=0, 0.03 s, output: e4_nova_libvirt 
+$ docker start e4_nova_libvirt -> rc=1, 2.19 s, output: Error response from daemon: could not delete stale containerd task object: failed to delete task: failed to delete task: unable to destroy container: unable to remove container's cgroup: Failed to remove paths: map[name=systemd:/sys/fs/cgroup/systemd/docker/680b3a0ca948 pids:/sys/fs/cgroup/pids/docker/680b3a0ca948] failed to start containers: e4_nova_libvirt 
+$ docker stop -t 10 e4_nova_libvirt -> rc=0, 0.03 s, output: e4_nova_libvirt 
+$ docker start e4_nova_libvirt -> rc=1, 2.21 s, output: Error response from daemon: could not delete stale containerd task object: failed to delete task: failed to delete task: unable to destroy container: unable to remove container's cgroup: Failed to remove paths: map[name=systemd:/sys/fs/cgroup/systemd/docker/680b3a0ca948 pids:/sys/fs/cgroup/pids/docker/680b3a0ca948] failed to start containers: e4_nova_libvirt 
+$ docker stop -t 10 e4_nova_libvirt -> rc=0, 0.03 s, output: e4_nova_libvirt 
+$ docker start e4_nova_libvirt -> rc=1, 2.19 s, output: Error response from daemon: could not delete stale containerd task object: failed to delete task: failed to delete task: unable to destroy container: unable to remove container's cgroup: Failed to remove paths: map[name=systemd:/sys/fs/cgroup/systemd/docker/680b3a0ca948 pids:/sys/fs/cgroup/pids/docker/680b3a0ca948] failed to start containers: e4_nova_libvirt 
+c2-restart: after the handler-style retries: container exited
+c2 before recreate: containerd task 680b3a0ca948: STOPPED; shim process: 17640
+$ docker stop -t 10 e4_nova_libvirt -> rc=0, 0.02 s, output: e4_nova_libvirt 
+c2-recreate-after-failed-restart: after docker stop, before rm: qemu 17886 ALIVE, container status exited exit=128
+$ docker rm -f e4_nova_libvirt -> rc=0, 0.04 s, output: e4_nova_libvirt 
+$ run_ctr -> rc=0, 0.16 s
+c2 after recreate (old container removed by docker rm -f): containerd task 680b3a0ca948: STOPPED; shim process: 17640; old cgroup dirs: pids systemd 
+moved 21054 to /sys/fs/cgroup/systemd/e4-machine
+moved 21054 to /sys/fs/cgroup/pids/e4-machine
+moved 21054 to /sys/fs/cgroup/blkio/e4-machine
+moved 21054 to /sys/fs/cgroup/freezer/e4-machine
+moved 21054 to /sys/fs/cgroup/devices/e4-machine
+moved 21054 to /sys/fs/cgroup/memory/e4-machine
+moved 21054 to /sys/fs/cgroup/cpuset/e4-machine
+moved 21054 to /sys/fs/cgroup/cpuacct/e4-machine
+moved 21054 to /sys/fs/cgroup/cpu/e4-machine
+$ docker restart -t 10 e4_nova_libvirt -> rc=0, 0.26 s, output: e4_nova_libvirt 

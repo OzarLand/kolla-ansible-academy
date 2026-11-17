@@ -1,0 +1,28 @@
+# e4 environment (2026-11-17T13:53Z)
+kernel: 6.18.44-fc-v553
+docker server 29.9.2; Engine 29.9.2; containerd v2.4.2; runc 1.5.2; docker-init 0.19.0; 
+cgroup driver cgroupfs, cgroup version 1, storage overlayfs
+host cgroup mounts:
+  /sys/fs/cgroup/cpu cgroup rw,relatime,cpu
+  /sys/fs/cgroup/cpuacct cgroup rw,relatime,cpuacct
+  /sys/fs/cgroup/cpuset cgroup rw,relatime,cpuset
+  /sys/fs/cgroup/memory cgroup rw,relatime,memory
+  /sys/fs/cgroup/devices cgroup rw,relatime,devices
+  /sys/fs/cgroup/freezer cgroup rw,relatime,freezer
+  /sys/fs/cgroup/blkio cgroup rw,relatime,blkio
+  /sys/fs/cgroup/pids cgroup rw,relatime,pids
+  /sys/fs/cgroup/systemd cgroup rw,relatime,name=systemd
+  /sys/fs/cgroup/unified cgroup2 rw,relatime
+host CapBnd: 000001fffeffffff (bit 24 CAP_SYS_RESOURCE: 0)
+host D-Bus system socket: ls: cannot access '/run/dbus/system_bus_socket': No such file or directory
+host PID 1: process_api (no systemd, no systemd-machined)
+host / propagation: private
+image e4-nova-libvirt:ussuri: sha256:c764b4960938
+  dumb-init 1.2.1-1
+  libvirt-daemon-system 4.0.0-1ubuntu8.21
+  libvirt0 4.0.0-1ubuntu8.21
+  qemu-system-x86 1:2.11+dfsg-1ubuntu7.42
+  sasl2-bin 2.1.27~101-g0780600+dfsg-3ubuntu2.4
+  VERSION="18.04.6 LTS (Bionic Beaver)"
+  /var/run -> /run
+  hard limits in a container: nofile 20000, nproc 64272

@@ -1,0 +1,14 @@
+# times relative to T0 = 1794923387.930041 (T0 docker restart -t 10 e5_openvswitch_vswitchd (no strace attached))
+   -1.510 s  pings started
+   +0.000 s  T0 docker restart -t 10 e5_openvswitch_vswitchd (no strace attached)
+   +0.037 s  docker event: kill exitCode=
+   +0.161 s  docker event: stop exitCode=
+   +0.162 s  docker event: die exitCode=143
+   +0.240 s  docker event: start exitCode=
+   +0.240 s  docker event: restart exitCode=
+   +0.244 s  docker restart returned (rc=0)
+   +0.328 s  vswitchd answers on e5-br-sec.mgmt again
+   +0.476 s  flows (cookie lines) after restart: e5-br-sec 0, e5-br-std 1
+   +2.480 s  re-adding the flows
+   +2.904 s  flows re-added
+   +4.909 s  pings stopped

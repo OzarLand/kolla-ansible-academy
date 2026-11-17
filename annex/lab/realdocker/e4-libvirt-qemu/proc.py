@@ -75,8 +75,9 @@ def rootmnt(label, pid):
         f = line.split()
         if len(f) > 4 and f[4] == '/':
             m = re.search(r'upperdir=([^,]+)', line)
-            print('[%s] pid %s root mount: %s %s' % (label, pid, f[f.index('-') + 1],
-                  m.group(1) if m else ' '.join(f[f.index('-') + 2:f.index('-') + 3])))
+            up = m.group(1) if m else ''
+            print('[%s] pid %s root mount: %s upperdir=%s (%s on the host)' % (
+                label, pid, f[f.index('-') + 1], up, 'exists' if up and os.path.isdir(up) else 'ABSENT'))
             return
     print('[%s] pid %s: no mountinfo' % (label, pid))
 
@@ -127,11 +128,15 @@ def shim(raw, t0, qemu_pids):
                     continue
                 out.append(a)
             text = 'execve ' + ' '.join(out)
-        elif rest.startswith('write(') and '/sys/fs/cgroup' in rest:
+        elif re.match(r'write\(\d+</sys/fs/cgroup/', rest):
             text = re.sub(r', \d+\) = ', ') = ', rest)
+        elif rest.startswith('write(2<pipe') and 'unable to' in rest:
+            text = 'runc stderr: ' + rest.split(', "', 1)[1][:170]  # runc's error message
+        elif rest.startswith('write('):
+            continue
         elif rest.startswith('rmdir(') and '/sys/fs/cgroup' in rest:
             text = rest
-        elif re.match(r'(kill|tgkill)\(\d+, \d+, SIGURG\)', rest):
+        elif re.match(r'(kill|tgkill)\(\d+, (\d+, )?SIGURG', rest):
             continue  # Go runtime preemption signals between the shim's own threads
         elif re.match(r'(kill|tgkill|pidfd_send_signal)\(', rest):
             km = re.match(r'kill\((-?\d+), (\w+)\)', rest)

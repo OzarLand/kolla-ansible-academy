@@ -1,0 +1,18 @@
+# strace -T -f -e trace=rt_sigtimedwait,kill,exit_group[,...] -e signal=all on the host; times relative
+# to T0 (return time for completed syscalls); "thread N" = another thread of the daemon (host tid)
+   +0.035 s  dumb-init(1)           rt_sigtimedwait(~[RTMIN RT_1], {si_signo=SIGTERM, si_code=SI_USER, si_pid=0, si_uid=0}, NULL, 8) = 15 (SIGTERM)  [returned; entry -0.502 s]
+   +0.035 s  dumb-init(1)           kill(7, SIGTERM) = 0  [returned; entry +0.035 s]
+   +0.035 s  bash(7)                --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=1, si_uid=0} ---
+   +0.035 s  dumb-init(1)           rt_sigtimedwait(~[RTMIN RT_1],  <unfinished ...>
+   +0.035 s  bash(7)                +++ killed by SIGTERM +++
+   +0.035 s  dumb-init(1)           <... rt_sigtimedwait resumed>{si_signo=SIGCHLD, si_code=CLD_KILLED, si_pid=7, si_uid=0, si_status=SIGTERM, si_utime=0, si_stime=0}, NULL, 8) = 17 (SIGCHLD)
+   +0.035 s  dumb-init(1)           kill(7, SIGTERM) = -1 ESRCH (No such process)  [returned; entry +0.035 s]
+   +0.035 s  dumb-init(1)           exit_group(143) = ?
+   +0.036 s  thread 28531           +++ killed by SIGKILL +++
+   +0.036 s  thread 28532           +++ killed by SIGKILL +++
+   +0.036 s  thread 28539           +++ killed by SIGKILL +++
+   +0.036 s  thread 28538           +++ killed by SIGKILL +++
+   +0.036 s  thread 28540           +++ killed by SIGKILL +++
+   +0.105 s  thread 28537           +++ killed by SIGKILL +++
+   +0.105 s  ovs-vswitchd(18)       +++ killed by SIGKILL +++
+   +0.105 s  dumb-init(1)           +++ exited with 143 +++

@@ -1,0 +1,7 @@
+
+### recreate: docker stop -t 10, docker rm, docker run (same parameters, same volumes)
+docker stop -t 10 took 10.07 s; exit code 137
+$ tgtadm --lld iscsi --op show --mode target   (rc 0, 0 target(s))
+(empty output: no targets)
+$ ls /var/lib/cinder/volumes
+volume-e6000000-0000-4000-8000-000000000001

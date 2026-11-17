@@ -10,6 +10,7 @@ IMG=e4-nova-libvirt:ussuri
 CTR=e4_nova_libvirt
 VOLUMES="e4_kolla_logs e4_libvirtd e4_nova_compute e4_nova_libvirt_qemu"
 CG_NAME=e4-machine
+ALL_VMS="e4-vm-a e4-vm-b e4-vm-c1 e4-vm-c2 e4-vm-c3 e4-vm-d1 e4-vm-d2"
 PY="python3 -I"
 
 note() { echo "== $*"; }
@@ -48,7 +49,8 @@ run_ctr() {
     -v e4_libvirtd:/var/lib/libvirt \
     -v e4_nova_compute:/var/lib/nova/ \
     -v e4_nova_libvirt_qemu:/etc/libvirt/qemu \
-    "$IMG" >/dev/null
+    "$IMG" >/dev/null || return 1
+  docker inspect -f '{{.Id}}' "$CTR" >> "$WORK/container-ids"
 }
 
 virsh() { docker exec "$CTR" virsh -c qemu:///system "$@"; }
@@ -100,7 +102,12 @@ snap() {
 # Trace the container's containerd shim (parent of dumb-init) for runc invocations and kill() calls.
 shim_trace_start() { # TAG
   local ip shim
-  ip=$(init_pid); shim=$(ps -o ppid= -p "$ip" | tr -d ' ')
+  ip=$(init_pid); SHIM_STRACE=
+  if [ -z "$ip" ] || [ "$ip" = 0 ]; then
+    echo "shim: none (container not running, nothing to trace)" > "$WORK/raw/$1.shim.hdr"; : > "$WORK/raw/$1.shim.raw"
+    return 0
+  fi
+  shim=$(ps -o ppid= -p "$ip" | tr -d ' ')
   echo "shim: $(ps -o pid=,args= -p "$shim" | sed -E 's/([0-9a-f]{12})[0-9a-f]{52}/\1/g')" > "$WORK/raw/$1.shim.hdr"
   strace -ttt -f -q -y -e trace=execve,kill,tgkill,pidfd_send_signal,write,rmdir -e signal=none -s 300 \
     -o "$WORK/raw/$1.shim.raw" -p "$shim" 2> "$WORK/raw/$1.strace.err" &
@@ -109,8 +116,10 @@ shim_trace_start() { # TAG
 }
 shim_trace_end() { # TAG T0 OUTFILE QEMU_PID
   local i
-  for i in $(seq 1 40); do kill -0 "$SHIM_STRACE" 2>/dev/null || break; sleep 0.25; done
-  kill "$SHIM_STRACE" 2>/dev/null; wait "$SHIM_STRACE" 2>/dev/null
+  if [ -n "$SHIM_STRACE" ]; then
+    for i in $(seq 1 40); do kill -0 "$SHIM_STRACE" 2>/dev/null || break; sleep 0.25; done
+    kill "$SHIM_STRACE" 2>/dev/null; wait "$SHIM_STRACE" 2>/dev/null
+  fi
   { cat "$WORK/raw/$1.shim.hdr"; echo "# shim strace (-f, children = runc): runc invocations, kill()/pidfd_send_signal(), writes and rmdir under /sys/fs/cgroup; times relative to the docker command"
     $PY "$E4/proc.py" shim "$WORK/raw/$1.shim.raw" "$2" "$4"; } > "$3"
 }
@@ -118,8 +127,10 @@ shim_trace_end() { # TAG T0 OUTFILE QEMU_PID
 # Move a process (all threads, via cgroup.procs) into $CG_NAME at the root of every hierarchy it belongs to,
 # from the host. Models systemd-machined placing QEMU in machine.slice, outside the container's cgroup.
 move_cgroup() { # PID LOG [all|unified-only|all-but-unified]
-  local pid=$1 log=$2 mode=${3:-all} line ctrl dir
-  while IFS= read -r line; do
+  local pid=$1 log=$2 mode=${3:-all} line ctrl dir lines
+  # read the whole file first: /proc/PID/cgroup changes under a reader while the process is being moved
+  mapfile -t lines < "/proc/$pid/cgroup"
+  for line in "${lines[@]}"; do
     ctrl=$(echo "$line" | cut -d: -f2)
     case "$mode:$ctrl" in
       unified-only:?*) continue ;;
@@ -128,26 +139,64 @@ move_cgroup() { # PID LOG [all|unified-only|all-but-unified]
     case "$ctrl" in
       "") dir=/sys/fs/cgroup/unified ;;
       name=systemd) dir=/sys/fs/cgroup/systemd ;;
-      *) dir=/sys/fs/cgroup/${ctrl%%,*} ;;
+      blkio|cpu|cpuacct|cpuset|devices|freezer|memory|pids|net_cls|net_prio|perf_event|hugetlb|rdma|misc)
+        dir=/sys/fs/cgroup/$ctrl ;;
+      *) echo "unexpected cgroup line '$line', not moved" >> "$log"; continue ;;
     esac
+    [ "$(stat -f -c %T "$dir")" = cgroupfs ] || [ "$(stat -f -c %T "$dir")" = cgroup2fs ] \
+      || { echo "$dir is not a cgroup mount, not moved" >> "$log"; continue; }
     mkdir -p "$dir/$CG_NAME"
     if [ -f "$dir/$CG_NAME/cpuset.cpus" ]; then
       cat "$dir/cpuset.cpus" > "$dir/$CG_NAME/cpuset.cpus"; cat "$dir/cpuset.mems" > "$dir/$CG_NAME/cpuset.mems"
     fi
     if echo "$pid" > "$dir/$CG_NAME/cgroup.procs"; then echo "moved $pid to $dir/$CG_NAME" >> "$log"
     else echo "FAILED to move $pid to $dir/$CG_NAME" >> "$log"; fi
-  done < "/proc/$pid/cgroup"
+  done
 }
 
 rm_cgroups() {
-  local d
-  for d in /sys/fs/cgroup/*/"$CG_NAME"; do [ -d "$d" ] && rmdir "$d" 2>/dev/null; done
+  local d i
+  for i in 1 2 3 4 5 6 7 8 9 10; do
+    for d in /sys/fs/cgroup/*/"$CG_NAME"; do [ -d "$d" ] && rmdir "$d" 2>/dev/null; done
+    ls -d /sys/fs/cgroup/*/"$CG_NAME" >/dev/null 2>&1 || return 0
+    sleep 0.5
+  done
+  echo "WARNING: could not remove $(ls -d /sys/fs/cgroup/*/"$CG_NAME" | tr '\n' ' ')" >&2
+}
+
+CTR_A=(--address /var/run/docker/containerd/containerd.sock -n moby)
+ctr_q() { ctr "${CTR_A[@]}" "$@" 2> >(grep -v DEPRECATION >&2); }
+
+# containerd's view of a container id (Docker's own containerd, namespace moby): task status and shim.
+containerd_state() { # ID
+  local st shim
+  st=$(ctr_q tasks ls 2>/dev/null | awk -v id="$1" '$1 == id {print $3}')
+  shim=$(ps -eo pid=,args= | grep "containerd-shim-runc-v2 .*-id $1" | grep -v grep | awk '{print $1}')
+  echo "containerd task ${1:0:12}: ${st:-none}; shim process: ${shim:-none}"
+}
+
+# Leftovers of containers this experiment created (ids recorded by run_ctr), once Docker no longer knows them:
+# a failed runc delete (QEMU still in the container's pids/name=systemd cgroup) leaves the containerd task, the
+# container record, the shim and empty /docker/<id> cgroup directories behind even after "docker rm -f" (test c2).
+rm_stale_container_cgroups() {
+  local id d img
+  [ -f "$WORK/container-ids" ] || return 0
+  for id in $(sort -u "$WORK/container-ids"); do
+    docker inspect "$id" >/dev/null 2>&1 && continue
+    img=$(ctr_q containers info "$id" 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)["Image"])' 2>/dev/null)
+    if [ "$img" = "docker.io/library/$IMG" ]; then
+      ctr_q tasks delete "$id" >/dev/null 2>&1; ctr_q containers delete "$id" >/dev/null 2>&1
+    fi
+    for d in /sys/fs/cgroup/*/docker/"$id"; do [ -d "$d" ] && rmdir "$d" 2>/dev/null; done
+  done
 }
 
 libvirtd_log() { # OUTFILE: warnings/errors libvirtd logged (log_level 3), from the e4_kolla_logs volume
   local mp
   mp=$(docker volume inspect -f '{{.Mountpoint}}' e4_kolla_logs 2>/dev/null) || return 0
-  sed -E 's/^[0-9-]+ ([0-9:.]+)\+[0-9]+: /\1 /' "$mp/libvirt/libvirtd.log" 2>/dev/null > "$1"
+  # dropped: capability-probe noise of this sandbox (no DMI, no /dev/mem, no suspend, no dnsmasq)
+  sed -E 's/^[0-9-]+ ([0-9:.]+)\+[0-9]+: /\1 /' "$mp/libvirt/libvirtd.log" 2>/dev/null \
+    | grep -v -E 'dmidecode|/dev/mem|^\s*$|SuspendSupportsTarget|power management|dnsmasq|udevGetDMIData|hostname: ' > "$1"
 }
 
 # Kill only QEMU processes this experiment started (command line guest=e4-*), after asking libvirtd first.
@@ -162,10 +211,11 @@ kill_e4_qemu() {
 }
 
 cleanup() {
-  kill_e4_qemu e4-vm-a e4-vm-b e4-vm-c e4-vm-d1 e4-vm-d2
+  kill_e4_qemu $ALL_VMS
   docker rm -f "$CTR" >/dev/null 2>&1
   local v; for v in $VOLUMES; do docker volume rm "$v" >/dev/null 2>&1; done
   rm_cgroups
+  rm_stale_container_cgroups
   if mountpoint -q "$WORK/hostrun"; then umount -R "$WORK/hostrun"; fi
   rm -rf "$WORK"
 }

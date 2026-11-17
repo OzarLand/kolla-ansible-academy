@@ -1,0 +1,12 @@
+$ docker restart -t 10 e4_nova_libvirt -> rc=0, 0.26 s, output: e4_nova_libvirt 
+moved 23502 to /sys/fs/cgroup/systemd/e4-machine
+moved 23502 to /sys/fs/cgroup/pids/e4-machine
+moved 23502 to /sys/fs/cgroup/blkio/e4-machine
+moved 23502 to /sys/fs/cgroup/freezer/e4-machine
+moved 23502 to /sys/fs/cgroup/devices/e4-machine
+moved 23502 to /sys/fs/cgroup/memory/e4-machine
+moved 23502 to /sys/fs/cgroup/cpuset/e4-machine
+moved 23502 to /sys/fs/cgroup/cpuacct/e4-machine
+moved 23502 to /sys/fs/cgroup/cpu/e4-machine
+moved 23502 to /sys/fs/cgroup/unified/e4-machine
+$ docker restart -t 10 e4_nova_libvirt -> rc=0, 0.22 s, output: e4_nova_libvirt 

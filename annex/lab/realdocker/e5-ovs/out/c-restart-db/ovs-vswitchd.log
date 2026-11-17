@@ -1,0 +1,7 @@
+2026-11-17T13:50:25.469Z|00038|reconnect|INFO|unix:/run/openvswitch/db.sock: connection closed by peer
+2026-11-17T13:50:26.469Z|00039|reconnect|INFO|unix:/run/openvswitch/db.sock: connecting...
+2026-11-17T13:50:26.469Z|00040|reconnect|INFO|unix:/run/openvswitch/db.sock: connected
+2026-11-17T13:50:26.919Z|00041|memory|INFO|66100 kB peak resident set size after 10.0 seconds
+2026-11-17T13:50:26.919Z|00042|memory|INFO|handlers:2 ports:8 revalidators:2 rules:15 udpif keys:4
+2026-11-17T13:50:27.273Z|00043|bridge|INFO|bridge e5-br-std: added interface e5-int9 on port 4
+2026-11-17T13:50:27.454Z|00044|bridge|INFO|bridge e5-br-std: deleted interface e5-int9 on port 4

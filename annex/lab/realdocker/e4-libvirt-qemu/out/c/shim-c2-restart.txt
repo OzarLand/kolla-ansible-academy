@@ -1,0 +1,28 @@
+shim: 17640 /usr/bin/containerd-shim-runc-v2 -namespace moby -id 680b3a0ca948 -address /var/run/docker/containerd/containerd.sock
+# shim strace (-f, children = runc): runc invocations, kill()/pidfd_send_signal(), writes and rmdir under /sys/fs/cgroup; times relative to the docker command
+  +0.038 s  pid 18074  execve runc kill 680b3a0ca948 15
+  +0.067 s  pid 18074  pidfd_send_signal(9<anon_inode:[pidfd]>, 0, NULL, 0) = 0
+  +0.067 s  pid 18074  pidfd_send_signal(9<anon_inode:[pidfd]>, SIGTERM, NULL, 0) = 0
+  +0.081 s  pid 18081  execve runc kill --all 680b3a0ca948 9
+  +0.108 s  pid 18081  write(9</sys/fs/cgroup/unified/docker/680b3a0ca948/cgroup.kill>, "1") = 1
+  +0.127 s  pid 18087  execve runc delete 680b3a0ca948
+  +0.155 s  pid 18087  write(9</sys/fs/cgroup/unified/docker/680b3a0ca948/cgroup.kill>, "1") = 1
+  +2.223 s  pid 18087  runc stderr: unable to destroy container: unable to remove container's cgroup: Failed to remove paths: map[name=systemd:/sys/fs/cgroup/systemd/docker/680b3a0ca948e3d22b09001603c5f44dc
+  +2.249 s  pid 18096  execve runc kill --all 680b3a0ca948 9
+  +2.285 s  pid 18102  execve runc delete 680b3a0ca948
+  +4.386 s  pid 18102  runc stderr: unable to destroy container: unable to remove container's cgroup: Failed to remove paths: map[name=systemd:/sys/fs/cgroup/systemd/docker/680b3a0ca948e3d22b09001603c5f44dc
+  +9.502 s  pid 18142  execve runc kill --all 680b3a0ca948 9
+  +9.536 s  pid 18148  execve runc delete 680b3a0ca948
+ +11.630 s  pid 18150  runc stderr: unable to destroy container: unable to remove container's cgroup: Failed to remove paths: map[name=systemd:/sys/fs/cgroup/systemd/docker/680b3a0ca948e3d22b09001603c5f44dc
+ +16.748 s  pid 18213  execve runc kill --all 680b3a0ca948 9
+ +16.787 s  pid 18219  execve runc delete 680b3a0ca948
+ +18.883 s  pid 18221  runc stderr: unable to destroy container: unable to remove container's cgroup: Failed to remove paths: map[name=systemd:/sys/fs/cgroup/systemd/docker/680b3a0ca948e3d22b09001603c5f44dc
+ +24.017 s  pid 18267  execve runc kill --all 680b3a0ca948 9
+ +24.056 s  pid 18273  execve runc delete 680b3a0ca948
+ +26.149 s  pid 18278  runc stderr: unable to destroy container: unable to remove container's cgroup: Failed to remove paths: map[name=systemd:/sys/fs/cgroup/systemd/docker/680b3a0ca948e3d22b09001603c5f44dc
+ +31.286 s  pid 18341  execve runc kill --all 680b3a0ca948 9
+ +31.331 s  pid 18347  execve runc delete 680b3a0ca948
+ +33.432 s  pid 18351  runc stderr: unable to destroy container: unable to remove container's cgroup: Failed to remove paths: map[name=systemd:/sys/fs/cgroup/systemd/docker/680b3a0ca948e3d22b09001603c5f44dc
+ +38.560 s  pid 18442  execve runc kill --all 680b3a0ca948 9
+ +38.596 s  pid 18448  execve runc delete 680b3a0ca948
+ +40.688 s  pid 18448  runc stderr: unable to destroy container: unable to remove container's cgroup: Failed to remove paths: map[name=systemd:/sys/fs/cgroup/systemd/docker/680b3a0ca948e3d22b09001603c5f44dc

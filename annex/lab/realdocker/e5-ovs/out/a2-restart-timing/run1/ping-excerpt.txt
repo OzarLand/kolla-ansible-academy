@@ -1,0 +1,24 @@
+# raw ping -D -O lines around each gap; left column: time relative to T0
+== 10.55.1.2
+   -0.060 s  [1794923373.293378] 64 bytes from 10.55.1.2: icmp_seq=27 ttl=64 time=0.344 ms
+   -0.004 s  [1794923373.349310] 64 bytes from 10.55.1.2: icmp_seq=28 ttl=64 time=0.309 ms
+   +0.107 s  [1794923373.460868] no answer yet for icmp_seq=29
+   +0.163 s  [1794923373.516811] no answer yet for icmp_seq=30
+   +0.223 s  [1794923373.576809] no answer yet for icmp_seq=31
+   ...
+   +2.879 s  [1794923376.232800] no answer yet for icmp_seq=78
+   +2.939 s  [1794923376.292822] no answer yet for icmp_seq=79
+   +2.940 s  [1794923376.293158] 64 bytes from 10.55.1.2: icmp_seq=80 ttl=64 time=0.205 ms
+   +3.000 s  [1794923376.353124] 64 bytes from 10.55.1.2: icmp_seq=81 ttl=64 time=0.245 ms
+118 packets transmitted, 67 received, 43% packet loss, time 6581ms
+== 10.55.2.2
+   -0.060 s  [1794923373.293306] 64 bytes from 10.55.2.2: icmp_seq=27 ttl=64 time=0.204 ms
+   -0.004 s  [1794923373.349218] 64 bytes from 10.55.2.2: icmp_seq=28 ttl=64 time=0.225 ms
+   +0.107 s  [1794923373.460823] no answer yet for icmp_seq=29
+   +0.163 s  [1794923373.516817] no answer yet for icmp_seq=30
+   +0.219 s  [1794923373.572818] no answer yet for icmp_seq=31
+   +0.275 s  [1794923373.628800] no answer yet for icmp_seq=32
+   +0.331 s  [1794923373.684887] no answer yet for icmp_seq=33
+   +0.332 s  [1794923373.685139] 64 bytes from 10.55.2.2: icmp_seq=34 ttl=64 time=0.195 ms
+   +0.392 s  [1794923373.746006] 64 bytes from 10.55.2.2: icmp_seq=35 ttl=64 time=1.14 ms
+118 packets transmitted, 113 received, 4% packet loss, time 6561ms

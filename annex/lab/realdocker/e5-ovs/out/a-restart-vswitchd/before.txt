@@ -1,0 +1,70 @@
+### ovs-vsctl show
+174889ca-1530-4e3b-b475-62091a3bf4fc
+    Bridge "e5-br-sec"
+        fail_mode: secure
+        Port "e5-v2a"
+            tag: 101
+            Interface "e5-v2a"
+        Port "e5-v1a"
+            tag: 101
+            Interface "e5-v1a"
+        Port "e5-br-sec"
+            Interface "e5-br-sec"
+                type: internal
+        Port "e5-patch-std"
+            Interface "e5-patch-std"
+                type: patch
+                options: {peer="e5-patch-sec"}
+    Bridge "e5-br-std"
+        Port "e5-v3a"
+            Interface "e5-v3a"
+        Port "e5-v4a"
+            Interface "e5-v4a"
+        Port "e5-br-std"
+            Interface "e5-br-std"
+                type: internal
+        Port "e5-patch-sec"
+            Interface "e5-patch-sec"
+                type: patch
+                options: {peer="e5-patch-std"}
+### Open_vSwitch row
+external_ids        : {system-id="e5-lab-host"}
+other_config        : {max-idle="15000"}
+cur_cfg             : 3
+next_cfg            : 3
+### Bridge rows
+name                : "e5-br-std"
+datapath_type       : netdev
+fail_mode           : []
+protocols           : []
+other_config        : {mac-table-size="2048"}
+external_ids        : {}
+
+name                : "e5-br-sec"
+datapath_type       : netdev
+fail_mode           : secure
+protocols           : ["OpenFlow10", "OpenFlow13"]
+other_config        : {mac-table-size="4096"}
+external_ids        : {bridge-id="e5-br-sec"}
+### Interface rows (name, type, ofport, options, external_ids)
+name           type     ofport options               external_ids
+-------------- -------- ------ --------------------- -----------------------------------------------------------------------------
+"e5-v1a"       ""       2      {}                    {attached-mac="02:e5:00:00:00:01", iface-id="e5-port-1", iface-status=active}
+"e5-br-std"    internal 65534  {}                    {}
+"e5-patch-sec" patch    1      {peer="e5-patch-std"} {}
+"e5-br-sec"    internal 65534  {}                    {}
+"e5-patch-std" patch    3      {peer="e5-patch-sec"} {}
+"e5-v4a"       ""       3      {}                    {}
+"e5-v2a"       ""       1      {}                    {iface-id="e5-port-2"}
+"e5-v3a"       ""       2      {}                    {}
+### ovs-ofctl dump-flows e5-br-sec
+NXST_FLOW reply (xid=0x4):
+ cookie=0xe5000001, table=0, n_packets=40, n_bytes=3864, priority=100,in_port=2 actions=output:1
+ cookie=0xe5000002, table=0, n_packets=40, n_bytes=3864, priority=100,in_port=1 actions=output:2
+ cookie=0xe5000003, table=0, n_packets=1, n_bytes=42, priority=1 actions=drop
+ cookie=0xe5000017, table=23, n_packets=0, n_bytes=0, priority=0 actions=drop
+### ovs-ofctl dump-flows e5-br-std
+NXST_FLOW reply (xid=0x4):
+ cookie=0xe5000011, table=0, n_packets=0, n_bytes=0, priority=200,dl_type=0x88cc actions=drop
+ cookie=0xe5000012, table=0, n_packets=47, n_bytes=4606, priority=100,ip,in_port=2,nw_dst=10.55.2.0/24 actions=NORMAL
+ cookie=0x0, table=0, n_packets=49, n_bytes=4690, priority=0 actions=NORMAL
