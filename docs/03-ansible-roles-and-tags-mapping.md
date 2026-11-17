@@ -55,6 +55,10 @@ Minimal reproduction ([annex/lab/tagdemo](../annex/lab/tagdemo/), output in
 ===== --tags chrony      → common task runs in the chrony play (first play the host appears in)
 ```
 
+Run it with `-e kolla_action=reconfigure`, which the included file name needs. Ansible 2.8.20 selects exactly the same
+tasks ([annex/lab/tagdemo.ansible-2.8.out](../annex/lab/tagdemo.ansible-2.8.out)). The code that drops the include's
+own tags, `Task._get_parent_attribute` in `playbook/task.py`, is identical in 2.8.20 and 2.9.27 [LAB].
+
 ### 2.2 Handlers ignore tags [ANSIBLE]
 
 A notified handler runs even if its own tags do not match `--tags`. This is why `-t keystone` can restart HAProxy:
@@ -95,8 +99,11 @@ Confirmed on the real playbook [LAB s03]. An override that only touches `/etc/ko
 restarted `nova_compute`, **`nova_libvirt` and `nova_ssh`** on every compute host. In s04, a scheduler-only override
 restarted `nova_api` *and* `nova_scheduler`. Impact analysis in [07](07-day2-operational-impact.md).
 
-Ussuri supports only Ansible 2.8–2.9 (`tools/kolla-ansible:58-59`). Whether newer Ansible changed this behaviour is
-irrelevant to Ussuri. It was not tested here.
+Ussuri supports only Ansible 2.8–2.9 (`tools/kolla-ansible:58-59`). The behaviour is **identical on Ansible 2.8.20**
+[LAB]. The reproduction gives the same three handler runs
+([annex/lab/notify-loop.ansible-2.8.out](../annex/lab/notify-loop.ansible-2.8.out)), and the code block is unchanged:
+in 2.8.20 it is `plugins/strategy/__init__.py:540-557`, the same as 2.9.27's `:609-626`. Newer Ansible is irrelevant
+to Ussuri and was not tested.
 
 ### 2.5 `run_once` with `serial` [ANSIBLE]
 

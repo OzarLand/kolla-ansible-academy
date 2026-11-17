@@ -98,7 +98,7 @@ hardware.
 | Q7 | Real timing at scale (SSH, pipelining, fact caching, forks) | doc 06 model | Run `-t nova reconfigure` (no drift) with 50/100/200 computes on a test fleet or VMs, with forks 20/50/100, pipelining on/off, fact cache on/off | wall time per play, deploy-host CPU, SSH connection count |
 | Q8 | Image sizes and registry throughput | doc 06 model | `docker image inspect -f '{{.Size}}'` for the Ussuri images in use; registry egress during `pull` | GB per compute, pull wall time vs forks |
 | Q9 | Check mode (`--check --diff`) usability | doc 09 | `EXTRA_OPTS="--check --diff" kolla-ansible -t nova reconfigure` on staging | which tasks fail; is the diff output useful? |
-| Q10 | Ansible 2.8 vs 2.9 behaviour for F1/F2 | Ussuri allows 2.8 | Re-run `annex/lab/notify-loop.yml` and `annex/lab/tagdemo` on 2.8 | same output? |
+| Q10 | Ansible 2.8 vs 2.9 behaviour for F1/F2 | Ussuri allows 2.8 | Done: both reproductions re-run on Ansible 2.8.20 and 2.9.27 | **Answered: identical** (`annex/lab/*.ansible-2.8.out`); the responsible code blocks are unchanged between the two versions (03 §2.1, §2.4) |
 | Q11 | Fernet key distribution failure modes | R19 | Stop one keystone node during `-t keystone reconfigure` | key directory contents per node; token validation across nodes |
 | Q12 | Glance backend switch on enabling Swift | R21 | Enable Swift on staging with images in the file store | image download success |
 | Q13 | `bootstrap-servers` re-run effects on a live compute | R14 | Re-run with an unchanged and a changed `daemon.json` on a staging compute with VMs | Docker restart?, container restarts, VM state |

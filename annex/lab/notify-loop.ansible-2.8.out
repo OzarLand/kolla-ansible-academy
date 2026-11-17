@@ -1,0 +1,33 @@
+
+PLAY [localhost] ***************************************************************
+
+TASK [Check containers (loop, one item changed)] *******************************
+ok: [localhost] => (item={'key': 'nova-libvirt', 'value': {'changed': False}}) => {
+    "msg": "checking nova-libvirt"
+}
+ok: [localhost] => (item={'key': 'nova-ssh', 'value': {'changed': False}}) => {
+    "msg": "checking nova-ssh"
+}
+changed: [localhost] => (item={'key': 'nova-compute', 'value': {'changed': True}}) => {
+    "msg": "checking nova-compute"
+}
+skipping: [localhost] => (item={'key': 'nova-novncproxy', 'value': {'changed': False, 'skip': True}}) 
+
+RUNNING HANDLER [Restart nova-libvirt container] *******************************
+ok: [localhost] => {
+    "msg": "RESTART nova_libvirt"
+}
+
+RUNNING HANDLER [Restart nova-ssh container] ***********************************
+ok: [localhost] => {
+    "msg": "RESTART nova_ssh"
+}
+
+RUNNING HANDLER [Restart nova-compute container] *******************************
+ok: [localhost] => {
+    "msg": "RESTART nova_compute"
+}
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=4    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

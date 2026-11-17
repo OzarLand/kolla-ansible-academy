@@ -43,6 +43,7 @@ is set per host in the inventory (host vars beat `group_vars/all.yml`).
 | `list-tags-site.txt`, `list-tasks-nova.txt` | real `--list-tags` / `--list-tasks -t nova` output |
 | `notify-loop.yml` / `.out` | minimal reproduction of Ansible 2.9 loop-notify semantics |
 | `tagdemo/`, `tagdemo.out` | minimal reproduction of `-t common` being a no-op |
+| `notify-loop.ansible-2.8.out`, `tagdemo.ansible-2.8.out` | the same two reproductions on Ansible 2.8.20: identical behaviour (docs/10 Q10) |
 | `kolla_docker_params.py` / `.out` | the real `kolla_docker.generate_module()` fed handler arguments: effective `graceful_timeout` = 10 |
 | `haproxy-tag-toy/` | the haproxy-play tag toy used by fact sheet A |
 
@@ -63,6 +64,15 @@ cp <this repo>/annex/lab/harness/lab-globals.yml lab/etc/kolla/globals.yml
 <this repo>/annex/lab/harness/build_lab.sh
 python3 <this repo>/annex/lab/harness/run_lab.py --run t0-deploy --computes 3
 python3 <this repo>/annex/lab/harness/analyze.py t0-deploy all
+```
+
+The two minimal reproductions run without the harness:
+
+```bash
+ansible-playbook -i localhost, -c local notify-loop.yml
+for t in common nova chrony; do
+  ANSIBLE_ROLES_PATH=tagdemo/roles ansible-playbook -i localhost, -c local tagdemo/site.yml --tags $t -e kolla_action=reconfigure
+done
 ```
 
 `scenarios.sh` and `scale.sh` contain the exact scenario commands used for the documentation. Two things the lab
