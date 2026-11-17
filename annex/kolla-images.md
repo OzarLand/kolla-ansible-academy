@@ -19,7 +19,9 @@ have no prefix and are relative to its `ansible/` directory (`roles/nova/tasks/b
   `httpd_setup.sh`, `sudoers`, `healthcheck_*`), and the `Dockerfile.j2` and start scripts of the images in §5:
   Keystone, Glance, Placement, Cinder, Heat, Horizon, Barbican, Octavia, Manila, Swift, Nova, Neutron, Open vSwitch,
   OVN, MariaDB, RabbitMQ, memcached, HAProxy, keepalived (with `check_alive.sh`), fluentd, cron, kolla-toolbox,
-  chrony, iscsid and tgtd. Of the other images only the `ironic-api` bootstrap branch was read (§4). The rest were not.
+  chrony, iscsid and tgtd. Of the other images only the `ironic-api` bootstrap branch (§4) and the `bifrost-deploy`
+  `ENTRYPOINT`/`CMD` (§2.1) were read, and every Dockerfile was searched for `HEALTHCHECK` (§2.7) and for
+  `ENTRYPOINT`/`CMD` overrides. The rest were not.
 - **Matched to Kolla-Ansible.** Each one-shot variable was traced to the task that sets it. The stub lab records the
   environment each one-shot container was given, not what the image did with it: [LAB s04] (Nova one-shots with
   `KOLLA_UPGRADE`), [LAB s11] (`deploy` with a new tag: `bootstrap_placement` and `bootstrap_neutron` with
@@ -39,7 +41,10 @@ have no prefix and are relative to its `ansible/` directory (`roles/nova/tasks/b
 Every kolla image inherits from kolla `docker/base/Dockerfile.j2` [CODE]:
 
 - `ENTRYPOINT ["dumb-init", "--single-child", "--"]` when `use_dumb_init` is on (`:433-435`; default True, kolla
-  `kolla/common/config.py:170`), and `CMD ["kolla_start"]` (`:455`).
+  `kolla/common/config.py:170`), and `CMD ["kolla_start"]` (`:455`). The MariaDB image drops `--single-child` (§2.6).
+  bifrost-deploy resets both (`ENTRYPOINT []`, `CMD [ "/sbin/init" ]`, kolla
+  `docker/bifrost/bifrost-deploy/Dockerfile.j2:29-30`), so `bifrost_deploy` never runs `kolla_start` or
+  `kolla_set_configs`.
 - The base scripts are installed as `kolla_start` (`start.sh`), `kolla_set_configs` (`set_configs.py`),
   `kolla_copy_cacerts` (`copy_cacerts.sh`) and `kolla_httpd_setup` (`httpd_setup.sh`); `sudoers` becomes
   `/etc/sudoers`, mode 0440 (`:427-431,448`).
@@ -245,8 +250,10 @@ Kolla-Ansible writes the files in `/etc/kolla/<service>/` with mode 0660 into di
 In an image with a service `USER` (e.g. `USER nova`, kolla `docker/nova/nova-compute/Dockerfile.j2:196`) a plain
 `docker exec <c> kolla_set_configs --check` cannot open them and exits 2. `kolla_docker` execs as root
 (`library/kolla_docker.py:545-549`). By hand, use `docker exec -u root` as the swift reconfigure does
-(`roles/swift/tasks/reconfigure.yml:47`; the bifrost one does not, `roles/bifrost/tasks/reconfigure.yml:17`), or
-`sudo kolla_set_configs --check` inside the container (§2.1).
+(`roles/swift/tasks/reconfigure.yml:47`), or `sudo kolla_set_configs --check` inside the container (§2.1). The bifrost
+reconfigure omits `-u root` (`roles/bifrost/tasks/reconfigure.yml:17`), but its check cannot work anyway: it execs into
+`bifrost-deploy`, while the container is `bifrost_deploy` (`roles/bifrost/tasks/start.yml:8`), which runs `/sbin/init`
+and mounts no `config.json` (§2.1). No `kolla-ansible` command runs that file.
 
 ### 3.5 What a restart applies
 
@@ -261,8 +268,11 @@ In an image with a service `USER` (e.g. `USER nova`, kolla `docker/nova/nova-com
   (`roles/nova-cell/defaults/main.yml:293`, `group_vars/all.yml:967`). `--check` does not flag them [CODE].
   [HYPOTHESIS] A removed Keystone policy file (`roles/keystone/templates/keystone.json.j2:30-36`) is therefore still
   read after the restart.
-- CA certificates are purged and re-added on every start (§2.4). [HYPOTHESIS] When the last custom CA is removed, the
-  generated trust bundle probably keeps it (§2.4).
+- CA certificates are purged and re-added on every start (§2.4), from `/etc/kolla/<svc>/ca-certificates/`. A CA
+  deleted from `kolla_certificates_dir/ca/`, or left there after `kolla_copy_ca_into_containers` is turned off, stays
+  in that directory, because the `copy` task never deletes files (`roles/service-cert-copy/tasks/main.yml:2-12`)
+  [ANSIBLE], so it is re-added at every start until it is deleted there by hand. [HYPOTHESIS] When the last custom
+  CA is removed there, the generated trust bundle probably keeps it (§2.4).
 - `COPY_ONCE`: `/configured` lives in the container layer, so only a recreate re-applies config. `kolla_docker`
   always recreates under `COPY_ONCE` (`library/kolla_docker.py:793-801`).
 
@@ -291,7 +301,7 @@ service command (§2.2) [CODE]. That directory is the service's own, except for 
 | Image | `KOLLA_BOOTSTRAP` | `KOLLA_UPGRADE` / other one-shot variables | Set by Kolla-Ansible (task, action) | Day-2 note |
 |---|---|---|---|---|
 | keystone | `keystone-manage db_sync`, as user keystone (kolla `docker/keystone/keystone/extend_start.sh:43-46`) | `KOLLA_UPGRADE`: `db_sync --expand`, then `--migrate` (`:24-31`). `KOLLA_FINISH_UPGRADE`: `db_sync --contract` (`:36-39`) | `bootstrap_keystone`, deploy/reconfigure, run_once (`roles/keystone/tasks/bootstrap_service.yml:32-49`). Handlers `init_upgrade_database` and `finish_upgrade_database`, upgrade only (`roles/keystone/handlers/main.yml:5-27,74-95`) | Schema sync on every deploy/reconfigure. `EXTRA_KEYSTONE_MANAGE_ARGS` (`:21`) is never set by Kolla-Ansible |
-| glance-api | `glance-manage db_sync`, then `db_load_metadefs` (kolla `docker/glance/glance-api/extend_start.sh:5-9`) | `KOLLA_UPGRADE` with `GLANCE_DB_EXPAND`, `GLANCE_DB_MIGRATE` or `GLANCE_DB_CONTRACT`: `glance-manage db expand`, `migrate` or `contract` (`:13-27`) | `bootstrap_glance`, deploy/reconfigure and legacy upgrade (`roles/glance/tasks/bootstrap_service.yml:18-36`, `legacy_upgrade.yml:6`). Rolling containers only with `glance_enable_rolling_upgrade` (default `no`, `group_vars/all.yml:868`; `rolling_upgrade.yml:29-101`) | Metadata definitions reloaded on every deploy/reconfigure |
+| glance-api | `glance-manage db_sync`, then `db_load_metadefs` (kolla `docker/glance/glance-api/extend_start.sh:5-9`) | `KOLLA_UPGRADE` with `GLANCE_DB_EXPAND`, `GLANCE_DB_MIGRATE` or `GLANCE_DB_CONTRACT`: `glance-manage db expand`, `migrate` or `contract` (`:13-27`) | `bootstrap_glance`, deploy/reconfigure and legacy upgrade (`roles/glance/tasks/bootstrap_service.yml:18-36`, `legacy_upgrade.yml:6`). Rolling containers only with `glance_enable_rolling_upgrade` (default `no`, `group_vars/all.yml:868`; `rolling_upgrade.yml:29-101`) | `glance-manage db_load_metadefs` runs on every deploy/reconfigure; [HYPOTHESIS] without `--merge` it only adds namespaces not yet in the DB |
 | placement-api | `placement-manage db sync`, then `db online_data_migrations` (kolla `docker/placement/placement-api/extend_start.sh:5-9`) | `KOLLA_UPGRADE`: `db sync` only (`:11-15`), never used. `KOLLA_OSM`: `db online_data_migrations` (`:17-21`) | `bootstrap_placement`, deploy/reconfigure and upgrade (`roles/placement/tasks/bootstrap_service.yml:2-20`, `deploy.yml:11`, `upgrade.yml:11`) [LAB s11]. `KOLLA_OSM` after the restart, upgrade only (`upgrade.yml:16-34`) | Online data migrations on every deploy/reconfigure, and twice on upgrade |
 | cinder-api | `cinder-manage db sync` (kolla `docker/cinder/cinder-api/extend_start.sh:6-9`) | No `KOLLA_UPGRADE`. `KOLLA_OSM`: `db online_data_migrations`, with `--max_count` only if `MAX_NUMBER` is set (`:11-18`) | `bootstrap_cinder`, deploy/reconfigure and upgrade (`roles/cinder/tasks/bootstrap_service.yml:2-20`, `upgrade.yml:7`). `KOLLA_OSM` without `MAX_NUMBER`, so unbounded, upgrade only (`upgrade.yml:16-34`) | A tag change applied by deploy/reconfigure syncs the schema without the online migrations |
 | heat-api | `heat-manage db_sync`, then, only if `heat_user_domain` is absent, creates that domain, user `heat_domain_admin` (password `HEAT_DOMAIN_ADMIN_PASSWORD`) and its `admin` role (kolla `docker/heat/heat-api/extend_start.sh:5-17`) | none; upgrade re-runs the bootstrap | `bootstrap_heat` with admin `OS_*` credentials, deploy/reconfigure and upgrade (`roles/heat/tasks/bootstrap_service.yml:10-21`, `upgrade.yml:6`) | Needs a reachable Keystone. A changed `heat_domain_admin_password` never reaches Keystone (§6 item 7) |
@@ -352,7 +362,7 @@ appears (kolla `docker/keystone/keystone-fernet/keystone_bootstrap.sh:35-41`). I
 | glance-api | glance | Log dir (kolla `docker/glance/glance-base/extend_start.sh:3-8`); no httpd step. `kolla_set_configs` recursively chowns `/var/lib/glance` and `/var/log/kolla/glance` (`roles/glance/templates/glance-api.json.j2:41-52`) | With the file backend `/var/lib/glance` is the image store: one chown per file on every start (§6 item 10) |
 | placement-api | root | Log dir and `placement-api.log`; `chown -R` only if the top-level owner differs (kolla `docker/placement/placement-base/extend_start.sh:3-13`); `kolla_httpd_setup` (`placement-api/extend_start.sh:23`) | – |
 | cinder-api | root | Log dir (kolla `docker/cinder/cinder-base/extend_start.sh:3-8`); `kolla_httpd_setup` (`cinder-api/extend_start.sh:20`) | – |
-| cinder-volume | cinder | Log dir; `sudo chown -R cinder:kolla` of `/var/lib/cinder` and `/etc/iscsi` only if the top-level owner differs, `chmod 2775` if needed (kolla `docker/cinder/cinder-volume/extend_start.sh:3-14`) | The recursive chown runs only on a fresh volume, so a restart stays cheap |
+| cinder-volume | cinder | Log dir; `sudo chown -R cinder:kolla` of `/var/lib/cinder` and `/etc/iscsi` only if the top-level owner differs, `chmod 2775` if needed (kolla `docker/cinder/cinder-volume/extend_start.sh:3-14`) | Not only on a fresh volume: `kolla_set_configs` first chowns `/var/lib/cinder` recursively to `cinder:cinder` (`roles/cinder/templates/cinder-volume.json.j2:38-43`), so the `cinder:kolla` test always fails and `chown -R` walks the `cinder` volume a second time on every start |
 | cinder-scheduler, cinder-backup | cinder | Log dir only (empty `kolla_cinder_extend_start`, kolla `docker/cinder/cinder-base/Dockerfile.j2:78`) | – |
 | heat-api, heat-api-cfn, heat-engine | root (APIs), heat (engine) | Log dir (kolla `docker/heat/heat-base/extend_start.sh:3-8`); the two API images run `kolla_httpd_setup` (`heat-api/extend_start.sh:19`, `heat-api-cfn/extend_start.sh:3`) | – |
 | horizon | root | Settings symlinks, plugin files from `ENABLE_*`, conditional static-asset regeneration, log dir, `kolla_httpd_setup` (kolla `docker/horizon/extend_start.sh:24-42,51-388`; §5.2) | [HYPOTHESIS] Slow start after a recreate or a settings change |
@@ -463,8 +473,10 @@ new-cluster decision [CODE: kolla `docker/mariadb/mariadb/extend_start.sh` has n
    ([08 §3](../docs/08-operational-risk-matrix.md), [09 §1](../docs/09-practical-command-reference.md)).
 4. **A restart does not remove a dropped file.** Destinations of entries removed from `config.json` stay in the
    container until it is recreated, and on a volume even after that (§3.5); `--check` does not report them. CA
-   certificate files are the exception: they are purged and re-added on every start, although when the last custom
-   CA is removed the generated bundle probably keeps it (§2.4) [CODE; bundle and service effect HYPOTHESIS]
+   certificate files are purged and re-added on every start, but only from `/etc/kolla/<svc>/ca-certificates/`,
+   where a CA deleted from `kolla_certificates_dir/ca/` stays (the `copy` task never deletes) and is re-added; when
+   the last custom CA is removed there by hand, the generated bundle probably keeps it (§2.4) [CODE; copy ANSIBLE;
+   bundle and service effect HYPOTHESIS]
    ([01 §7](../docs/01-repository-architecture.md)).
 5. **Nova's online data migrations never run outside `upgrade`.** Deploy and reconfigure run the Nova bootstrap
    containers with `KOLLA_UPGRADE` (`api_db sync` + `db sync`, `db sync --local_cell`); the images' `KOLLA_BOOTSTRAP`
@@ -487,10 +499,11 @@ new-cluster decision [CODE: kolla `docker/mariadb/mariadb/extend_start.sh` has n
    cookie, while `kolla_toolbox` gets the new one [CODE; consequences HYPOTHESIS]
    ([fact sheet B §2](factsheets/B-mariadb-rabbitmq-keystone.md)).
 10. **Recursive chown on data volumes at every start.** `kolla_set_configs` makes one `chown` per file of the glance
-    image store, of `/var/lib/nova` on computes (with `/var/lib/nova/mnt` when shared), of the MariaDB datadir and of
-    the RabbitMQ mnesia directory, on every `COPY_ALWAYS` start [CODE]. [HYPOTHESIS] Start time grows with the number
-    of files, especially on NFS-backed trees ([fact sheet C](factsheets/C-glance-placement-cinder-horizon-heat.md),
-    [05 §5](../docs/05-nova-deep-dive.md)).
+    image store, of `/var/lib/nova` on computes, of the MariaDB datadir, of the RabbitMQ mnesia directory and of the
+    `cinder` volume (twice for cinder-volume, §5), on every `COPY_ALWAYS` start [CODE]. [HYPOTHESIS] With
+    `enable_shared_var_lib_nova_mnt` the walk also enters the shares still mounted under `/var/lib/nova/mnt`. Start
+    time grows with the number of files, especially on NFS-backed trees
+    ([fact sheet C](factsheets/C-glance-placement-cinder-horizon-heat.md), [05 §5](../docs/05-nova-deep-dive.md)).
 11. **nova-libvirt's start path is passive**; VM survival is decided on the stop path (§5.1) [CODE for the start
     path; NEEDS-LAB for survival] ([05 §5](../docs/05-nova-deep-dive.md), Q1).
 12. **The L3 agent wrapper does not `exec` the agent.** [HYPOTHESIS] SIGTERM goes to bash and the agent is killed
@@ -499,8 +512,10 @@ new-cluster decision [CODE: kolla `docker/mariadb/mariadb/extend_start.sh` has n
 13. **An `openvswitch_vswitchd` restart replaces only the userspace daemon.** The kernel module stays loaded and
     `conf.db` keeps bridges and ports [CODE]. [HYPOTHESIS] The OpenFlow tables are lost and must be reprogrammed by
     the OVS agent or `ovn-controller` ([08 R7](../docs/08-operational-risk-matrix.md), Q3).
-14. **Every memcached restart empties the cache**: it has no volume [CODE]. [HYPOTHESIS] Token-cache misses follow,
-    and Horizon sessions are lost where they are kept in memcached ([08 R4](../docs/08-operational-risk-matrix.md)).
+14. **Every memcached restart empties the cache.** The container has no data volume and its command no persistence
+    option (`roles/memcached/templates/memcached.json.j2:2`) [CODE]. [HYPOTHESIS: memcached keeps its data in memory
+    only] Token-cache misses follow, and Horizon sessions are lost where they are kept in memcached
+    ([08 R4](../docs/08-operational-risk-matrix.md)).
 15. **The VIP follows the HAProxy stats socket only.** keepalived's `check_alive.sh` asks the socket on the shared
     `haproxy_socket` volume (kolla `docker/keepalived/check_alive.sh:6`); with `interval 2`, `fall 2`, `rise 10`
     (`roles/haproxy/templates/keepalived.conf.j2:1-6`) [CODE]. [HYPOTHESIS: keepalived semantics] An HAProxy restart
@@ -512,7 +527,7 @@ new-cluster decision [CODE: kolla `docker/mariadb/mariadb/extend_start.sh` has n
     new cluster again on any manual `docker start`: split-brain risk
     ([fact sheet B §1](factsheets/B-mariadb-rabbitmq-keystone.md), [08 R18](../docs/08-operational-risk-matrix.md)).
 17. **No Docker HEALTHCHECK is wired in Ussuri** (§2.7). `docker ps` shows no health status; service health must be
-    checked from outside [CODE] ([09 §1](../docs/09-practical-command-reference.md)).
+    checked from outside [CODE] ([08 §3](../docs/08-operational-risk-matrix.md) item 5, health gates).
 18. **SSH host keys of `nova_ssh` and `keystone_ssh` change on every recreate**, because `/etc/ssh` is on no volume.
     This is harmless: the clients use `StrictHostKeyChecking no` (`roles/nova-cell/templates/ssh_config.j2:2-3`,
     `roles/keystone/templates/ssh_config.j2:2`) [CODE] ([05 §6](../docs/05-nova-deep-dive.md)).
@@ -545,3 +560,7 @@ new-cluster decision [CODE: kolla `docker/mariadb/mariadb/extend_start.sh` has n
   bind mount. The Dockerfiles do not show it.
 - **The restart loop after a failing `kolla_set_configs`** (§2.3) and **the CA bundle after the last custom CA is
   removed** (§2.4).
+- **Service-side effects of the one-shot findings**: heat stack-domain authentication after a changed
+  `heat_domain_admin_password` (§6 item 7); whether `rabbitmq-server` ignores `RABBITMQ_CLUSTER_COOKIE` and uses
+  only the cookie file (§6 item 9); Galera after a full stop, or a manual start left with `--wsrep-new-cluster`
+  (§6 item 16).

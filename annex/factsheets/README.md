@@ -24,12 +24,13 @@ How the sheets were checked:
   - compute-side memcached lists (`roles/ceilometer/templates/ceilometer.conf.j2:55`).
 - **Behaviours re-verified by execution:** see [../lab](../lab/README.md).
 
-**Erratum (applies to sheet A and any statement that `docker stop` honours `docker_graceful_timeout: 60`).** The
+**Erratum (sheets A, B and E, and any statement that `docker stop` honours `docker_graceful_timeout: 60`).** The
 effective stop timeout of every `kolla_docker` stop/restart is **10 s**. In `kolla_docker.generate_module()`, a module
 parameter that is not `None` overrides `common_options`, and `graceful_timeout` defaults to `10`. This was proven by
 running the real module code
-([../lab/kolla_docker_params.out](../lab/kolla_docker_params.out)). Sheet C states it correctly. The same error was in
-sheet B's "Graceful stop" row, which is now corrected in the sheet.
+([../lab/kolla_docker_params.out](../lab/kolla_docker_params.out)). Sheet C states it correctly. Sheet A (common
+mechanics, §1.8), sheet B's "Graceful stop" row and sheet E (§2.4, §13) had the same error and are now corrected.
+Sheet E's §13 also listed `docker_client_timeout` as a working knob; the module ignores it the same way (docs/01 §6).
 
 **Erratum (sheet A, "There is no reload path anywhere in scope").** This holds for the handler path: every
 handler stops and starts or recreates its container, and `kolla_docker` has no reload action. Outside the handlers,

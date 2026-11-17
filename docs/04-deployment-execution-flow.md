@@ -214,8 +214,9 @@ LAB s14 → s15]. Changes confined to `config.json` itself (`command`, `permissi
 after `genconfig`, and a later `deploy`/`reconfigure` does not either: the config tasks that notify the restart, the
 `config.json` template task included (memcached's only one, `roles/memcached/tasks/config.yml:13-26`), are then
 unchanged. Such changes take effect only at the next restart for another reason. An `optional` file that newly appears,
-and whose destination does not exist in the container yet, makes the check exit 2 and the task fail [CODE kolla
-`docker/base/set_configs.py:162-167,430-432`, `kolla_docker.py:575-578`]. The lab stub hashes the whole config
+and whose destination does not exist in the container yet, makes the check exit 2 and the task fail, unless an entry
+listed before it already differs (then exit 1 and a restart that copies the file) [CODE kolla
+`docker/base/set_configs.py:162-167,407-410,430-432`, `kolla_docker.py:575-578`]. The lab stub hashes the whole config
 directory, `config.json` included, so it cannot show either case. See [07](07-day2-operational-impact.md) §H and
 [annex/kolla-images.md §3](../annex/kolla-images.md).
 

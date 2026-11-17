@@ -179,9 +179,11 @@ roles/<svc>/
 ### 4.2 `reconfigure` is `deploy`
 
 Of the 72 roles that have a `reconfigure.yml`, 67 only do `import_tasks: deploy.yml`. `congress`, `mongodb` and
-`nova-hyperv` do the same with `include_tasks`. `swift` and `bifrost` have their own reconfigure logic: they fail if a
-container is down, run `kolla_set_configs --check` and restart only drifted containers
-(`roles/swift/tasks/reconfigure.yml`). See the generated column "reconf→deploy" in
+`nova-hyperv` do the same with `include_tasks`. `swift` and `bifrost` have their own reconfigure logic: swift fails if a
+container is down, runs `kolla_set_configs --check` and restarts only drifted containers
+(`roles/swift/tasks/reconfigure.yml`). The bifrost copy cannot work and no `kolla-ansible` command runs it: it uses a
+group and a container named `bifrost-deploy`, but the container is `bifrost_deploy`, which runs `/sbin/init` with no
+`config.json` (`roles/bifrost/tasks/reconfigure.yml:2-23`, `start.yml:8`). See the generated column "reconf→deploy" in
 [annex/generated-inventory.md §3](../annex/generated-inventory.md).
 So `reconfigure` re-runs Keystone registration, DB creation and the **bootstrap (DB sync) container** of most
 services, exactly like `deploy` [CODE, LAB scenario s01]. The only built-in differences between `deploy` and
@@ -350,10 +352,11 @@ How `kolla_docker` decides [CODE]:
   - Proven by feeding the real module code the arguments a handler sends
     ([annex/lab/kolla_docker_params.out](../annex/lab/kolla_docker_params.out)):
     `graceful_timeout common_options='60' -> effective=10`.
-  - Practical effect: **every `docker stop` issued through `kolla_docker` in Ussuri sends SIGKILL after 10 s**. This
-    holds for handler restarts, recreates and `stop`. The release note `docker-stop-timeout-c8089f6bf92d6c28.yaml` claims
-    the default was raised to 60 s; it has no effect. A service needing a longer graceful shutdown (in-flight image
-    uploads, cinder copies, heat-engine) is killed after 10 s. [CODE + LAB]
+  - Practical effect: **every `docker stop` issued through `kolla_docker` in Ussuri SIGKILLs a container still
+    running 10 s after SIGTERM**. This holds for handler restarts, recreates and `stop`. The release note
+    `docker-stop-timeout-c8089f6bf92d6c28.yaml` claims the default was raised to 60 s; it has no effect. A service
+    needing a longer graceful shutdown (in-flight image uploads, cinder copies, heat-engine) is killed after 10 s.
+    [CODE + LAB]
 
 ---
 
@@ -384,7 +387,8 @@ How `kolla_docker` decides [CODE]:
    the current `config.json` and skips an optional entry whose source is missing (kolla
    `docker/base/set_configs.py:135-148,310-315`). A file whose entry was dropped (e.g. a removed Keystone policy file,
    `roles/keystone/templates/keystone.json.j2:30-36`), or whose optional source is gone, keeps its old copy in the
-   container until the container is recreated, and `kolla_set_configs --check` does not flag it
+   container until the container is recreated, or even after that when the destination is on a named volume (e.g.
+   nova-compute's SASL `auth.conf` under `/var/lib/nova`), and `kolla_set_configs --check` does not flag it
    (`set_configs.py:217-220,407-410`). Deleting a custom file such as `/etc/kolla/config/keystone/keystone-paste.ini`
    also leaves its rendered copy in `/etc/kolla/keystone/` (`roles/keystone/tasks/config.yml:165-187`), which is
    copied in again even after a recreate. The image-side start path and `--check` are described in

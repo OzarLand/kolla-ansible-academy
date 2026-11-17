@@ -33,7 +33,7 @@ Evidence levels:
 | F11 | **The `openvswitch_agent.ini` merge** includes the operator's `ml2_conf.ini` overrides | [CODE] `roles/neutron/tasks/config.yml:172-190`; [LAB s05] | Server-side ML2 changes restart every OVS agent |
 | F12 | **The L3 agent wrapper deletes all L3 namespaces at start** when `enable_neutron_agent_ha: yes` | [CODE] `neutron-l3-agent-wrapper.sh.j2:5-12` | Every L3 agent restart becomes a router data-plane outage on that node |
 | F13 | **The Nova deploy order** puts nova-compute before OVS and the Neutron agents on new computes | [CODE] `site.yml:710-780`, [LAB t0 trace] | Expected and harmless on a running cloud; relevant when adding computes one by one |
-| F14 | **`kolla_set_configs --check` has blind spots.** It compares only the `config_files` entries of `config.json` (content, mode, owner). A change confined to `config.json` itself (`command`, `permissions`; all of memcached's settings) is never detected. A newly added optional file makes it exit 2, which fails `check-containers`. `preserve_properties` entries (prometheus extras) and directory sources with subdirectories report drift on every run. A restart never removes the files of a dropped entry | [CODE] kolla `docker/base/set_configs.py:60-65,131-151,160-235,310-330,388-393,407-432`; `kolla_docker.py:566-578`; scratch run of the real script, outside a container ([annex/kolla-images.md §3](../annex/kolla-images.md)) | "`genconfig` + `--check`" ([09 §1](09-practical-command-reference.md)) under-reports some changes and over-reports others. A `config.json`-only change is applied by a normal deploy/reconfigure, because the changed template task notifies the restart handler. Once `genconfig` has written it, neither `deploy-containers` nor a later run (its template task is then unchanged) applies it until the container restarts for another reason |
+| F14 | **`kolla_set_configs --check` has blind spots.** It compares only the `config_files` entries of `config.json` (content, mode, owner). A change confined to `config.json` itself (`command`, `permissions`; all of memcached's settings) is never detected. A newly added optional file makes it exit 2, which fails `check-containers`, unless an entry listed before it already differs (then 1). `preserve_properties` entries (prometheus extras) and directory sources with subdirectories report drift on every run. A restart never removes the files of a dropped entry | [CODE] kolla `docker/base/set_configs.py:60-65,131-151,160-235,310-330,388-393,407-432`; `kolla_docker.py:566-578`; scratch run of the real script, outside a container ([annex/kolla-images.md §3](../annex/kolla-images.md)) | "`genconfig` + `--check`" ([09 §1](09-practical-command-reference.md)) under-reports some changes and over-reports others. A `config.json`-only change is applied by a normal deploy/reconfigure, because the changed template task notifies the restart handler. Once `genconfig` has written it, neither `deploy-containers` nor a later run (its template task is then unchanged) applies it until the container restarts for another reason |
 | F15 | **What the bootstrap containers run differs per image.** Nova's bootstrap containers run with `KOLLA_UPGRADE` (schema sync, no online data migrations outside `upgrade`). Placement's `KOLLA_BOOTSTRAP` container also runs `online_data_migrations`, on every deploy/reconfigure. Heat's does not re-apply a changed `heat_domain_admin_password` to Keystone. neutron-server's migrates `neutron-dynamic-routing`, which the rolling `upgrade` never migrates | [CODE] kolla `docker/nova/nova-api/extend_start.sh:9-25`, `docker/nova/nova-conductor/extend_start.sh:3-17`, `docker/placement/placement-api/extend_start.sh:5-9`, `docker/heat/heat-api/extend_start.sh:5-17`, `docker/neutron/neutron-server/extend_start.sh:5-12,34-38`; `roles/nova/tasks/bootstrap_service.yml:13`, `roles/nova-cell/tasks/bootstrap_service.yml:11`, `roles/placement/tasks/bootstrap_service.yml:11`, `roles/heat/tasks/bootstrap_service.yml:11,21`, `roles/neutron/defaults/main.yml:412`; [LAB s04, s11] | What a "reconfigure" or a tag-changing "deploy" does to databases depends on the image, not only on kolla-ansible ([annex/kolla-images.md §4](../annex/kolla-images.md)) |
 
 ---
@@ -48,7 +48,7 @@ Evidence levels:
 | site.yml | cyborg play uses `serial` instead of `kolla_serial` | `site.yml:1028` | [CODE] |
 | site.yml | placement haproxy include lacks `when: enable_placement` | `site.yml:289-292` | [CODE] |
 | kolla_docker | `graceful_timeout`/`client_timeout` from `docker_common_options` ignored (F3); `restart_policy` never compared (FIXME `:21`) | `kolla_docker.py` | [CODE+LAB] |
-| kolla images | `kolla_set_configs --check` compares only `config_files` entries (F14): changes confined to `config.json` (`command`, `permissions`; all of memcached's settings) are never detected, so neither `genconfig` + `deploy-containers` nor a later run applies them until the container restarts for another reason; a newly added optional file makes it exit 2 and fails `check-containers`; `preserve_properties` entries (prometheus extras) and directory sources with subdirectories report drift on every run; a restart never removes files whose entry was dropped | kolla `docker/base/set_configs.py:60-65,131-151,160-235,310-330,388-393,407-432`; `kolla_docker.py:566-578` | [CODE], scratch run of the real script |
+| kolla images | `kolla_set_configs --check` compares only `config_files` entries (F14): changes confined to `config.json` (`command`, `permissions`; all of memcached's settings) are never detected, so neither `genconfig` + `deploy-containers` nor a later run applies them until the container restarts for another reason; a newly added optional file makes it exit 2 and fails `check-containers` unless an entry listed before it differs (then 1); `preserve_properties` entries (prometheus extras) and directory sources with subdirectories report drift on every run; a restart never removes files whose entry was dropped | kolla `docker/base/set_configs.py:60-65,131-151,160-235,310-330,388-393,407-432`; `kolla_docker.py:566-578` | [CODE], scratch run of the real script |
 | common | `-t common` no-op (F2) | – | [LAB] |
 | haproxy | Restart instead of reload; stale `services.d` files never removed; keepalived priority from inventory order; upgrade "Stopping all slave keepalived" without an `enable_keepalived` guard and with raw interface names | fact sheet A §1.8 | [CODE], [NEEDS-LAB] for the upgrade bugs |
 | openvswitch | `Set system-id` always reports changed | `roles/openvswitch/tasks/post-config.yml:3-5` | [CODE+LAB] |
@@ -74,12 +74,12 @@ Evidence levels:
 The fact sheets were produced by parallel source-reading agents and spot-checked (MariaDB restart waves, glance
 `log_bin_trust_function_creators`, the Docker restart gate, keepalived priority, compute-side memcached lists: all
 confirmed). Eleven corrections apply. All are listed with their evidence under "Verification and errata" in
-[annex/factsheets/README.md](../annex/factsheets/README.md). The last four bullets (seven corrections) were also made in
-the sheets themselves:
+[annex/factsheets/README.md](../annex/factsheets/README.md). The first bullet (in sheets A, B and E) and the last four
+bullets (eight corrections) were also made in the sheets themselves:
 
-- **Fact sheet A** (and any sentence elsewhere) stating that `docker stop` uses `docker_graceful_timeout` = 60 s is
-  wrong. The effective timeout is **10 s** (F3). Fact sheet C states this correctly. This is the correction with the
-  widest effect.
+- **Fact sheets A, B and E** (and any sentence elsewhere) stating that `docker stop` uses `docker_graceful_timeout` =
+  60 s are wrong. The effective timeout is **10 s** (F3). Sheet E also listed `docker_client_timeout` as a working
+  knob; it is ignored the same way. Fact sheet C states this correctly. This is the correction with the widest effect.
 - **Fact sheet A**, "no reload path anywhere": true for handlers, but `nova_scheduler` receives a `SIGHUP` on every
   `deploy`/`reconfigure` that runs the `nova`, `nova-api` or `nova-refresh-scheduler-cell-cache` tag (or no tag) and
   whose `--limit` includes the `nova-scheduler` hosts (`ansible/nova.yml:139-156`).
@@ -90,7 +90,8 @@ the sheets themselves:
 - **Fact sheet B**, Erlang cookie: the kolla image writes `.erlang.cookie` only in the `KOLLA_BOOTSTRAP` container,
   which runs only on a new volume, not at every start. The sheet's former hypothesis of a partition during the
   rolling recreate rested on that wrong premise; the corrected behaviour is in the second rabbitmq row of §2.
-- **Fact sheet C**, four image-side statements, checked against the kolla `ussuri-eol` sources (F15):
+- **Fact sheet C**, four image-side statements, checked against the kolla `ussuri-eol` sources (F15, Q14 and
+  [annex/kolla-images.md §4, §5.2](../annex/kolla-images.md)):
   - Placement online data migrations also run on every deploy/reconfigure, inside `bootstrap_placement`, not only on
     upgrade.
   - The heat domain admin is created only when `heat_user_domain` is absent, so a changed password is not
@@ -151,5 +152,7 @@ version, Docker version, Kolla images, network hardware.
   [annex/kolla-images.md](../annex/kolla-images.md) (Nova, Neutron, Open vSwitch, OVN, Keystone, Glance, Placement,
   Cinder, Heat, Horizon, Barbican, Octavia, Manila, Swift, MariaDB, RabbitMQ, memcached, HAProxy, keepalived incl.
   `check_alive.sh`, fluentd, cron, kolla-toolbox, chrony, iscsid, tgtd). Of the other images only the `ironic-api`
-  bootstrap branch was read. What the scripts do against real services and data stays [HYPOTHESIS] or [NEEDS-LAB].
+  bootstrap branch and the `bifrost-deploy` `ENTRYPOINT`/`CMD` were read, and every Dockerfile was searched for
+  `HEALTHCHECK` and for `ENTRYPOINT`/`CMD` overrides. What the scripts do against real services and data stays
+  [HYPOTHESIS] or [NEEDS-LAB].
   `set_configs.py --check` was exercised standalone on a scratch tree, outside a container.

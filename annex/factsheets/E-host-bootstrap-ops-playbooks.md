@@ -221,10 +221,11 @@ start** until someone runs `systemctl unmask docker`. Check after any failed run
 
 - FACT: restart is `systemd state=restarted` on each host of the current batch. With default `serial: 0`, **all baremetal hosts
   restart Docker in the same task** (subject to forks). That includes all controllers at once.
-- FACT: Kolla containers use `restart_policy: unless-stopped` (`group_vars/all.yml:134`), so they come back after the daemon
-  restarts. FACT: `kolla_docker` sets no container `StopTimeout` (grep for `stop_timeout|StopTimeout` in
-  `ansible/library/kolla_docker.py` is empty). HYPOTHESIS: on a daemon restart, containers get Docker's default stop timeout
-  (about 10 s), **not** `docker_graceful_timeout: 60` (`all.yml:154`), which only applies to `kolla_docker` stop actions.
+- FACT: Kolla service containers use `restart_policy: unless-stopped` (`group_vars/all.yml:134`). HYPOTHESIS (Docker
+  semantics): they come back after the daemon restarts. FACT: `kolla_docker` sets no container `StopTimeout` (grep for
+  `stop_timeout|StopTimeout` in `ansible/library/kolla_docker.py` is empty). HYPOTHESIS: on a daemon restart, containers
+  get Docker's default stop timeout (about 10 s). `docker_graceful_timeout: 60` (`all.yml:154`) plays no part:
+  `kolla_docker` stop actions ignore it too and use the module default of 10 s ([README](README.md) erratum).
 - HYPOTHESIS (Galera semantics): restarting Docker on all MariaDB hosts at once is a full-cluster stop. FACT: the kolla
   image does not recover from it. The containers come back as plain `mysqld_safe` with every MariaDB host in
   `gcomm://`, and the image's start path has no `grastate.dat` or `safe_to_bootstrap` handling and no new-cluster
@@ -555,9 +556,9 @@ still be overridden there.
 | `docker_log_max_file` / `docker_log_max_size` | `"5"` / `"50m"` (`all.yml:130-131`) | daemon.json, so a change means a restart |
 | `docker_disable_default_iptables_rules` / `_network` / `ip_forward` | `"no"` x3 (`all.yml:125-127`) | daemon.json, so a change means a restart. Defaults flip in Wallaby (warnings at `post-install.yml:94-133`). |
 | `docker_storage_driver` / `docker_runtime_directory` / `docker_custom_config` / `docker_custom_option` | `""`/`""`/`{}`/`""` (`baremetal/defaults/main.yml:36-38`, `all.yml:120`) | The first three are in daemon.json (restart). `docker_custom_option` is a systemd drop-in that is **never applied by Kolla** (§2.2). |
-| `docker_restart_policy` / `docker_restart_policy_retry` | `unless-stopped` / `10` (`all.yml:134,137`) | Containers return after a daemon restart or reboot |
-| `docker_graceful_timeout` | `60` (`all.yml:154`) | SIGTERM→SIGKILL for kolla_docker stop and restart. Not for daemon restarts (HYPOTHESIS §2.4). |
-| `docker_client_timeout` | `120` (`all.yml:122`; `globals.yml:88`) | Docker API timeout for slow pulls and stops on busy hosts |
+| `docker_restart_policy` / `docker_restart_policy_retry` | `unless-stopped` / `10` (`all.yml:134,137`) | Containers return after a daemon restart or reboot (HYPOTHESIS, Docker semantics, §2.4) |
+| `docker_graceful_timeout` | `60` (`all.yml:154`) | **Ignored**: kolla_docker stops and restarts use the module default of 10 s (`kolla_docker.py:991,1037-1047`; [README](README.md) erratum; docs/01 §6). Daemon restarts use Docker's default (HYPOTHESIS §2.4). |
+| `docker_client_timeout` | `120` (`all.yml:122`; `globals.yml:88`) | **Ignored**: kolla_docker always uses its module default `client_timeout` of 120 s (`kolla_docker.py:1011`; docs/01 §6), so raising it has no effect |
 | `docker_configure_for_zun` / `containerd_configure_for_zun` | `no` (`all.yml:140,146`) | Zun hosts: daemon.json includes **all etcd hosts**, and the containerd config is overwritten and restarted |
 | `customize_etc_hosts`, `create_kolla_user`, `disable_firewall`, `change_selinux`/`selinux_state`, `enable_host_ntp`, `enable_docker_repo`, `virtualenv` | True, True, True, True/permissive, False, true, none (`baremetal/defaults/main.yml`) | Host mutations made by bootstrap-servers (§1) |
 | `enable_chrony` | `yes` (`all.yml:597`; `globals.yml:262`) | Removes host chrony packages during bootstrap |

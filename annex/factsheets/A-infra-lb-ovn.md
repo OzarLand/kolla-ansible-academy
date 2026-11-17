@@ -645,8 +645,11 @@ All handlers have `when: kolla_action != "config"`. There is no `run_once`, `ser
     load-balancing across two clusters.
   - There is no code for member removal or replacement (`cluster/kick`, `cluster/leave`), and none for backups (grep:
     no `ovsdb-client backup` anywhere in roles). NEEDS-LAB.
-- **(C) ovn-controller restarts.** They happen on image change (upgrade), on config.json drift, or on
-  `deploy-containers` drift, and hit **all computes and network nodes in parallel**.
+- **(C) ovn-controller restarts.** They happen on image or container-parameter change (upgrade, `deploy-containers`)
+  or when a deploy/reconfigure rewrites its `config.json`, and hit **all computes and network nodes in parallel**.
+  The OVN manifests have no `config_files` (`roles/ovn/templates/*.json.j2`), so `kolla_set_configs --check` always
+  exits 0: a command-line change written by `genconfig` is applied neither by `deploy-containers` nor by a later run,
+  until the container restarts for another reason ([annex/kolla-images.md §3](../kolla-images.md)).
   - HYPOTHESIS: Ussuri-era OVN clears and re-installs OpenFlow flows on restart. That gives a short data-plane
     interruption per chassis, plus north-south traffic loss if all gateway chassis (network nodes) restart together.
   - HYPOTHESIS: there is also an SB DB reconnect storm whose size scales with the number of computes. NEEDS-LAB.

@@ -106,7 +106,8 @@ kolla-ansible -i multinode -t nova-cell deploy-containers --limit 'compute[10:19
   `config.json`'s own `command`/`permissions` (e.g. memcached: empty `config_files`), and no later
   `deploy`/`reconfigure` restarts for those either, because the `config.json` template task is then unchanged; they take
   effect at the next restart for another reason. A newly rendered `optional` file whose destination is not yet in the
-  container (e.g. nova-compute's `release`) makes `--check` exit 2 and the task fail
+  container (e.g. nova-compute's `release`) makes `--check` exit 2 and the task fail, unless an entry listed before
+  it (here `nova.conf`, if it changed too) differs: then it exits 1 and the restart copies the new file
   ([annex/kolla-images.md §3](../annex/kolla-images.md)).
 - Each batch restarts only its hosts. No bootstrap containers, no Keystone registration and no haproxy play run.
 - **Caveat:** `genconfig -t nova-cell` also renders the conductor and console config on controllers. Include them

@@ -213,11 +213,12 @@ Facts [CODE]:
   every recreate: changed image or parameters, or `config_strategy: COPY_ONCE`
   (`library/kolla_docker.py:793-803,892-904`). The in-code note says the SASL user must exist for nova-compute to
   start (`handlers/main.yml:111`).
-- **Effective stop timeout is 10 s** (01 §6), but the SIGKILL does not go to libvirtd. The container's main process is
+- **Effective stop timeout is 10 s** (01 §6), and both signals go to dumb-init. The container's main process is
   `dumb-init --single-child -- kolla_start` (kolla `docker/base/Dockerfile.j2:433-435,455`; `use-dumb-init` defaults to
   True, kolla `kolla/common/config.py:170`). `kolla_start` `exec`s libvirtd (kolla `docker/base/start.sh:21`), so
   libvirtd is dumb-init's direct child. `docker stop` (timeout 10, `library/kolla_docker.py:871-884,892-904`) sends
-  SIGTERM to dumb-init and, after 10 s, SIGKILL to dumb-init.
+  SIGTERM to dumb-init and, after 10 s, SIGKILL to dumb-init. libvirtd itself is SIGKILLed only if it is still running
+  then (the cgroup kill below, [HYPOTHESIS]).
 - **Libvirt is restarted before nova-compute.** In the handler order `nova-libvirt` comes before `nova-compute`, so
   during the window nova-compute is still running against a libvirtd that is going away.
 - **Kolla ships, but does not install by default, a guest shutdown helper.** `tools/kolla-libvirt-guests.service`
@@ -295,8 +296,8 @@ Impact of a Kolla run on these:
 - A run that restarts `nova_libvirt` (any nova-compute change, by loop-notify) **interrupts every live migration in
   progress** on the affected computes. With `serial: 0`, that is every compute at once.
 - A `nova_ssh` restart interrupts resizes or cold migrations that are copying disks.
-- Every `deploy`/`reconfigure` with a nova tag SIGHUPs the schedulers and runs `discover_hosts`. Neither affects
-  existing instances.
+- Every `deploy`/`reconfigure` with `-t nova` or no tag SIGHUPs the schedulers and runs `discover_hosts`
+  (`-t nova-api` only SIGHUPs, `-t nova-cell` only discovers). Neither affects existing instances.
 
 ---
 

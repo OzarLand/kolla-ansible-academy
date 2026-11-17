@@ -81,7 +81,7 @@ sequenceDiagram
 | nova-compute stop/start (10 s SIGKILL) | yes, when drift | [HYPOTHESIS] VMs unaffected; in-flight operations on that host fail or are left mid-task; the service is reported down only if the restart exceeds `service_down_time` |
 | libvirtd stop/start | yes, whenever nova-compute drifts | [NEEDS-LAB] VMs normally survive (QEMU moved to `machine.slice`, cgroup mounted rw, host `/run` bind mount, `pid_mode: host`). The image's start scripts do nothing to QEMU, cgroups or `/var/run/libvirt` [CODE, kolla `docker/base/start.sh`, `docker/nova/nova-libvirt/extend_start.sh`; [annex/kolla-images.md §5](../annex/kolla-images.md)]. The open questions are therefore libvirt and Docker behaviour: the stop (SIGKILL if libvirtd is still running 10 s after SIGTERM) and libvirtd re-attaching to running domains when it starts. [HYPOTHESIS] Live migrations in progress **fail**, and libvirt API calls fail until libvirtd is back. Run the experiment in 05 §5 before trusting this |
 | nova-ssh stop/start | yes, with the above | resize / cold migration disk copies over port 8022 are interrupted |
-| Scheduling | API and scheduler restarts are parallel on all controllers (serial 0) | API calls fail during the restart window. The scheduler gets SIGHUP on every run (cell-cache refresh), which is harmless |
+| Scheduling | API and scheduler restarts are parallel on all controllers (serial 0) | [HYPOTHESIS] API calls fail during the restart window. The scheduler gets SIGHUP on every run that reaches its hosts (cell-cache refresh), which is harmless |
 | Host mapping | `discover_hosts` runs every time | harmless; maps any newly registered compute |
 
 ### A.5 Operational risks and verification

@@ -114,6 +114,7 @@ docs/            01–10 deliverables
 annex/
   generated-inventory.md
   kolla-images.md
+  service-cards.md
   factsheets/    A–E per-role evidence
   lab/           harness, results, minimal reproductions
 tools/
