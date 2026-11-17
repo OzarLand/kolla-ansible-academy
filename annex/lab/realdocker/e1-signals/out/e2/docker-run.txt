@@ -1,1 +1,0 @@
-docker run ... --privileged -v e1-haproxy_socket:/var/lib/kolla/haproxy/ e1-haproxy:ussuri

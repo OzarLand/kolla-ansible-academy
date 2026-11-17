@@ -1,7 +1,0 @@
-# ping -D -O -i 0.05 from e5-peer1; times relative to T0; a gap is > 0.25 s between replies
-== 10.55.1.2 (129 packets transmitted, 75 received, 41% packet loss, time 7235ms)
-   first reply    -2.014 s (seq 1), last reply    +5.221 s (seq 129)
-   GAP: last reply before    +0.021 s (seq 37) -> next reply    +3.133 s (seq 92): 3.112 s without reply, 54 requests unanswered
-== 10.55.2.2 (130 packets transmitted, 122 received, 6% packet loss, time 7290ms)
-   first reply    -2.009 s (seq 1), last reply    +5.281 s (seq 130)
-   GAP: last reply before    -0.022 s (seq 36) -> next reply    +0.485 s (seq 45): 0.508 s without reply, 8 requests unanswered

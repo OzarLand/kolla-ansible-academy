@@ -1,8 +1,0 @@
-
-### which installed file mentions RABBITMQ_CLUSTER_COOKIE or a cookie variable? (image e6-rabbitmq, 3.6.10)
-$ grep -rl RABBITMQ_CLUSTER_COOKIE /usr/lib/rabbitmq /usr/lib/erlang /usr/sbin /etc /usr/local/bin
-/usr/local/bin/kolla_extend_start
-$ grep -rn -i cookie <the rabbitmq shell scripts>
-/usr/lib/rabbitmq/bin/rabbitmq-script-wrapper:35:    if [ -f $PWD/.erlang.cookie ] ; then
-$ grep -rln -i -E "ERLANG_COOKIE|setcookie" /usr/lib/rabbitmq /usr/sbin /etc/rabbitmq   (text and .beam)
-(rc 1: 1 = no match)

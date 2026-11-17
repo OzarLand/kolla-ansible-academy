@@ -1,2 +1,0 @@
-after restart: status running; restarts 0; exit code 0
-rows in e1.t after restart: 17490

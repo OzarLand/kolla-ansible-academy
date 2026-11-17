@@ -1,4 +1,0 @@
-{"command": "/usr/local/bin/wrapper.sh",
- "config_files": [
-  {"source": "/var/lib/kolla/config_files/svc.sh", "dest": "/usr/local/bin/svc.sh", "owner": "root", "perm": "0755"},
-  {"source": "/var/lib/kolla/config_files/wrapper.sh", "dest": "/usr/local/bin/wrapper.sh", "owner": "root", "perm": "0755"}]}

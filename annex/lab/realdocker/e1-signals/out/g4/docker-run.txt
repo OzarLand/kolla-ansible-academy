@@ -1,1 +1,0 @@
-docker run ... -u root --privileged -v /sys/fs/cgroup:/sys/fs/cgroup -e E1_SPAWN=e1-worker,e1-qemu@escape e1-svc:ussuri

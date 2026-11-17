@@ -1,2 +1,0 @@
-stopped container 7f10d6c9b7ccf438d85434817c7bf87c94af245036f39cda6243aac098c6d2cd: exitCode=143 OOMKilled=false
-old container 7f10d6c9b7cc, new container 06ff1754faf7

@@ -1,3 +1,0 @@
-25045    ppid=25019    dumb-init --single-child -- kolla_start 
-25057    ppid=25045    bash /usr/local/bin/start-ovs 
-25070    ppid=25057    /usr/sbin/ovs-vswitchd unix:/run/openvswitch/db.sock -vconsole:emer -vsyslog:err -vfile:info --mlockall --log-file=/var/log/kolla/openvswitch/ovs-vswitchd.log --pidfile 

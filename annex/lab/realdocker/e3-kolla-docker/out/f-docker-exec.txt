@@ -1,3 +1,0 @@
-$ docker exec e3-bifrost-deploy /usr/local/bin/kolla_set_configs --check
-Error response from daemon: No such container: e3-bifrost-deploy
-rc=1

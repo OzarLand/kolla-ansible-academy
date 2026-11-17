@@ -1,1 +1,0 @@
-b    recreate (stop, rm -f, run)    qemu pid 14758   GONE              virsh domstate: shut off (crashed)     monitor: suspend+resume failed: error: Requested operation is not valid: domain is not running

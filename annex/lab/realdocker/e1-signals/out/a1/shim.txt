@@ -1,4 +1,0 @@
-shim: 28211 /usr/bin/containerd-shim-runc-v2 -namespace moby -id 43cf2212477b661c6217f9fc91413cd751a480a62ae8b320cd889fc40d690377 -address /var/run/docker/containerd/containerd.sock
-# shim strace: runc invocations and kill() calls; times relative to t0
-  +0.032 s  pid 28446 execve runc kill 43cf2212477b661c6217f9fc91413cd751a480a62ae8b320cd889fc40d690377 15
-  +0.597 s  pid 28454 execve runc delete 43cf2212477b661c6217f9fc91413cd751a480a62ae8b320cd889fc40d690377

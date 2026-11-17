@@ -1,3 +1,0 @@
-1794921268.193637046 modprobe[17] stub called: openvswitch
-1794921268.210974 ovs-vswitchd[20] start pid=20 ppid=7 pgid=1 sid=1 uid=0 cg=/docker/e759fe137cc8d10ea5d0b2790d8a1529218c84725cfc1c3a7f953dba704ff4ca argv=unix:/run/openvswitch/db.sock -vconsole:emer -vsyslog:err -vfile:info --mlockall --log-file=/var/log/kolla/openvswitch/ovs-vswitchd.log --pidfile
-1794921268.211014 ovs-vswitchd[20] ready

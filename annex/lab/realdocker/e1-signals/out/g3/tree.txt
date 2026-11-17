@@ -1,5 +1,0 @@
-HOSTPID  NSPID   HPPID NSPPID NSPGID  NSSID    UID S CG  DEVICES-CGROUP         CMD
-  12373  12373   12347      0  12373  12373      0 S ctr /docker/011488241bc105 dumb-init --single-child -- kolla_start
-  12385  12385   12373  12373  12373  12373      0 S ctr /docker/011488241bc105 /usr/bin/python3 /usr/local/bin/e1-sigsvc
-  12404  12404   12385  12385  12373  12373      0 S ctr /docker/011488241bc105 /usr/bin/python3 /usr/local/bin/e1-worker --child --mode child --tag e1-g3
-  12406  12406   12347      0  12405  12405      0 S OUT /e1-escape             /usr/bin/python3 /usr/local/bin/e1-qemu --child --mode escape --tag e1-g3 --escape

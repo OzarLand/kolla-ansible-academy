@@ -1,9 +1,0 @@
-# times relative to T0 = 1794923434.395196 (T0 docker exec e5_openvswitch_vswitchd kill -TERM <ovs-vswitchd pid> (direct SIGTERM to the daemon; not a kolla path))
-   +0.000 s  T0 docker exec e5_openvswitch_vswitchd kill -TERM <ovs-vswitchd pid> (direct SIGTERM to the daemon; not a kolla path)
-   +0.026 s  docker event: exec_create: sh -c kill -TERM $(cat /run/openvswitch/ovs-vswitchd.pid) exitCode=
-   +0.027 s  docker event: exec_start: sh -c kill -TERM $(cat /run/openvswitch/ovs-vswitchd.pid) exitCode=
-   +0.081 s  kill sent (rc=0)
-   +0.197 s  docker event: die exitCode=143
-   +0.365 s  docker event: start exitCode=
-   +1.168 s  vswitchd answers on e5-br-sec.mgmt again (container restarted by its restart policy)
-   +2.243 s  flows (cookie lines) now: e5-br-sec 0

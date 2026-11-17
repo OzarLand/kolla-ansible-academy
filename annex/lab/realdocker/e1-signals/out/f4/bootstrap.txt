@@ -1,6 +1,0 @@
-bootstrap_mariadb exit code: 0
-++ mysql_install_db
-++ mysqld_safe --wsrep-new-cluster --skip-networking --wsrep-on=OFF --pid-file=/var/lib/mysql/mariadb.pid
-++ sudo -E kolla_security_reset
-++ mysqladmin -uroot -p<pw> shutdown
-++ exit 0

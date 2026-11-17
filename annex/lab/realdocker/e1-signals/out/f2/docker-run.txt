@@ -1,1 +1,0 @@
-docker run ... -v e1-mariadb-f2:/var/lib/mysql --entrypoint dumb-init e1-mariadb:ussuri --single-child -- kolla_start

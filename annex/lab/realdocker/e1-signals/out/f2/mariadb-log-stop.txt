@@ -1,1 +1,0 @@
-# mariadb.log written during the stop (0 lines; decisive lines kept)

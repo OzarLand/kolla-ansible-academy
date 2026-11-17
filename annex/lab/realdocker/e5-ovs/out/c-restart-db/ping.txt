@@ -1,7 +1,0 @@
-# ping -D -O -i 0.05 from e5-peer1; times relative to T0; a gap is > 0.25 s between replies
-== 10.55.1.2 (153 packets transmitted, 153 received, 0% packet loss, time 8587ms)
-   first reply    -3.016 s (seq 1), last reply    +5.571 s (seq 153)
-   no interruption (no gap > 0.25 s between consecutive replies)
-== 10.55.2.2 (152 packets transmitted, 152 received, 0% packet loss, time 8538ms)
-   first reply    -3.016 s (seq 1), last reply    +5.523 s (seq 152)
-   no interruption (no gap > 0.25 s between consecutive replies)

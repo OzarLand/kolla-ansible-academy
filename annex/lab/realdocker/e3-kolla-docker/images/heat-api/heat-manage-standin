@@ -1,3 +1,0 @@
-#!/bin/bash
-# e3 STAND-IN for heat-manage: touches no database, prints what it was asked to do and succeeds.
-echo "heat-manage stand-in: '$*' -> pretend success"

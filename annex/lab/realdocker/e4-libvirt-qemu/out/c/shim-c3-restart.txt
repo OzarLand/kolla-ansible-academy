@@ -1,9 +1,0 @@
-shim: 20809 /usr/bin/containerd-shim-runc-v2 -namespace moby -id 05b7924c7a0d -address /var/run/docker/containerd/containerd.sock
-# shim strace (-f, children = runc): runc invocations, kill()/pidfd_send_signal(), writes and rmdir under /sys/fs/cgroup; times relative to the docker command
-  +0.034 s  pid 21249  execve runc kill 05b7924c7a0d 15
-  +0.066 s  pid 21249  pidfd_send_signal(9<anon_inode:[pidfd]>, 0, NULL, 0) = 0
-  +0.066 s  pid 21249  pidfd_send_signal(9<anon_inode:[pidfd]>, SIGTERM, NULL, 0) = 0
-  +0.080 s  pid 21256  execve runc kill --all 05b7924c7a0d 9
-  +0.108 s  pid 21256  write(9</sys/fs/cgroup/unified/docker/05b7924c7a0d/cgroup.kill>, "1") = 1
-  +0.124 s  pid 21262  execve runc delete 05b7924c7a0d
-  +0.153 s  pid 21262  write(9</sys/fs/cgroup/unified/docker/05b7924c7a0d/cgroup.kill>, "1") = 1

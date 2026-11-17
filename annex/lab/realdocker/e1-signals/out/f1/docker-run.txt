@@ -1,1 +1,0 @@
-docker run ... -v e1-mariadb-f1:/var/lib/mysql e1-mariadb:ussuri

@@ -1,4 +1,0 @@
-client: curl GET /slow through haproxy :18112 (backend sends 81920 bytes over 20 s, Content-Length set)
-http_code=200 bytes_received=19456 curl_rc=18
-curl stderr: curl: (18) transfer closed with 62464 bytes remaining to read
-request started -4.603 s, ended +0.071 s relative to docker stop

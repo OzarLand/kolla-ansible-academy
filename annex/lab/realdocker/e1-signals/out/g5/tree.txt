@@ -1,5 +1,0 @@
-HOSTPID  NSPID   HPPID NSPPID NSPGID  NSSID    UID S CG  DEVICES-CGROUP         CMD
-  13053  13053   13028      0  13053  13053      0 S ctr /docker/dee8caba92f15c dumb-init --single-child -- kolla_start
-  13066  13066   13053  13053  13053  13053      0 S ctr /docker/dee8caba92f15c /usr/bin/python3 /usr/local/bin/e1-sigsvc
-  13082  13082   13066  13066  13053  13053      0 S ctr /docker/dee8caba92f15c /usr/bin/python3 /usr/local/bin/e1-worker --child --mode child --tag e1-g5
-  13084  13084   13028      0  13083  13083      0 S OUT /e1-escape             /usr/bin/python3 /usr/local/bin/e1-qemu --child --mode escape --tag e1-g5 --escape

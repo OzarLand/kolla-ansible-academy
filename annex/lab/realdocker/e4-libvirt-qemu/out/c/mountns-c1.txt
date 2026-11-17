@@ -1,7 +1,0 @@
-c1 before restart: qemu mnt ns mnt:[4026532264], libvirtd 15781 mnt ns mnt:[4026532264]
-[qemu] pid 15990 root mount: overlay upperdir=/var/lib/docker/containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/1405/fs (exists on the host)
-[libvirtd] pid 15781 root mount: overlay upperdir=/var/lib/docker/containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/1405/fs (exists on the host)
-c1 after recreate: qemu mnt ns mnt:[4026532264], new libvirtd 16863 mnt ns mnt:[4026532268]
-[qemu] pid 15990 root mount: overlay upperdir=/var/lib/docker/containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/1405/fs (ABSENT on the host)
-[new libvirtd] pid 16863 root mount: overlay upperdir=/var/lib/docker/containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/1407/fs (exists on the host)
-qemu exe: /usr/bin/qemu-system-x86_64; qemu ppid: 1 (process_api)

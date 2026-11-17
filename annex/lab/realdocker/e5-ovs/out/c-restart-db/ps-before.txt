@@ -1,3 +1,0 @@
-24183    ppid=24158    dumb-init --single-child -- kolla_start 
-24196    ppid=24183    /bin/bash /usr/local/bin/start-ovsdb-server 127.0.0.1 
-24240    ppid=24196    /usr/sbin/ovsdb-server /var/lib/openvswitch/conf.db -vconsole:emer -vsyslog:err -vfile:info --remote=punix:/run/openvswitch/db.sock --remote=ptcp:18540:127.0.0.1 --remote=db:Open_vSwitch,Open_vSwitch,manager_options --log-file=/var/log/kolla/openvswitch/ovsdb-server.log --pidfile 

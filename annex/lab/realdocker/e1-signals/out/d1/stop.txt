@@ -1,3 +1,0 @@
-docker stop -t 10 e1-d1 took 0.142 s (wall clock around the CLI call)
-container exit code 143; OOMKilled false; started 2026-11-17T13:14:23.574511255Z; finished 2026-11-17T13:14:26.689284936Z; restarts 0
-SURVIVORS: none (all 3 processes of the pre-stop table are gone)

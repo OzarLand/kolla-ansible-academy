@@ -1,8 +1,0 @@
-#!/bin/bash
-# Stand-in for python-openstackclient (experiment e2). It never prints its arguments beyond the first two words, so a
-# password seen in the container logs cannot come from it. "domain list" answers only "default", so the heat
-# bootstrap takes its create branch (kolla docker/heat/heat-api/extend_start.sh:10-14).
-case "$1 $2" in
-  "domain list") echo default ;;
-  *) echo "openstack-standin: '$1 $2' ok" ;;
-esac

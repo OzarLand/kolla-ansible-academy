@@ -1,2 +1,0 @@
-# 3 s after docker stop returned:
-SURVIVORS: none (all 4 processes of the pre-stop table are gone)

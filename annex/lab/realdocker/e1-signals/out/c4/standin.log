@@ -1,1 +1,0 @@
-1794921259.252819 neutron-netns-cleanup[18] start pid=18 ppid=7 pgid=1 sid=1 uid=42435 cg=/docker/a834649730fad7fe0d9915724f5092338b563e7155346b6ec2dc10212c8fb7db argv=--config-file /etc/neutron/neutron.conf --config-file /etc/neutron/l3_agent.ini --config-file /etc/neutron/fwaas_driver.ini --force --agent-type l3

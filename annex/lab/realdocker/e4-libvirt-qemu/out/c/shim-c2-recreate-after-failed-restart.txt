@@ -1,2 +1,0 @@
-shim: none (container not running, nothing to trace)
-# shim strace (-f, children = runc): runc invocations, kill()/pidfd_send_signal(), writes and rmdir under /sys/fs/cgroup; times relative to the docker command

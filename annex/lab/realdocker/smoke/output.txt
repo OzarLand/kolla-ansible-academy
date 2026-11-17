@@ -1,9 +1,0 @@
-    PID    PPID    PGID     SID CMD
-      1       0       1       1 dumb-init --single-child -- kolla_start
-      8       1       1       1 /bin/bash /usr/local/bin/wrapper.sh
-     15       8       1       1 /bin/bash /usr/local/bin/svc.sh
-     32       0      32      32 ps -eo pid,ppid,pgid,sid,cmd
-     39      15       1       1 sleep 0.2
-docker stop -t 10 took 0.14 s; exit code 143
---- service log:
-1794918012.477043025 svc[15] start

@@ -1,3 +1,0 @@
-docker stop -t 10 e1-f1 took 4.947 s (wall clock around the CLI call)
-container exit code 0; OOMKilled false; started 2026-11-17T13:15:06.722587619Z; finished 2026-11-17T13:15:20.113463483Z; restarts 0
-SURVIVORS: none (all 3 processes of the pre-stop table are gone)

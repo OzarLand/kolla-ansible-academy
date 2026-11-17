@@ -1,1 +1,0 @@
-docker run ... --privileged -v e1-neutron_metadata_socket:/var/lib/neutron/kolla/ -e KOLLA_LEGACY_IPTABLES=false -e E1_SPAWN=e1-rootwrap-daemon,e1-keepalived@daemon,e1-haproxy-ns@daemon -e E1_CLEANUP_SECS=60 e1-svc:ussuri

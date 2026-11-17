@@ -1,1 +1,0 @@
-docker run ... -u root -e E1_SPAWN=e1-worker,e1-daemon@daemon e1-svc:ussuri
