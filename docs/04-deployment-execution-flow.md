@@ -235,8 +235,9 @@ gantt
   (`wait_discover_computes.yml` runs for `all_computes_in_batch[0]`).
 - **mariadb and rabbitmq always run all hosts in one batch** (no `serial` key). Their handlers implement the rolling
   restart themselves (fact sheet B). cyborg is not batched by `kolla_serial` either: its play reads `serial` instead.
-- **`kolla_serial` must be set through the environment.** It reaches only `reconfigure` and `upgrade` through the
-  wrapper (`ANSIBLE_SERIAL`). For `deploy`, pass `-e kolla_serial=N` yourself (for `deploy` it is not overridden).
+- **How `kolla_serial` is set depends on the action.** For `reconfigure` and `upgrade` the wrapper sets it from
+  `ANSIBLE_SERIAL` (`tools/kolla-ansible:430,439`), after your own `-e`, so use the environment variable. For `deploy`
+  the wrapper does not set it: pass `-e kolla_serial=N` yourself.
 
 ---
 
