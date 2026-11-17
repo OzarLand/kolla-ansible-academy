@@ -24,7 +24,7 @@ actually touch the hosts. The other documents build on the vocabulary defined he
 | `ansible/destroy.yml`, `prune-images.yml`, `mariadb_backup.yml`, `mariadb_recovery.yml`, `post-deploy.yml`, `certificates.yml`, `bifrost.yml` | Single-purpose playbooks | See [09](09-practical-command-reference.md) |
 | `ansible/roles/` | 85 roles: 68 with a `common` meta-dependency (service roles); 17 without — the helper or utility roles plus `memcached` and `multipathd` | §4 and §5 |
 | `ansible/group_vars/all.yml` | 1,130 lines of defaults (every `enable_*`, ports, transport URLs, Docker options) | Lowest-priority defaults. `globals.yml` overrides them |
-| `ansible/inventory/{all-in-one,multinode}` | Example inventories that define about 200 groups | Group membership drives where every container runs |
+| `ansible/inventory/{all-in-one,multinode}` | Example inventories that define 235 groups each | Group membership drives where every container runs |
 | `ansible/library/` | Custom modules: `kolla_docker`, `kolla_toolbox`, `kolla_container_facts`, `bslurp` | Main Docker interface: the service roles' container lifecycle goes through `kolla_docker`. Many role tasks also run `docker exec`/`docker inspect` directly (§6) |
 | `ansible/action_plugins/` | `merge_configs` (INI merge) and `merge_yaml` | How `/etc/kolla/config` overrides are merged (§7) |
 | `ansible/filter_plugins/`, `kolla_ansible/*.py` | Jinja filters: `service_enabled_and_mapped_to_host`, `kolla_address`, `extract_cell`, `customise_fluentd`, … | Decide placement of a service on a host (§4.4) |
@@ -266,13 +266,13 @@ All 195 container definitions are listed in [annex/generated-inventory.md §2](.
 | Role | Used by | What it does | Scope |
 |---|---|---|---|
 | `common` | meta dependency of 68 roles | Deploys `fluentd`, `kolla_toolbox`, `cron` on **every** host (`group: all`). Renders `td-agent.conf` and `logrotate.conf` | Once per host per run (guarded by the `common_run` fact) |
-| `service-ks-register` | 39 roles | Creates the Keystone service, endpoints, project, user, role and grants through `kolla_toolbox` | `run_once` per play (`roles/service-ks-register/tasks/main.yml:125-126`) |
+| `service-ks-register` | 39 roles | Creates the Keystone service, endpoints, project, user, role and grants through `kolla_toolbox` | `run_once`: once per play, or once per batch when `kolla_serial` is set (`roles/service-ks-register/tasks/main.yml:125-126`) |
 | `service-rabbitmq` | nova-cell only (`roles/nova-cell/tasks/rabbitmq.yml`, imported from `bootstrap.yml`) | Creates RabbitMQ vhost and user through `kolla_toolbox`, delegated to the first host of the cell's RPC (or notify) RabbitMQ group | once per cell, on the cell's first nova-conductor host (the notify pass only when its group or users differ from RPC) |
 | `service-images-pull` | every role's `pull.yml` | `kolla_docker pull_image` for every enabled container mapped to the host | per host × per container |
 | `service-stop` | every role's `stop.yml` | `kolla_docker stop_container`, honouring `skip_stop_containers` | per host × per container |
 | `service-precheck` | every role's `precheck.yml` | Validates that the inventory groups exist | per host |
 | `service-cert-copy` | `copy-certs.yml` of 52 roles | Copies the CA (and backend certs) into each service config dir when `kolla_copy_ca_into_containers` is set | per host × per service |
-| `haproxy-config` | every role's `loadbalancer.yml` | Renders `/etc/kolla/haproxy/services.d/<svc>.cfg` | per haproxy host |
+| `haproxy-config` | every role's `loadbalancer.yml` | Renders `/etc/kolla/haproxy/services.d/<svc>*.cfg` | per haproxy host |
 | `module-load` | nova-cell, neutron, openvswitch, haproxy, ironic (`iscsi_tcp`), iscsi (`configfs`), multipathd (`dm-multipath`) | `modprobe` and persistence in `/etc/modules-load.d` | per host |
 
 ### 5.1 The `common` role and the `common_run` guard

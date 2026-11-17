@@ -141,7 +141,7 @@ kolla-ansible -i multinode -t nova --skip-tags haproxy reconfigure
 ```
 
 - `--skip-tags haproxy` drops the whole haproxy play, including the per-service frontend includes.
-- Use it when frontends are not meant to change. Otherwise a changed `services.d/<svc>.cfg` restarts HAProxy on all
+- Use it when frontends are not meant to change. Otherwise a changed `services.d/<svc>*.cfg` restarts HAProxy on all
   haproxy hosts.
 
 ### 2.9 Apply `common` changes (fluentd, cron, kolla_toolbox)

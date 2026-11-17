@@ -199,7 +199,7 @@ Order caveats:
 | `reconfigure` | yes | yes | yes | yes (most roles) | yes | only if absent | Identical to deploy in most roles (01 §4.2). `kolla_serial` passed |
 | `upgrade` | yes | yes | yes | upgrade-specific (`bootstrap_upgrade`, rolling or legacy upgrade, online migrations) | yes (some roles) | only if absent → run `pull` first | Nova reload plays and online migrations are active only here |
 | `deploy-containers` | **no** | yes (incl. config drift vs files already on disk) | yes | no | no | only if absent | `tasks/deploy-containers.yml` = `check-containers.yml`. haproxy includes skipped (`site.yml:392`) |
-| `genconfig` (`config`) | yes | no | **all skipped** (`when: kolla_action != "config"`) | no | no | no | Fluentd label check still pulls the fluentd image if missing (`roles/common/tasks/config.yml:26-37`) |
+| `genconfig` (`config`) | yes | no | **all container restarts skipped** (`when: kolla_action != "config"`; only the deprecated nova-hyperv Windows-service handlers are unguarded, 08 §3) | no | no | no | Fluentd label check still pulls the fluentd image if missing (`roles/common/tasks/config.yml:26-37`) |
 | `pull` | no | no | no | no | no | **yes**, every enabled container mapped to the host, plus `common` | `service-images-pull` |
 | `stop` | no | no | no | no | no | no | `stop_container` for every enabled container on the host, honouring `skip_stop_containers` |
 | `precheck` | no | no | no | no | no | no | `prechecks` role + each role's `precheck.yml` (port checks, group validation) |
@@ -246,7 +246,7 @@ gantt
 | Aspect | Initial `deploy` (empty hosts) | `reconfigure` on a running cloud |
 |---|---|---|
 | Containers | All `create+start` [LAB t0: 37 container types, 136 `create+start` instances. Exception: mariadb on the bootstrap host control01 runs through `bootstrap_mariadb`, then is started, recreated and restarted by its handlers] | Restart (config) or recreate (image or params) **only if** drift is detected; otherwise none [LAB t1: 0 restarts] |
-| One-shot containers | DB bootstrap for every service, MariaDB and RabbitMQ bootstrap, fernet key generation, cell creation | DB sync containers **still run** for keystone, glance, cinder, placement, nova (×4), heat, plus barbican, octavia and others [LAB t1: 8 DB-sync bootstraps (keystone, glance, cinder, placement, neutron, heat, nova API, nova cell) + map_cell0 + 2× list_cells; s18 (`reconfigure`): the same minus neutron]. MariaDB/RabbitMQ bootstrap are not re-run |
+| One-shot containers | DB bootstrap for every service, MariaDB and RabbitMQ bootstrap, fernet key generation, cell creation | DB sync containers **still run** for keystone, glance, cinder, placement, nova (API and cell DB sync, plus map_cell0 and list_cells ×2), heat, plus barbican, octavia and others [LAB t1: 8 DB-sync bootstraps (keystone, glance, cinder, placement, neutron, heat, nova API, nova cell) + map_cell0 + 2× list_cells; s18 (`reconfigure`): the same minus neutron]. MariaDB/RabbitMQ bootstrap are not re-run |
 | Handler order effects | Every handler fires | Only notified handlers fire, but loop-notify widens them to all containers of the role on that host (03 §2.4) |
 | Neutron DB sync (`bootstrap_neutron`) | runs | skipped by default (`neutron_enable_rolling_upgrade: yes`). The DB/user/grant tasks still run |
 | Nova cell | `create_cell` | `update_cell` only if the transport URL or DB URL changed (`roles/nova-cell/tasks/create_cells.yml:31-55`) |

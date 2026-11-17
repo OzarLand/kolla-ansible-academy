@@ -477,8 +477,9 @@ docker_prune: {images: yes, images_filters: {label: kolla_version}, timeout: "{{
   Because that `-e` is appended **after** the user's `--extra` options, Ansible's last-wins rule for extra-vars means
   **`kolla-ansible reconfigure -e kolla_serial=1` silently runs with `0`**. Use `ANSIBLE_SERIAL=1 kolla-ansible reconfigure`.
   For every other command, `-e kolla_serial=...` works. Plays that **ignore** `kolla_serial` are listed below.
-  - `site.yml`: gather-facts imports, "Group hosts", "Check CentOS variant", prechecks, mariadb, rabbitmq, rabbitmq-outward
-    (66 of 72 plays do set `serial`).
+  - `site.yml`: "Group hosts", "Check CentOS variant", prechecks, mariadb, rabbitmq, rabbitmq-outward (no `serial` key),
+    and cyborg, whose play reads `serial: '{{ serial|default("0") }}'` (`site.yml:1028`). The two imported
+    gather-facts plays do use `kolla_serial` (`gather-facts.yml:7,31`).
   - `destroy.yml`, `mariadb_backup.yml`, `mariadb_recovery.yml`, `post-deploy.yml`, `certificates.yml`, `bifrost.yml` (grep `serial:` count 0).
 - **Bug: `--ask-vault-pass`** (`:320-323`):
   ```bash

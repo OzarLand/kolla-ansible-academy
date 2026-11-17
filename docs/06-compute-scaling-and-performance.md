@@ -75,7 +75,7 @@ Total task results ≈ `fixed + Σ_hosts per-host count`:
   3 computes.
 - **Each additional compute adds:**
   - ≈130 task results (≈77 remote invocations, 11 `kolla_set_configs --check` execs once its containers exist) to
-    every full `deploy`/`reconfigure`;
+    every no-change full `deploy`/`reconfigure` (a first deploy adds ≈141 task results and ≈91 invocations);
   - ≈60 task results (≈46 invocations, 6 checks) to every `-t nova` run.
 
 Measured scaling runs (10 and 30 computes, forks 5/20/50) are in §6.
@@ -145,10 +145,11 @@ Because of the per-task barrier, the critical path of a play is **(number of exe
 
 ### 4.2 Operation counts by fleet size
 
-Built from the per-compute counts measured in §2. "Waves" assume `forks = 50`; the waves multiply the per-host
+Built from the per-compute counts measured in §2. The "Waves per task" columns give ⌈C/F⌉ for compute hosts at
+F = 20, 50 and 100; the worked examples below use F = 50. The waves multiply the per-host
 invocation chain, they do not add tasks.
 
-| Computes (C) | Compute task results, full `reconfigure` (≈130·C) | Compute remote invocations, full `reconfigure` (≈77·C) | `kolla_set_configs --check` execs on computes (11·C) | Compute task results, `-t nova` (≈60·C) | Invocations, `-t nova` (≈46·C) | Waves per task at F=20 | Waves per task at F=50 | Waves per task at F=100 | Image pulls for a full image update (11·C) | Delegated fact `setup` calls with `--limit <1 host>` (≈C + ctl + net) |
+| Computes (C) | Compute task results, full `reconfigure` (≈130·C) | Compute remote invocations, full `reconfigure` (≈77·C) | `kolla_set_configs --check` execs on computes (11·C) | Compute task results, `-t nova` (≈60·C) | Invocations, `-t nova` (≈46·C) | Waves per task at F=20 | Waves per task at F=50 | Waves per task at F=100 | Image pulls for a full image update (11·C) | Delegated fact `setup` calls with `--limit <1 host>` (≈C + 7: every other inventory host of the lab layout) |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 10 | 1,300 | 770 | 110 | 600 | 460 | 1 | 1 | 1 | 110 | ~17 |
 | 50 | 6,500 | 3,850 | 550 | 3,000 | 2,300 | 3 | 1 | 1 | 550 | ~57 |
@@ -240,7 +241,8 @@ What the measurements show:
    forks=20).
 5. **`--limit` bounds the restarts, but fact gathering stays O(inventory).**
    - With `--limit compute001` on the 30-compute inventory, compute001 executed **38 `setup` calls sequentially**:
-     its own plus one delegated call per inventory host. That took 5.5 s in the lab (≈0.15 s per call locally),
+     its own, plus one delegated call for each of the 37 other inventory hosts (localhost included). The delegated loop
+     took 5.5 s in the lab (≈0.15 s per call locally),
      against 1.6 s for 11 hosts in the 3-compute inventory.
    - The delegated `discover_hosts`/`list_cells` work ran on control01.
    - With SSH, multiply the delegated count by the real per-host `setup` time; at 500 computes it is ≈510 sequential
@@ -275,7 +277,8 @@ What the measurements show:
    ≈19 task results per compute instead of ≈60–130 [LAB s15], and runs no bootstrap or Keystone steps.
 3. **Fact caching + setup filter.** This removes the O(N) serial delegated gathering under `--limit` and speeds the
    first play. All options are documented in Ussuri `ansible-tuning.rst`.
-4. **SSH pipelining** cuts the per-invocation constant that multiplies ~45–80 invocations per compute. A longer
+4. **SSH pipelining** cuts the per-invocation constant that multiplies ≈46–80 invocations per compute (≈91 on a
+   first deploy). A longer
    `ControlPersist` than the 60 s default avoids repeated handshakes on large fleets.
 5. **Size forks to the deploy host.** Templating of large Jinja templates (`nova.conf.j2`, `neutron.conf.j2`) happens
    on the deploy host, per compute.

@@ -88,7 +88,7 @@ sequenceDiagram
 - **Before:**
   - `kolla-ansible -t nova genconfig` (restarts nothing), then diff `/etc/kolla/nova-*/nova.conf` on one controller
     and one compute.
-  - `docker exec nova_compute kolla_set_configs --check` on a few computes: exit 1 means the container *will*
+  - `docker exec -u root nova_compute /usr/local/bin/kolla_set_configs --check; echo $?` on a few computes: exit 1 means the container *will*
     restart, and so will `nova_libvirt` and `nova_ssh`.
   - No active live migrations: `openstack server list --all-projects --status MIGRATING`.
 - **Apply in batches:** `deploy-containers --limit` (§H) or `ANSIBLE_SERIAL`.
@@ -176,9 +176,9 @@ included `reconfigure.yml` tasks are filtered out because they do not carry the 
   | `-t chrony` | all hosts (recommended way to push `common` changes) |
   | `-t haproxy` | haproxy hosts |
 - **What it can change:**
-  - `td-agent.conf` (fluentd inputs/outputs, built from **all** `enable_*` flags and the Elasticsearch/Monasca
-    settings);
-  - `logrotate.conf` (cron);
+  - `td-agent.conf` (fluentd inputs/outputs, built from the `enable_*` flags of the services in
+    `fluentd_input_openstack_services` and the Elasticsearch/Monasca settings);
+  - `logrotate.conf` (cron, built from `cron_logrotate_services`);
   - the RabbitMQ erlang cookie in kolla_toolbox;
   - container definitions of fluentd, cron and kolla_toolbox (image tag, volumes).
 - **What restarts:** any drift restarts **all three** containers on that host (loop-notify in
@@ -188,9 +188,28 @@ included `reconfigure.yml` tasks are filtered out because they do not carry the 
   - cron: log rotation is delayed.
   - kolla_toolbox: no runtime impact on OpenStack. It matters only for Kolla's own tasks.
   - **No VM or API impact.**
-- **Hidden coupling:** enabling a new service changes `td-agent.conf` and `logrotate.conf` on *every* host. The
-  common containers therefore restart on whatever hosts the *next* run reaches, which can be a seemingly unrelated
-  `-t nova` run (s07).
+- **Hidden coupling:** enabling a service that appears in either list (most OpenStack services, e.g. barbican)
+  changes `td-agent.conf` and/or `logrotate.conf` on *every* host (01 §5.1). The common containers therefore restart
+  on whatever hosts the *next* run reaches, which can be a seemingly unrelated `-t nova` run (s07).
+
+### C.3 Sequence, risks and verification
+
+- **Sequence on each reached host** (first matching play only), from `roles/common/tasks/deploy.yml`:
+  1. config: config directories; fluentd image label check; `config.json` ×3; custom fluentd files; `td-agent.conf`;
+     cron `logrotate.conf`; RabbitMQ Erlang cookie and env files for kolla_toolbox;
+  2. check-containers: one looped `compare_container` over fluentd, kolla_toolbox and cron;
+  3. bootstrap: `kolla_logs` volume and the `/var/log/kolla` link;
+  4. flush handlers, in definition order: Restart fluentd → Restart kolla-toolbox (→ toolbox `ansible --version`
+     init) → Restart cron.
+- **Hosts, parallelism:** all reached hosts at once, unless batched.
+- **Interruption:** a few seconds per container. Log shipping pauses, cron rotation is delayed, and Kolla's own
+  `kolla_toolbox` tasks wait. **No VM, API, network or storage impact.**
+- **Risks:** R2 (fleet-wide restarts after an `enable_*` change), R25 (`-t common` mistaken for a reconfigure).
+- **Verification:**
+  - before: `genconfig`, then `docker exec -u root fluentd /usr/local/bin/kolla_set_configs --check; echo $?`
+    (1 = will restart);
+  - after: `docker ps --filter name=fluentd --filter name=cron --filter name=kolla_toolbox` shows fresh start times;
+    `docker logs fluentd` has no parse errors; logs still reach the configured output.
 
 ---
 
@@ -267,7 +286,7 @@ Even with a narrow tag, the code guarantees that the run also touches:
 | **`common` on every host of the service play** (fluentd/cron/toolbox config + container check, restarts if drift) | meta dependency inherits the tag; first-play rule | [LAB s01, s07] |
 | **Keystone registration** (service, endpoints, user, role) | `register.yml` in `deploy.yml`/`reconfigure.yml` | `service-ks-register` |
 | **DB creation/grants and DB schema sync** for most services (Neutron's DB sync: `deploy` only by default, §B.1) | `bootstrap.yml` imported by `deploy.yml` | [LAB t1: 11 one-shot container runs on a no-change redeploy — 8 DB-sync bootstraps + map_cell0 + 2× list_cells] |
-| **RabbitMQ user/vhost** (nova-cell and others) | `service-rabbitmq` | `nova-cell/tasks/rabbitmq.yml` |
+| **RabbitMQ user/vhost** (nova-cell only) | `service-rabbitmq` | `nova-cell/tasks/rabbitmq.yml` |
 | **Global MariaDB variable toggle** (`-t glance`) | `log_bin_trust_function_creators` 1→0 | fact sheet C §1 |
 | **Fernet key redistribution** (`-t keystone`) | `distribute_fernet.yml` | fact sheet B §3.6 (re-run on reconfigure: §3.7) |
 | **Actions on hosts outside `--limit`** | `delegate_to` to `groups[...][0]`: Neutron DB bootstrap on neutron-server[0], cell list/discovery on conductor[0], RabbitMQ user creation on rabbitmq[0] | [LAB s17: `bootstrap_neutron`, `nova_list_cells`, `discover_hosts` ran on control01 during `deploy --limit compute004`] |
@@ -280,6 +299,31 @@ are also checked; a service tag touches only its frontend file.
 [LAB s19] `-t haproxy reconfigure` on an unchanged cloud: `common` + haproxy role on the 2 haproxy hosts. All 49
 frontend `include_role` tasks were evaluated; only the 12 for enabled services rendered their frontends (the other 37
 were skipped by `when: enable_<svc>`). Nothing restarted.
+
+### E.1 Sequence, impact, risks and verification of `-t <svc> reconfigure`
+
+For an API service such as keystone, glance, cinder, heat or placement:
+
+1. The gather-facts and group_by plays run on all hosts (`tags: always`).
+2. haproxy play, on the haproxy hosts: `common`, then only the `<svc>` include renders `services.d/<svc>*.cfg`.
+   HAProxy restarts on all haproxy hosts at once if that file changed (R8).
+3. Service play, on the service hosts: `common` → Keystone registration (`run_once`) → config → check-containers →
+   DB/user creation and the DB-sync container on the first host → flush. Every drifted host restarts all of the
+   service's containers (loop-notify), all such hosts in parallel. Keystone is the exception: it registers last
+   (09 §2.1).
+
+- **Interruption:** the service API is unavailable while its containers restart (up to 10 s stop, then start) on all
+  its hosts at once. Add the HAProxy restart window if the frontend changed.
+- **VM impact:** none for these services. In-flight glance or cinder transfers are SIGKILLed after 10 s (R24). Tags
+  whose roles run on computes (`nova`, `nova-cell`, `neutron`, `openvswitch`, `ovn`, `iscsi`) are the VM-affecting
+  ones (03 §3.1).
+- **Risks:** R8 (HAProxy restart), R19 (Keystone), R20 (glance file backend), R23 (`--limit` on a large inventory), R24
+  (10 s SIGKILL).
+- **Verification:**
+  - before: `kolla-ansible -t <svc> genconfig`, then `kolla_set_configs --check` in each `<svc>` container and a diff of
+    `/etc/kolla/haproxy/services.d/<svc>*.cfg` against the previous version;
+  - after: `openstack endpoint list --service <svc>` is unchanged, the API answers through the VIP, the container
+    start times show which hosts restarted, and `docker ps --filter name=haproxy` shows whether HAProxy restarted.
 
 ---
 
@@ -311,7 +355,7 @@ as such, and batch the compute side.
   - a Keystone API call to wait for compute registration.
 - **Facts:** gathered for all 12 hosts. The new compute itself runs the delegated `setup` loop sequentially
   (`gather-facts.yml:29-50`).
-- **Not touched:** existing computes and controllers.
+- **Not touched:** existing computes. Controllers get no config writes or restarts, only the delegated one-shots listed above.
 - **Caveats:**
   - Existing hosts' `/etc/hosts` is not updated (`bootstrap-servers --limit`).
   - With `libvirt_tls: true` (hostname-based migration), the other computes cannot resolve the new host until a
@@ -323,8 +367,9 @@ as such, and batch the compute side.
 
 [LAB s14 → s15]
 
-1. `kolla-ansible -t nova genconfig` wrote the new `nova.conf` on all hosts. **Zero restarts**: every handler has
-   `when: kolla_action != "config"`.
+1. `kolla-ansible -t nova genconfig` wrote the new `nova.conf` on all hosts. **Zero restarts**: every container restart handler has
+   `when: kolla_action != "config"`. The only unguarded restart handlers are the deprecated nova-hyperv Windows-service
+   ones, which `-t nova` does not select (08 §3).
 2. `kolla-ansible -t nova deploy-containers --limit compute001` restarted only compute001's nova containers. Drift is
    detected by `kolla_set_configs --check` inside `compare_container`. It ran 19 tasks on one host, with no bootstrap,
    no Keystone registration and no haproxy play.

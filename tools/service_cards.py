@@ -39,6 +39,22 @@ def kinds(hosts):
 
 
 site = open(os.path.join(A, 'site.yml')).read().splitlines()
+site_plays = yaml.safe_load(open(os.path.join(A, 'site.yml')))
+
+
+def plays_of(role):
+    """(play, role entry) for every site.yml play that applies `role` through `roles:`."""
+    res = []
+    for p in site_plays:
+        for r in p.get('roles') or []:
+            name = r.get('role') if isinstance(r, dict) else r
+            if name == role:
+                res.append((p, r if isinstance(r, dict) else {}))
+    return res
+
+
+def as_list(v):
+    return v if isinstance(v, list) else ([v] if v else [])
 
 
 def play_line(role):
@@ -86,7 +102,21 @@ for title, role, keyvars in CORE:
     for k, v in d.items():
         if k.endswith('_services') and isinstance(v, dict):
             sv.update({sk: s for sk, s in v.items() if isinstance(s, dict) and 'container_name' in s})
+    rplays = plays_of(role)
+    cnames = []
     chosts = set()
+    for s in sv.values():
+        # Resolve the role parameters a play passes (e.g. rabbitmq: project_name, role_rabbitmq_groups).
+        variants = [rv for _, rv in rplays] or [{}]
+        for rv in variants:
+            env = {'project_name': rv.get('project_name', d.get('project_name', role))}
+            env.update({k: v for k, v in rv.items() if isinstance(v, str)})
+            cn = re.sub(r'\{\{\s*(\w+)\s*\}\}', lambda m: str(env.get(m.group(1), m.group(0))), str(s['container_name']))
+            if cn not in cnames:
+                cnames.append(cn)
+            g0 = re.sub(r'\{\{\s*(role_\w+)\s*\}\}', lambda m: str(env.get(m.group(1), m.group(0))), str(s.get('group') or ''))
+            if g0 and g0 != str(s.get('group')):
+                chosts |= hosts_of(g0)
     for s in sv.values():
         expr = str(s.get('host_in_groups') or '')
         gs = re.findall(r"groups\[['\"]([A-Za-z0-9_\-]+)['\"]\]", expr) if expr else []
@@ -98,6 +128,17 @@ for title, role, keyvars in CORE:
             gs = ['all'] if g == 'all' else [g]
         for g in gs:
             chosts |= hosts_of(g)
+    if not sv:
+        # Old-style roles (swift) start containers with explicit kolla_docker tasks.
+        for tf in sorted(glob.glob(os.path.join(rd, 'tasks', '*.yml'))):
+            for t in yaml.safe_load(open(tf)) or []:
+                kd = t.get('kolla_docker') if isinstance(t, dict) else None
+                if not kd or kd.get('action') != 'start_container' or '{{' in str(kd.get('name')):
+                    continue
+                if kd['name'] not in cnames:
+                    cnames.append(kd['name'])
+                for g in re.findall(r"groups\[['\"]([A-Za-z0-9_\-]+)['\"]\]", str(t.get('when', ''))):
+                    chosts |= hosts_of(g)
     pl = play_line(role)
     phosts = set()
     if role in ('nova', 'nova-cell'):
@@ -105,22 +146,29 @@ for title, role, keyvars in CORE:
         pats = ['nova-api', 'nova-scheduler', 'nova-super-conductor'] if role == 'nova' else ['compute', 'nova-compute-ironic', 'nova-conductor', 'nova-novncproxy', 'nova-serialproxy', 'nova-spicehtml5proxy']
         tags = 'nova, nova-api(-*)' if role == 'nova' else 'nova, nova-cell(-*)'
     elif role == 'common':
-        pl_txt = 'meta dependency of every service role'
-        pats = ['all']
+        ndeps = sum(1 for m in glob.glob(os.path.join(A, 'roles', '*', 'meta', 'main.yml'))
+                    if re.search(r'role:\s*common\b', open(m).read()))
+        pl_txt = ('meta dependency of %d roles (not `memcached`, `multipathd` or the helper roles); runs in the first '
+                  'play that reaches each host' % ndeps)
+        pats = ['first play reaching each host (chrony by default)']
         tags = 'inherits the tag of the first play reaching the host (`-t common` alone is a no-op)'
+        phosts = {h for h in hosts_of('all') if h != 'localhost'}
+        chosts = set(phosts)
     else:
-        pl_txt = 'site.yml:%s' % pl if pl else '?'
-        pats, tags = [], ''
-        if pl:
-            j = pl
-            while j < len(site) and not site[j].startswith('- name:'):
-                m = re.match(r"\s+- ['\"]?([A-Za-z0-9_\-]+)['\"]?$", site[j])
-                if m and not site[j].strip().startswith("- '&"):
-                    pats.append(m.group(1))
-                mt = re.search(r'tags:\s*\[?([A-Za-z0-9_\-, ]+)\]?', site[j])
-                if mt:
-                    tags = mt.group(1).strip().rstrip(',')
-                j += 1
+        pl_txt = ', '.join('site.yml:%d' % i for i, l in enumerate(site, 1)
+                           if l.strip() in ['- name: %s' % p['name'] for p, _ in rplays]) or '?'
+        pats, tagl = [], []
+        for p, rv in rplays:
+            for h in as_list(p.get('hosts')):
+                if not str(h).startswith('&') and h not in pats:
+                    pats.append(h)
+            for t in as_list(p.get('tags')) + as_list(rv.get('tags')):
+                if t not in tagl:
+                    tagl.append(t)
+        tags = ', '.join(tagl)
+        if role == 'haproxy':
+            tags += ('; each of the 49 per-service `include_role … tasks_from: loadbalancer` tasks in this play also '
+                     'carries its service tag')
     for p in pats:
         phosts |= hosts_of(p)
     tfiles = sorted(os.path.basename(f) for f in glob.glob(os.path.join(rd, 'tasks', '*.yml')))
@@ -151,13 +199,15 @@ for title, role, keyvars in CORE:
             '| Play host patterns | %s |' % (', '.join(pats) or '–'),
             '| Node types in play (example inventory) | %s |' % kinds(phosts),
             '| Node types running its containers | %s |' % kinds(chosts),
-            '| Containers | %s |' % ', '.join('`%s`' % s['container_name'] for s in sv.values()),
+            '| Containers | %s |' % (', '.join('`%s`' % c for c in cnames) or '–'),
             '| deploy/reconfigure flow (`tasks/deploy.yml`) | %s |' % (flow or '–'),
             '| Task files | %s |' % ', '.join(tfiles),
             '| Templates | %s |' % (', '.join('`%s`' % t for t in tpls[:25]) + (' … (+%d)' % (len(tpls) - 25) if len(tpls) > 25 else '')),
             '| Handlers (definition order) | %s |' % ('; '.join(map(str, hn)) or '–'),
             '| Key variables | %s |' % ', '.join('`%s`' % v for v in keyvars),
-            '| Role dependencies | %s |' % ('`common` (meta)' if os.path.exists(os.path.join(rd, 'meta', 'main.yml')) else 'none'),
+            '| Role dependencies | %s |' % ('`common` (meta)' if os.path.exists(os.path.join(rd, 'meta', 'main.yml'))
+                                           and re.search(r'role:\s*common\b', open(os.path.join(rd, 'meta', 'main.yml')).read())
+                                           else 'none'),
             '']
 open(OUT, 'w').write('\n'.join(out) + '\n')
 print('wrote', OUT)

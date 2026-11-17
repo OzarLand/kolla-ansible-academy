@@ -46,10 +46,12 @@ Annexes:
    `nova_scheduler`, which refreshes its cell cache.
 3. **One changed container restarts all containers of its role on that host** (Ansible 2.9 loop-notify). A
    nova-compute config change restarts **nova_libvirt** on every compute (docs/03 §2.4, proven).
-4. **Without `ANSIBLE_SERIAL`, handlers restart a service on every host of the play at once.** Only MariaDB (4 waves)
-   and RabbitMQ (one by one) roll by themselves.
-5. **A service tag is never just that service.** It also runs the haproxy frontend config (and can restart HAProxy),
-   the `common` role on every host of the play and, for API services, Keystone registration and DB sync (docs/07 §E).
+4. **Without batching, handlers restart a service on every host of the play at once.** Batching is `ANSIBLE_SERIAL`
+   for `reconfigure`/`upgrade` and `-e kolla_serial=N` for `deploy`, which ignores `ANSIBLE_SERIAL`. Only MariaDB
+   (4 waves) and RabbitMQ (one by one) roll by themselves.
+5. **A service tag is never just that service.** For a service with a frontend it also runs the haproxy frontend
+   config (and can restart HAProxy). It runs the `common` role on every host of the play (memcached excepted) and, for
+   API services, Keystone registration and DB sync (docs/03 §3, docs/07 §E).
 6. **`-t common` does nothing** (docs/03 §2.1, proven). Use `-t chrony` or a service tag to push fluentd/cron changes.
 7. **Global settings land in per-host files.** `enable_*`, RabbitMQ/memcached membership and passwords end up in
    compute-side configs, so small central changes cause fleet-wide restarts (docs/07 §I).
@@ -64,7 +66,7 @@ Annexes:
 
 | Question | Short answer | Details |
 |---|---|---|
-| If I execute a specific tag, exactly what happens? | The tagged plays run on all their hosts. The haproxy frontend of that service is re-rendered. `common` runs on every host of the play. For API services, Keystone registration and DB-sync containers run (not Neutron's DB sync by default). Handlers restart drifted containers, plus their role siblings | docs/03 §3, docs/07 §E, annex/service-cards.md |
+| If I execute a specific tag, exactly what happens? | The tagged plays run on all their hosts. The haproxy frontend of that service, if it has one, is re-rendered. `common` runs on every host of the play (not for memcached). For API services, Keystone registration and DB-sync containers run (Neutron's DB sync only on `deploy` by default, not on `reconfigure`). Handlers restart drifted containers, plus their role siblings | docs/03 §3, docs/07 §E, annex/service-cards.md |
 | Which OpenStack components are affected? | The tagged service, plus HAProxy (only if its frontend changed), plus fluentd/cron/kolla_toolbox (if `common` drifted) | docs/07 §E |
 | Which compute nodes will receive changes? | Every compute in the play's host patterns (`nova`, `nova-cell`, `neutron`, `openvswitch`, `chrony`, `iscsi`, …) runs the tasks. Restarts happen where drift exists, usually all or none, because inputs are global | docs/06 §2, docs/07 §A.3 |
 | Will containers restart or be recreated? | Restart (stop 10 s → start) on config drift. Recreate on image or parameter change. Never on no-change runs. Siblings in the same role restart too | docs/01 §4.3, docs/03 §2.4 |

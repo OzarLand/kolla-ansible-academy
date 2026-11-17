@@ -67,10 +67,17 @@ Evidence levels:
 
 The fact sheets were produced by parallel source-reading agents and spot-checked (MariaDB restart waves, glance
 `log_bin_trust_function_creators`, the Docker restart gate, keepalived priority, compute-side memcached lists: all
-confirmed). One correction applies:
+confirmed). Four corrections apply. All are listed with their evidence under "Verification and errata" in
+[annex/factsheets/README.md](../annex/factsheets/README.md):
 
 - **Fact sheet A** (and any sentence elsewhere) stating that `docker stop` uses `docker_graceful_timeout` = 60 s is
-  wrong. The effective timeout is **10 s** (F3). Fact sheet C states this correctly.
+  wrong. The effective timeout is **10 s** (F3). Fact sheet C states this correctly. This is the correction with the
+  widest effect.
+- **Fact sheet A**, "no reload path anywhere": true for handlers, but `nova_scheduler` receives a `SIGHUP` on every
+  `deploy`/`reconfigure`.
+- **Fact sheet B §3.10**, memcached counts: 35 roles use `memcache_secret_key`, and 38 embed the memcached host list.
+- **Fact sheet A**, `tags: always` on `import_role: haproxy-config` "in every `loadbalancer.yml`": 48 of 49 files do
+  it directly; nova-cell reaches it through a chain of includes.
 
 ---
 

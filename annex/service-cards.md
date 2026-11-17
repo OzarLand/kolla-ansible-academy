@@ -23,12 +23,12 @@ For each core service: Kolla role, play in `site.yml`, tags, task flow for `depl
 
 | Item | Value |
 |---|---|
-| Play | site.yml:535 |
+| Play | site.yml:535, site.yml:555 |
 | Tags | rabbitmq |
-| Play host patterns | rabbitmq |
+| Play host patterns | rabbitmq, outward-rabbitmq |
 | Node types in play (example inventory) | control |
-| Node types running its containers | – |
-| Containers | `{{ project_name }}` |
+| Node types running its containers | control |
+| Containers | `rabbitmq`, `outward_rabbitmq` |
 | deploy/reconfigure flow (`tasks/deploy.yml`) | config → check-containers → bootstrap → flush handlers |
 | Task files | bootstrap.yml, check-containers.yml, check.yml, config.yml, deploy-containers.yml, deploy.yml, loadbalancer.yml, main.yml, precheck.yml, pull.yml, reconfigure.yml, restart_services.yml, stop.yml, upgrade.yml |
 | Templates | `advanced.config.j2`, `definitions.json.j2`, `erl_inetrc.j2`, `rabbitmq-env.conf.j2`, `rabbitmq.conf.j2`, `rabbitmq.json.j2` |
@@ -58,9 +58,9 @@ For each core service: Kolla role, play in `site.yml`, tags, task flow for `depl
 | Item | Value |
 |---|---|
 | Play | site.yml:126 |
-| Tags | zun |
-| Play host patterns | haproxy, haproxy, nova, nova-api, nova, nova-cell |
-| Node types in play (example inventory) | control, network |
+| Tags | haproxy; each of the 49 per-service `include_role … tasks_from: loadbalancer` tasks in this play also carries its service tag |
+| Play host patterns | haproxy |
+| Node types in play (example inventory) | network |
 | Node types running its containers | network |
 | Containers | `haproxy`, `keepalived` |
 | deploy/reconfigure flow (`tasks/deploy.yml`) | config-host → config → check-containers |
@@ -74,11 +74,11 @@ For each core service: Kolla role, play in `site.yml`, tags, task flow for `depl
 
 | Item | Value |
 |---|---|
-| Play | meta dependency of every service role |
+| Play | meta dependency of 68 roles (not `memcached`, `multipathd` or the helper roles); runs in the first play that reaches each host |
 | Tags | inherits the tag of the first play reaching the host (`-t common` alone is a no-op) |
-| Play host patterns | all |
-| Node types in play (example inventory) | compute, control, localhost, monitoring, network, storage |
-| Node types running its containers | compute, control, localhost, monitoring, network, storage |
+| Play host patterns | first play reaching each host (chrony by default) |
+| Node types in play (example inventory) | compute, control, monitoring, network, storage |
+| Node types running its containers | compute, control, monitoring, network, storage |
 | Containers | `fluentd`, `kolla_toolbox`, `cron` |
 | deploy/reconfigure flow (`tasks/deploy.yml`) | config → check-containers → bootstrap → flush handlers |
 | Task files | bootstrap.yml, check-containers.yml, check.yml, config.yml, copy-certs.yml, deploy-containers.yml, deploy.yml, main.yml, precheck.yml, pull.yml, reconfigure.yml, stop.yml, upgrade.yml |
@@ -350,8 +350,8 @@ For each core service: Kolla role, play in `site.yml`, tags, task flow for `depl
 | Tags | swift |
 | Play host patterns | swift-account-server, swift-container-server, swift-object-server, swift-proxy-server |
 | Node types in play (example inventory) | control, storage |
-| Node types running its containers | – |
-| Containers |  |
+| Node types running its containers | control, storage |
+| Containers | `swift_proxy_server`, `swift_rsyncd`, `swift_account_server`, `swift_account_auditor`, `swift_account_replication_server`, `swift_account_replicator`, `swift_account_reaper`, `swift_container_server`, `swift_container_auditor`, `swift_container_replication_server`, `swift_container_replicator`, `swift_container_updater`, `swift_object_server`, `swift_object_auditor`, `swift_object_replication_server`, `swift_object_replicator`, `swift_object_updater`, `swift_object_expirer` |
 | deploy/reconfigure flow (`tasks/deploy.yml`) | register → config → start → check |
 | Task files | check.yml, config.yml, copy-certs.yml, deploy-containers.yml, deploy.yml, legacy_upgrade.yml, loadbalancer.yml, main.yml, precheck.yml, pull.yml, reconfigure.yml, register.yml, rolling_upgrade.yml, start.yml, stop.yml, upgrade.yml |
 | Templates | `account.conf.j2`, `container.conf.j2`, `object.conf.j2`, `proxy-server.conf.j2`, `rsyncd.conf.j2`, `swift-account-auditor.json.j2`, `swift-account-reaper.json.j2`, `swift-account-replication-server.json.j2`, `swift-account-replicator.json.j2`, `swift-account-server.json.j2`, `swift-container-auditor.json.j2`, `swift-container-replication-server.json.j2`, `swift-container-replicator.json.j2`, `swift-container-server.json.j2`, `swift-container-updater.json.j2`, `swift-object-auditor.json.j2`, `swift-object-expirer.json.j2`, `swift-object-replication-server.json.j2`, `swift-object-replicator.json.j2`, `swift-object-server.json.j2`, `swift-object-updater.json.j2`, `swift-proxy-server.json.j2`, `swift-rsyncd.json.j2`, `swift.conf.j2` |
