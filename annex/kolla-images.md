@@ -91,10 +91,10 @@ flowchart TB
    secret there. `kolla_docker` returns the container's stderr in the task result
    (`library/kolla_docker.py:832-836,840-845,1070`). Ansible's default callback prints a failed result, `stderr`
    included, and an ok or changed one only with `-v` (ansible 2.9.27
-   `lib/ansible/plugins/callback/default.py:94-114,152-153`, `lib/ansible/plugins/callback/__init__.py:105-123`); a
+   `lib/ansible/plugins/callback/default.py:94-114,152-153`, `lib/ansible/plugins/callback/__init__.py:101-123`); a
    task with `no_log` reaches the callback with its result replaced by a `censored` message
-   (`lib/ansible/executor/task_queue_manager.py:373`, `lib/ansible/executor/task_result.py:131-139`). `bootstrap_heat`
-   and `bootstrap_mariadb` set no `no_log` (`roles/heat/tasks/bootstrap_service.yml:2-29`,
+   (ansible 2.9.27 `lib/ansible/executor/task_queue_manager.py:373`, `lib/ansible/executor/task_result.py:131-139`).
+   `bootstrap_heat` and `bootstrap_mariadb` set no `no_log` (`roles/heat/tasks/bootstrap_service.yml:2-29`,
    `roles/mariadb/tasks/bootstrap_cluster.yml:2-23`), `upgrade_mariadb` does (`roles/mariadb/tasks/upgrade.yml:26`)
    [CODE].
 2. `sudo -E kolla_set_configs` (`:8`) runs as root whatever the image `USER`, copies the configuration (§2.3) and
@@ -176,7 +176,7 @@ fluentd, ovn-base, nova-libvirt and nova-ssh put everything in `kolla_extend_sta
 - PID 1 is `dumb-init --single-child`, and `kolla_start` execs the service, so the service is dumb-init's direct
   child (kolla `docker/base/Dockerfile.j2:434`, `docker/base/start.sh:21`) [CODE]. [NOT AVAILABLE: dumb-init
   semantics, not in these sources] Whether in this mode dumb-init forwards `docker stop`'s SIGTERM only to that child.
-  A comment in the mariadb image says the same in reverse: without `--single-child`, "the TERM signal is sent to all
+  A comment in the mariadb image describes the other mode: without `--single-child`, "the TERM signal is sent to all
   subprocesses" (kolla `docker/mariadb/mariadb/Dockerfile.j2:67-71`).
 - MariaDB overrides the entrypoint to `dumb-init --` without `--single-child` (kolla
   `docker/mariadb/mariadb/Dockerfile.j2:65-76`) [CODE]. Its comment gives the reason: `mysqld_safe` ignores SIGTERM,
@@ -186,8 +186,8 @@ fluentd, ovn-base, nova-libvirt and nova-ssh put everything in `kolla_extend_sta
   `neutron-l3-agent-wrapper.sh` (`roles/neutron/templates/neutron-l3-agent-wrapper.sh.j2:14-18`), `start-ovs` and
   `start-ovsdb-server` (`roles/openvswitch/templates/start-ovs.j2:2`, `start-ovsdb-server.j2:11`) and
   `haproxy_run.sh` (`roles/haproxy/templates/haproxy_run.sh.j2:7-9`) [CODE]. [NOT AVAILABLE] Whether the service then
-  gets any SIGTERM before the container stops; `kolla_docker` stops a container still running after 10 s with SIGKILL
-  ([docs/01 §6](../docs/01-repository-architecture.md)).
+  gets any SIGTERM before the container stops. `kolla_docker` stops containers with the Docker client's `stop` and a
+  10 s timeout (`library/kolla_docker.py:871-884,892-904`, [docs/01 §6](../docs/01-repository-architecture.md)) [CODE].
 
 ### 2.7 Healthcheck scripts
 
@@ -379,7 +379,7 @@ appears (kolla `docker/keystone/keystone-fernet/keystone_bootstrap.sh:35-41`). I
 | nova-novncproxy, nova-serialproxy, nova-spicehtml5proxy | nova | nova-base step only | – |
 | neutron-base | – | Log dir; iptables backend: `update-alternatives --set` to the `-legacy` binaries when `KOLLA_LEGACY_IPTABLES` is `"true"`, otherwise `--auto` (kolla `docker/neutron/neutron-base/extend_start.sh:3-24`) | Only the OVS, linuxbridge and L3 agents get `KOLLA_LEGACY_IPTABLES` (`roles/neutron/defaults/main.yml:32,67,93`). Changing `neutron_legacy_iptables` recreates them; whether rules in the old backend are migrated is [NOT AVAILABLE] |
 | neutron-server | neutron | neutron-base step; no branch taken; exec `neutron-server` | – |
-| neutron-openvswitch-agent | neutron | neutron-base step; nothing to OVS bridges or flows | [NOT AVAILABLE] How flows are resynced after a restart: agent behaviour, not in these sources |
+| neutron-openvswitch-agent | neutron | neutron-base step; nothing to OVS bridges or flows | [NOT AVAILABLE] Whether and how the agent resyncs flows after a restart: agent behaviour, not in these sources |
 | neutron-dhcp-agent | neutron | neutron-base step; no dnsmasq or namespace handling | [NOT AVAILABLE] Whether dnsmasq children die with the container and whether `qdhcp-` namespaces persist on the shared `/run/netns` |
 | neutron-l3-agent | neutron | neutron-base step; the command is Kolla-Ansible's wrapper (§5.3) | Namespace cleanup on every start with `enable_neutron_agent_ha` ([08 R6](../docs/08-operational-risk-matrix.md)) |
 | neutron-metadata-agent (also the OVN metadata agent) | neutron | neutron-base step; recursive chown of `/var/lib/neutron/kolla`, the socket volume shared with the L3 and DHCP agents (`roles/neutron/templates/neutron-metadata-agent.json.j2:29-33`) | Ussuri runs the OVN metadata agent from this image (`roles/neutron/defaults/main.yml:200`) |
@@ -552,7 +552,7 @@ new-cluster decision [CODE: kolla `docker/mariadb/mariadb/extend_start.sh` has n
 - **QEMU survival across a `nova_libvirt` restart or recreate** (Q1): placement in `machine.slice` through the host
   D-Bus and systemd-machined, reconnect from the runtime state, the old QEMU binary kept after a recreate
   ([05 §5](../docs/05-nova-deep-dive.md)).
-- **OVS flow loss** on an `openvswitch_vswitchd` restart and the time to reprogram (Q3).
+- **Whether OVS flows are lost** on an `openvswitch_vswitchd` restart and, if so, how long reprogramming takes (Q3).
 - **Horizon regeneration time** after a recreate or a settings change (§5.2).
 - **Cost of the recursive chown** on large trees: glance store, NFS instance directory, MariaDB datadir, RabbitMQ
   mnesia.
@@ -563,8 +563,8 @@ new-cluster decision [CODE: kolla `docker/mariadb/mariadb/extend_start.sh` has n
   `/usr/share/ovn/scripts/` path on distributions that ship `ovn-ctl` elsewhere.
 - **`/var/run` as a symlink to `/run`** in the images, which would put libvirt's runtime state on the host `/run`
   bind mount. The Dockerfiles do not show it.
-- **The restart loop after a failing `kolla_set_configs`** (§2.3) and **the CA bundle after the last custom CA is
-  removed** (§2.4).
+- **Whether a failing `kolla_set_configs` causes a restart loop** (§2.3) and **the CA bundle after the last custom CA
+  is removed** (§2.4).
 - **Service-side effects of the one-shot findings**: heat stack-domain authentication after a changed
   `heat_domain_admin_password` (§6 item 7); whether `rabbitmq-server` ignores `RABBITMQ_CLUSTER_COOKIE` and uses
   only the cookie file (§6 item 9); Galera after a full stop, or a manual start left with `--wsrep-new-cluster`

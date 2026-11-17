@@ -50,7 +50,7 @@ In the source (ansible 2.9.27): without `apply:`, the include itself becomes the
 (`lib/ansible/playbook/task_include.py:135-154`, used at `lib/ansible/plugins/strategy/__init__.py:936-944`). An
 include is not statically loaded (`task_include.py:56`), so `Block._get_parent_attribute` skips it and takes the tags
 of the include's own parent, of the role and its dependency chain, and of the play
-(`lib/ansible/playbook/block.py:311-314, :329-360`). The included tasks are then filtered on those tags
+(`lib/ansible/playbook/block.py:311-326, :329-360`). The included tasks are then filtered on those tags
 (`lib/ansible/plugins/strategy/linear.py:371`, `block.py:378-380`). Applied to Kolla's `common` role, whose
 `include_tasks` and `set_fact` carry `tags: common` (`roles/common/tasks/main.yml:1-10`) and whose task files carry
 no other tag:
@@ -108,11 +108,12 @@ returns before `_ansible_notify` is set (`task_executor.py:557-559`).
 
 Applied to the real playbook [CODE]. An override that only touches `/etc/kolla/config/nova/nova-compute.conf`
 changes only nova-compute's `nova.conf` (`roles/nova-cell/tasks/config.yml:63-82`; `defaults/main.yml:349-355`).
-`kolla_set_configs --check` in `nova_compute` then exits 1 (kolla `docker/base/set_configs.py:31`, `:166-170`,
-`:232-234`, `:427-429`), so the `Check nova-cell containers` loop reports changed (`library/kolla_docker.py:326-332`,
-`:568-569`; `roles/nova-cell/tasks/check-containers.yml:2-20`). Its executed items on a compute host are
-`nova-libvirt`, `nova-ssh` and `nova-compute` (`roles/nova-cell/defaults/main.yml:3-54`), so the handlers restart
-`nova_compute`, **`nova_libvirt` and `nova_ssh`** on every compute host. A scheduler-only override changes the nova
+`kolla_set_configs --check` in `nova_compute` then exits 1 (kolla `docker/base/set_configs.py:32-35`, `:54-55`,
+`:166-171`, `:231-235`, `:427-429`), so the `Check nova-cell containers` loop reports changed
+(`library/kolla_docker.py:326-332`, `:568-569`; `roles/nova-cell/tasks/check-containers.yml:2-20`). Its executed
+items on a compute host with the defaults (`group_vars/all.yml:682, :726, :966`) are `nova-libvirt`, `nova-ssh` and
+`nova-compute` (`roles/nova-cell/defaults/main.yml:3-54`), so the handlers restart `nova_compute`, **`nova_libvirt`
+and `nova_ssh`** on every compute host. A scheduler-only override changes the nova
 role's `Copying over nova.conf` loop, whose executed items on a `multinode` controller are `nova-api` and
 `nova-scheduler` (`roles/nova/tasks/config.yml:51-69`; `nova-super-conductor` needs `enable_cells`, default `no`,
 `group_vars/all.yml:595`), so it restarts `nova_api` *and* `nova_scheduler`. Impact analysis in
@@ -138,8 +139,9 @@ With `kolla_serial=1` and the three controllers of the `multinode` inventory (`i
   once per controller batch, and each time on that batch's host (once more when `map_cell0` reports changed,
   `map_cell0.yml:25-26`).
 - `map_cell0` (`run_once`, `roles/nova/tasks/map_cell0.yml:22`) runs 3 times.
-- The compute registration wait plus `list_cells` run once per batch that holds a compute, on its first compute
-  (`roles/nova-cell/tasks/wait_discover_computes.yml:41, :89`; `deploy.yml:24-41`).
+- The compute registration wait plus `list_cells` run once per batch that holds a compute: they are gated on the batch's
+  first compute and delegated to the first conductor (`roles/nova-cell/tasks/wait_discover_computes.yml:41-42, :89`;
+  `discover_computes.yml:5, :21`; `deploy.yml:24-42`).
 - Nova containers restart strictly one host at a time, since each one-host batch finishes before the next starts.
 
 ### 2.6 `--list-tasks` is not usable for Kolla [CODE]
@@ -160,10 +162,11 @@ environment instead.
 
 "Target hosts" assumes the Ussuri `multinode` example inventory. "Containers" lists those that *can* be restarted
 or recreated, **only if** a config, parameter or image change is detected: a restart handler runs only when a task
-that notifies it reports *changed* (§2.4) [CODE]. [NOT AVAILABLE] Whether a run on an unchanged cloud reports no
-change anywhere. The kolla source shows one exception: `kolla_set_configs --check` exits 1 on every run
-for a `config_files` entry with `preserve_properties` and no `perm`, and in practice for a directory source that
-contains subdirectories (kolla `docker/base/set_configs.py:173-178, :193-204`;
+that notifies it reports *changed* (§2.4) [CODE]. [NOT AVAILABLE] Whether, on an unchanged cloud and apart from the
+exception below, every task that notifies a restart handler reports *ok*, so that nothing restarts. The kolla
+source shows one exception: `kolla_set_configs --check` exits 1 on every run for a `config_files` entry with
+`preserve_properties` and no `perm`, and in practice for a directory source that contains subdirectories (kolla
+`docker/base/set_configs.py:173-178, :193-204`;
 [annex/kolla-images.md §3](../annex/kolla-images.md)). So `prometheus_server` restarts on every deploy/reconfigure
 whenever `{{ node_custom_config }}/prometheus/extras/` holds files already copied into the container
 (`roles/prometheus/templates/prometheus-server.json.j2:10-15`). A newly added extras file makes `--check` exit 2
@@ -178,7 +181,7 @@ that selects a haproxy include can also restart `haproxy` if that frontend chang
 |---|---|---|---|---|---|---|
 | *(no tag)* | all 84 plays | everything for `kolla_action` | all | all | all bootstrap/DB-sync containers, Keystone registration of all services | Full blast radius |
 | `common` | include + `set_fact` in each play | **nothing else** [CODE] (`roles/common/tasks/main.yml:1-10`, §2.1) | all (no-op) | none | sets `common_run=True` | **No-op.** It does *not* reconfigure fluentd/cron/toolbox |
-| `haproxy` | haproxy play: `common`, haproxy role (config-host, config, check-containers), all 49 loadbalancer includes evaluated, but only those of enabled services run (each has a `when: enable_<svc>` except placement's, so the number depends on the `enable_*` flags) | sysctl, `ip_vs`, `haproxy.cfg`, `keepalived.conf`, certs, the `services.d/*.cfg` of every enabled service | haproxy hosts | `haproxy`, `keepalived`, `fluentd`/`cron`/`kolla_toolbox` (via common) | – | API and DB path interruption if anything changed; VIP may move (A §1.8) |
+| `haproxy` | haproxy play: `common`, haproxy role (config-host, config, check-containers), all 49 loadbalancer includes evaluated, but only those of enabled services run (each except placement's has a `when` on `enable_*` flags, `site.yml:139-389`, so the number depends on those flags) | sysctl, `ip_vs`, `haproxy.cfg`, `keepalived.conf`, certs, the `services.d/*.cfg` of every enabled service | haproxy hosts | `haproxy`, `keepalived`, `fluentd`/`cron`/`kolla_toolbox` (via common) | – | API and DB path interruption if anything changed; VIP may move (A §1.8) |
 | `<svc>` (e.g. `keystone`, `glance`, `cinder`, `heat`, `placement`; `horizon` differs, see below the table) | haproxy play (that service's include only) + the service play | haproxy `services.d/<svc>*.cfg`; `common` on the service hosts; register, config, check-containers, bootstrap of the service | haproxy hosts + service hosts | haproxy (if its frontend changed), all of the service's containers on a host if any changed (§2.4), common containers | DB sync container, Keystone registration | Service API outage during the parallel restart; HAProxy restart if the frontend changed |
 | `nova` | haproxy (nova + nova-cell includes), all 10 `nova.yml` plays | API/cell0/cell DB bootstrap, cell create/update, nova + nova-cell config/check, discovery, scheduler SIGHUP; reload/online-migration plays are no-ops except on `upgrade` | haproxy, `nova-api`, `nova-scheduler`, `nova-conductor`, consoles, **every `compute`** | nova API/scheduler/conductor/console proxies, **nova_compute, nova_libvirt, nova_ssh on all computes**, common containers | 5 one-shot container runs on `control01` when cell0 is mapped and the cell is unchanged (API DB sync, map_cell0, cell DB sync, list_cells ×2) [CODE] (`roles/nova/tasks/bootstrap.yml:52-54`, `roles/nova-cell/tasks/bootstrap.yml:39-41`, `create_cells.yml:2`, `discover_computes.yml:5`); RabbitMQ vhost/user for the cell; `kill -HUP` of nova_scheduler on every scheduler | See [05](05-nova-deep-dive.md), [07](07-day2-operational-impact.md) §A |
 | `nova-api` | haproxy nova include, API DB bootstrap play, nova play, scheduler cell-cache refresh, API reload/migrations | haproxy-config for the nova API/metadata frontends; `common` on nova-api and nova-scheduler hosts; nova_api + nova_cell0 DB/user creation, API DB sync and `map_cell0` on `nova-api[0]`; nova role: Keystone registration, config, check-containers, flush; scheduler SIGHUP | controllers + haproxy | nova_api, nova_scheduler, nova_super_conductor, fluentd/cron/kolla_toolbox (via common) | API DB sync, map_cell0 | Does **not** touch computes |
@@ -209,17 +212,17 @@ config, check-containers and, if anything changed, the horizon restart handler.
 This table answers the remaining per-tag questions. What runs, which services are affected and which containers can
 restart are in the master table above. Which handlers can fire is in §5: handlers fire only on drift, and tags never
 filter them (§2.2). "R*n*" refers to [08](08-operational-risk-matrix.md). Everything assumes a change was detected.
-[NOT AVAILABLE] Whether no tag restarts anything on an unchanged cloud (§3 gives one exception from the kolla source).
+[NOT AVAILABLE] Whether, apart from the exception given in §3, no tag restarts anything on an unchanged cloud.
 
 | Tag | Config files that can change | Running VMs | API availability | Networking / storage | Safe on its own? | Prerequisites |
 |---|---|---|---|---|---|---|
 | `haproxy` | `haproxy.cfg`, `services.d/*.cfg` of enabled services, `keepalived.conf`, TLS PEMs, sysctl; common files | no direct effect; instance metadata requests fail while HAProxy is down | **yes**: HAProxy restarts (never reloads) on all haproxy hosts at once; all APIs and the DB path through the VIP drop; keepalived can move the VIP (R8) | control plane only | yes if nothing reports a change, since the restart handlers then never run [CODE] (§2.4); with a change, batch with `ANSIBLE_SERIAL=1 … reconfigure` | facts of every backend host; certificates if TLS is on |
 | `<svc>` API service (`keystone`, `glance`, `cinder`, `heat`, `placement`, `horizon`) | service configs on its hosts, its `services.d` frontend, common files | none for keystone/heat/placement/horizon; glance/cinder transfers in progress are SIGKILLed after 10 s (R24) | **yes**: the service restarts on all its hosts at once; a Keystone restart blocks every API (R19); Placement down = no scheduling | cinder: volume operations, not the data path of attached volumes | yes, it is the intended unit; it still runs Keystone registration and DB sync (horizon: neither, by default); batch with `ANSIBLE_SERIAL`; the glance file backend has one host (R20) | MariaDB, RabbitMQ, memcached, Keystone (registration), HAProxy VIP |
-| `nova` | API and cell `nova.conf`, `config.json`, policy, libvirt (`libvirtd.conf`, `qemu.conf`, SASL), nova-ssh files, Ceph keyrings when enabled, nova frontends, common files | **yes**: `nova_libvirt` restarts with any nova-cell drift on a compute (loop-notify, R1); [NOT AVAILABLE] whether live migrations in progress fail and whether running VMs survive (05 §5, 07 §A.4) | nova API, scheduler and conductors restart at once; instance actions fail briefly | attach/detach and port binding in flight can fail; no OVS change | only with batching and a window; prefer `genconfig` + `deploy-containers --limit` (07 §H) | MariaDB, RabbitMQ, memcached, Keystone, Placement, Glance, Neutron registered |
+| `nova` | API and cell `nova.conf`, `config.json`, policy, libvirt (`libvirtd.conf`, `qemu.conf`, SASL), nova-ssh files, Ceph keyrings when enabled, nova frontends, common files | [CODE] `nova_libvirt` restarts with any nova-cell drift on a compute (loop-notify, R1); [NOT AVAILABLE] whether live migrations in progress fail and whether running VMs survive (05 §5, 07 §A.4) | nova API, scheduler and conductors restart at once; [NOT AVAILABLE] whether instance actions fail meanwhile | [NOT AVAILABLE] whether attach/detach and port binding in flight fail; no OVS change | only with batching and a window; prefer `genconfig` + `deploy-containers --limit` (07 §H) | MariaDB, RabbitMQ, memcached, Keystone, Placement, Glance, Neutron registered |
 | `nova-api` | API-side `nova.conf`, `config.json`, policy, nova frontends, common files on controllers | none | nova API, scheduler, super-conductor | none | yes; does not touch computes | as `nova` |
 | `nova-cell` | cell `nova.conf`, libvirt, nova-ssh and Ceph files on computes and conductors, console frontends, common files | **yes**, as `nova` | conductors and console proxies | as `nova` | as `nova` | the API DB and cell0 mapping (`nova-api`/`nova`), RabbitMQ |
 | `neutron` | `neutron.conf`, `ml2_conf.ini`, `openvswitch_agent.ini`, `l3_agent.ini`, `dhcp_agent.ini`, `metadata_agent.ini` (+ enabled features), neutron frontend, common files | **yes**: OVS agent resync on every compute ([NOT AVAILABLE] whether traffic is lost), L3/DHCP/metadata agent restarts on network nodes; L3 HA cleanup deletes router namespaces (R6) | neutron-server restarts on all controllers at once | **networking: yes** (07 §B.3); storage: no | risky without batching (R5, R6) | Open vSwitch or OVN running, MariaDB, RabbitMQ, Keystone |
-| `openvswitch` | `config.json` of `openvswitch_db`/`openvswitch_vswitchd`, `start-ovs`, `start-ovsdb-server`; `system-id`, and bridges on network nodes (and on computes when `computes_need_external_bridge`), via `ovs-vsctl` | **yes** if `openvswitch_vswitchd` restarts or is recreated: [NOT AVAILABLE] whether all VM traffic on the host stops until flows are reinstalled (R7). The kernel module stays loaded and `conf.db` keeps bridges and ports, but nothing saves or restores flows ([annex/kolla-images.md §6](../annex/kolla-images.md) item 13) | none | **networking: yes** | yes if unchanged (`Set system-id` reports *changed* without restarting); image changes per host batch | `openvswitch` kernel module |
+| `openvswitch` | `config.json` of `openvswitch_db`/`openvswitch_vswitchd`, `start-ovs`, `start-ovsdb-server`; `system-id`, and bridges on network nodes (and on computes when `computes_need_external_bridge`), via `ovs-vsctl` | [NOT AVAILABLE] whether running VMs are affected if `openvswitch_vswitchd` restarts or is recreated, e.g. whether all VM traffic on the host stops until flows are reinstalled (R7). The kernel module stays loaded and `conf.db` keeps bridges and ports, but nothing saves or restores flows ([annex/kolla-images.md §6](../annex/kolla-images.md) item 13) | none | **networking: yes** | yes if unchanged (`Set system-id` reports *changed* without restarting); image changes per host batch | `openvswitch` kernel module |
 | `ovn` | `config.json` of the OVN containers; chassis `external_ids` (`ovn-cms-options` overwritten) | [NOT AVAILABLE] whether an ovn-controller restart re-programs flows on the host | NB/SB DB restarts interrupt neutron-server's OVN driver | **networking: yes** | check manual `ovn-cms-options` first (A §5.8) | Open vSwitch |
 | `mariadb` | `galera.cnf` (lists all nodes), `config.json`, clustercheck files, `wsrep-notify.sh` | none directly | rolling restart in 4 waves; the active HAProxy backend restarts first (R9) | DB only | only on a healthy, fully synced cluster | every node `Synced` |
 | `rabbitmq` | `rabbitmq.conf`, `rabbitmq-env.conf`, `erl_inetrc`, `advanced.config`, `definitions.json`, `config.json` | none directly; nova-compute and agents lose RPC while their broker restarts | RPC-backed API calls can time out; restarts are one by one | agents reconnect; no data-plane effect | yes on a healthy cluster; membership changes are R3 | no partitions, all nodes running |
@@ -249,7 +252,7 @@ tasks inside roles, because they come from dynamic includes (§2.6). Use `gencon
 2. **A service tag drags in shared infrastructure.**
    - `-t nova` also runs the haproxy play (nova frontends), `common` on every nova host and compute, Keystone
      registration and the DB bootstrap containers [CODE] (`site.yml:293-306`, `roles/nova/meta/main.yml:2-3`,
-     `roles/nova/tasks/deploy.yml:2`, `nova.yml:29-96`).
+     `roles/nova-cell/meta/main.yml:2-3`, `nova.yml:117-135`, `roles/nova/tasks/deploy.yml:2`, `nova.yml:29-96`).
    - `-t neutron` also runs `common` on all computes.
    - A tag never restricts *which hosts* a play targets; use `--limit` for that.
 3. **Handlers make the impact data-dependent.** The same command can be a no-op or a fleet-wide restart, depending

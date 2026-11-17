@@ -17,11 +17,11 @@ Which Kolla-Ansible Ussuri operations grow with the number of compute nodes, why
 | **forks** (Ansible default 5; Kolla docs suggest 20–100) | Max parallel host executions per task: one worker process per fork, at most the batch size [CODE: ansible 2.9.27 `lib/ansible/executor/task_queue_manager.py:82, :257-258`] | A task on *H* hosts needs ⌈H/F⌉ waves |
 | **Loops** (`with_dict: <role>_services`, `with_items`) | Items run **sequentially on each host** [CODE: ansible 2.9.27 `lib/ansible/executor/task_executor.py:317, :367`]; each item that passes its `when` is a separate module execution (separate remote command); skipped items run no module | `config.yml` and `check-containers.yml` cost *items × invocation latency* per host |
 | **Remote module invocation** | Without pipelining, each invocation = SSH exec to create a tmp dir, transfer the AnsiballZ payload, run it, clean up. With `become`, `sudo` is added | The fixed cost per invocation dominates idempotent runs |
-| **Deploy-host templating** | `template` and `merge_configs` render **on the deploy host** for every host and item, then `copy` compares checksums remotely [CODE: `ansible/action_plugins/merge_configs.py:151-161, :214`; ansible 2.9.27 `lib/ansible/plugins/action/template.py:182-189`, `lib/ansible/plugins/action/copy.py:266, :288`] | Deploy-host CPU scales with hosts × templates. `nova.conf.j2` and `neutron.conf.j2` are large, with loops over groups |
+| **Deploy-host templating** | `template` and `merge_configs` render **on the deploy host** for every host and item, then `copy` compares checksums remotely [CODE: `ansible/action_plugins/merge_configs.py:151-161, :214`; ansible 2.9.27 `lib/ansible/plugins/action/template.py:149, :182-189`, `lib/ansible/plugins/action/copy.py:266, :288`] | Deploy-host CPU scales with hosts × templates. `nova.conf.j2` and `neutron.conf.j2` are large, with loops over groups |
 | **Controller-side tasks** | `group_by`, `set_fact`, `include_*`, `meta` run in Ansible workers without SSH | Cheap per host, but not free: the 69-item `group_by` loop (`site.yml:21-95`) is templated in a deploy-host worker for every host, and `group_by` runs no module on the host [CODE: ansible 2.9.27 `lib/ansible/plugins/action/group_by.py:31-51`]. Its CPU cost per host is [NOT AVAILABLE] |
 | **`run_once` / `delegate_to`** | Run once (per batch) on one host | Constant cost unless `serial` multiplies it |
 | **Handlers** | Run at flush points on notified hosts, in parallel up to `forks` [CODE: ansible 2.9.27 `lib/ansible/plugins/strategy/__init__.py:1019-1035`] | Restart time of the slowest container on the slowest host |
-| **`until`/`retries` loops** | e.g. compute registration wait (20 × 10 s), Keystone registration retries (5 × 10 s), `wait_for` | Add wall time even when nothing is wrong (first iteration usually succeeds) |
+| **`until`/`retries` loops** | e.g. compute registration wait (20 × 10 s), Keystone registration retries (5 × 10 s), `wait_for` | Add up to retries × delay of sleep per task, plus the time of each attempt [CODE: ansible 2.9.27 `lib/ansible/executor/task_executor.py:642-648, :758-763`]; how many attempts a run needs is [NOT AVAILABLE] |
 | **Fact gathering** | `setup` on every host at the start (`gather-facts.yml:5-21`). With `--limit`, the limited hosts gather **all other hosts' facts sequentially** in a delegated loop (`gather-facts.yml:29-50`) | O(total hosts) serial latency per limited run without fact caching |
 
 ---
@@ -59,7 +59,7 @@ skipped tasks, includes and `meta` tasks are counted at run time; the sources do
 | `-t nova reconfigure --limit compute001` (no change) | NOT AVAILABLE | NOT AVAILABLE | 53 + delegated fact loop (*N* − 1) | 6 | breakdown below; `gather-facts.yml:29-50` |
 | `-t nova deploy-containers --limit compute001` (no change) | NOT AVAILABLE | NOT AVAILABLE | 7 (`setup` + 6 `compare_container`) + delegated fact loop (*N* − 1) | 6 | `roles/common/tasks/deploy-containers.yml:2`, `roles/nova-cell/tasks/deploy-containers.yml:2` |
 | `pull` (all) | NOT AVAILABLE | NOT AVAILABLE | 13 (`setup`, CentOS `slurp`, 11 image pulls) | 0 | `site.yml:97-105`; `roles/service-images-pull/tasks/main.yml:2-14` |
-| `-t haproxy reconfigure` | 5 (facts + group_by only) | 5 | 1 (`setup`) | 0 | `annex/listings/list-tasks-nova.txt:106-119` (plays tagged `always`) |
+| `-t haproxy reconfigure` | 5 (facts + group_by only) | 5 | 1 (`setup`) | 0 | `annex/listings/list-tasks-nova.txt:106-119` (plays tagged `always`); `site.yml:126-136` (the only play tagged `haproxy` targets the `haproxy` group) |
 
 Breakdown of the 46 remote invocations of a no-change `-t nova` run on one compute, read from the task files [CODE]
 (compute001 adds 7 delegated invocations, for 53):
@@ -235,23 +235,24 @@ What the code shows:
      (ansible 2.9.27 `lib/ansible/executor/task_queue_manager.py:257-258`) [CODE].
 2. **The compute-wide plays grow with C.**
    - The plays that run on every compute include chrony (with common), nova-cell, openvswitch and neutron
-     (`annex/listings/list-tasks-nova.txt:127, :226, :268, :280`) [CODE]. The share of run time they take as C grows
-     is [NOT AVAILABLE].
+     (`annex/listings/list-tasks-nova.txt:127, :226, :268, :280`; `compute` is in the chrony and openvswitch groups:
+     `inventory/multinode:50-55, :144-147`) [CODE]. The share of run time they take as C grows is [NOT AVAILABLE].
 3. **forks and the deploy host's CPU.**
    - Whether, and at which forks value, the deploy host's CPU becomes the bottleneck is [NOT AVAILABLE] (Q7 in
      docs/10).
    - What runs on the deploy host is in the code [CODE]: one worker process per fork (ansible 2.9.27
      `lib/ansible/executor/task_queue_manager.py:257-258`, `lib/ansible/plugins/strategy/__init__.py:387-390`),
-     module packaging (AnsiballZ) for every invocation (`lib/ansible/plugins/action/__init__.py:155, :206`),
-     templating of `nova.conf.j2` (`ansible/action_plugins/merge_configs.py:151-161`) and the per-host `group_by`
-     loop (`site.yml:21-95`).
+     module packaging (AnsiballZ) for every invocation
+     (ansible 2.9.27 `lib/ansible/plugins/action/__init__.py:155, :206`), templating of `nova.conf.j2`
+     (`ansible/action_plugins/merge_configs.py:151-161`) and the per-host `group_by` loop (`site.yml:21-95`).
    - Whether forks overlap SSH and remote-execution latency in production, and up to which point, is
      [NOT AVAILABLE].
    - Size the deploy host (cores) together with forks.
 4. **A small change restarts the fleet in one step** [CODE]. With one nova-compute-only override on 30 computes,
    loop-notify ([03](03-ansible-roles-and-tags-mapping.md) §2.4) notifies `nova_compute`, `nova_libvirt` and
-   `nova_ssh` on every compute: 90 container restarts. Without `serial` all 30 computes are in one batch (ansible
-   2.9.27 `lib/ansible/executor/playbook_executor.py:161-169`), so the restarts run at one handler flush
+   `nova_ssh` on every compute: 90 container restarts. Without `serial` all 30 computes are in one batch
+   (`nova.yml:132`, `serial` defaults to "0"; ansible 2.9.27
+   `lib/ansible/executor/playbook_executor.py:161-169, :263-264, :276-278`), so the restarts run at one handler flush
    (`roles/nova-cell/tasks/deploy.yml:21-22`), on at most `forks` hosts at a time
    (ansible 2.9.27 `lib/ansible/plugins/strategy/__init__.py:359-391, :1019-1035`). How close together they land in
    time is [NOT AVAILABLE].
@@ -290,11 +291,11 @@ What the code shows:
    - Use `-t nova-api` for API-only changes (no computes).
    - Use `--limit` for host-scoped changes.
    - Use `--skip-tags haproxy` when frontends are not changing.
-2. **Separate config from apply.** `genconfig` once, then `deploy-containers --limit <batch>`. On a compute the apply
-   step runs only the `check-containers.yml` loops of common and nova-cell (7 invocations instead of 46 for
-   `-t nova`, §2), and runs no bootstrap or Keystone steps [CODE: `roles/common/tasks/deploy-containers.yml:2`,
-   `roles/nova-cell/tasks/deploy-containers.yml:2`, `roles/nova/tasks/deploy-containers.yml:2`,
-   `nova.yml:49-51, :85-87`].
+2. **Separate config from apply.** `genconfig` once, then `deploy-containers --limit <batch>`. With `-t nova`, the
+   apply step on a compute runs only `setup` and the `check-containers.yml` loops of common and nova-cell
+   (7 invocations instead of 46 for `-t nova reconfigure`, §2), and runs no bootstrap or Keystone steps [CODE:
+   `roles/common/tasks/deploy-containers.yml:2`, `roles/nova-cell/tasks/deploy-containers.yml:2`,
+   `roles/nova/tasks/deploy-containers.yml:2`, `nova.yml:49-51, :85-87`].
 3. **Fact caching + setup filter.** This removes the O(N) serial delegated gathering under `--limit` and speeds the
    first play. All options are documented in Ussuri `ansible-tuning.rst`.
 4. **SSH pipelining** cuts the per-invocation constant that multiplies 46–53 invocations per compute in a `-t nova`

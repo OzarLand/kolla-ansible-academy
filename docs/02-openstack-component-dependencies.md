@@ -200,7 +200,7 @@ Runtime facts [CODE]:
 ## 5. Compute-node dependency summary
 
 Everything that lands on a compute host in a default Ussuri deployment (`enable_*` defaults in
-`ansible/group_vars/all.yml:569-712`, placement from each role's `<role>_services`):
+`ansible/group_vars/all.yml:569-713`, placement from each role's `<role>_services`):
 
 | Container | Role | Config source that is *global* (changes fleet-wide) |
 |---|---|---|

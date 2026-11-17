@@ -124,8 +124,8 @@ Ordered by necessity. What Kolla configures is [CODE] (templates cited in §2.2)
 these sources and is marked [NOT AVAILABLE]:
 
 1. **MariaDB (through HAProxy and the VIP)** with the `nova_api`, `nova_cell0` and `nova` (cell) schemas migrated.
-   [NOT AVAILABLE] How API, scheduler and conductor fail without it, and whether computes keep running VMs while
-   their state reporting through the conductor fails.
+   [NOT AVAILABLE] Whether API, scheduler and conductor fail without it, and whether computes keep running VMs and
+   whether their state reporting through the conductor fails.
 2. **RabbitMQ** with the cell vhost and user. All RPC between API, scheduler, conductor and compute uses it.
    [NOT AVAILABLE] Whether computes also report liveness over it, with the service heartbeat going through the
    conductor.
@@ -248,7 +248,7 @@ What happens to running VMs is **not established by these sources** [NOT AVAILAB
   and the monitor sockets under `/var/lib/libvirt/qemu` (the `libvirtd` volume, `:246`) rather than from the
   persistent definitions in `/etc/libvirt/qemu`, and whether it stops a domain whose monitor it cannot reconnect to.
   [CODE] `stdio_handler = "file"` (`qemu.conf.j2:1`), and the container runs only `libvirtd --listen`
-  (`templates/nova-libvirt.json.j2:2`), so no virtlogd is started in it. [NOT AVAILABLE] Whether running QEMU
+  (`templates/nova-libvirt.json.j2:2`), so Kolla starts no virtlogd in it. [NOT AVAILABLE] Whether running QEMU
   therefore does not depend on a virtlogd. [CODE] The handler note above and `tools/cleanup-containers:5-9` both
   expect QEMU processes to still be running when `nova_libvirt` is stopped or removed.
 - [NOT AVAILABLE] Whether surviving QEMU processes keep the old container's mount namespace, so that after a recreate
@@ -269,8 +269,8 @@ to `nova:nova` recursively: one `chown` per directory and file of the instance d
 `COPY_ONCE` this happens only on the container's first start. A failed chown is only logged (kolla
 `docker/base/set_configs.py:359-363`). [NOT AVAILABLE] Whether, with `enable_shared_var_lib_nova_mnt` (cinder NFS or
 Quobyte, `roles/nova-cell/defaults/main.yml:294,450`), the walk also enters the cinder shares still mounted under
-`/var/lib/nova/mnt`, and how much start time grows with the number of files, most on NFS-backed trees such as those
-shares ([annex/kolla-images.md §6](../annex/kolla-images.md) item 10).
+`/var/lib/nova/mnt`, and whether start time grows with the number of files, in particular on NFS-backed trees such as
+those shares ([annex/kolla-images.md §6](../annex/kolla-images.md) item 10).
 
 nova-compute restart [NOT AVAILABLE: upstream Nova behaviour is not in these sources]:
 

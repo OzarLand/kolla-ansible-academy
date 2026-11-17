@@ -106,9 +106,11 @@ Details and Nova runtime dependencies: [05](05-nova-deep-dive.md).
 ### 2.4 Compute node deployment (what one compute host experiences)
 
 Sequence on one compute host during a full `deploy`, with the default enable flags and the `multinode` inventory
-groups (`iscsi` only with `enable_iscsid`) [CODE: play order `site.yml:114-124,512-522,710-721,761-780`; task and
+groups (`iscsi` only with `enable_iscsid`) [CODE: facts and `group_by` first (`site.yml:2,7-95`); play order
+`site.yml:114-124,512-522,710-721,761-780`; task and
 handler order in each role's `tasks/deploy.yml` and `handlers/main.yml`; `common` once per host,
-`roles/common/tasks/main.yml:1-10`]:
+`roles/common/tasks/main.yml:1-10`; discovery on the first compute of the batch only, delegated to the first
+conductor, `roles/nova-cell/tasks/wait_discover_computes.yml:41-42,86-89` and `discover_computes.yml:20-21`]:
 
 ```mermaid
 sequenceDiagram
@@ -116,7 +118,7 @@ sequenceDiagram
   participant D as Deploy host
   participant C as compute001
   D->>C: setup (facts), group_by (always)
-  Note over D,C: Play "chrony" — the first play this host appears in
+  Note over D,C: Play "chrony" — the first role play this host appears in
   D->>C: common: config dirs, fluentd label check, config.json ×3, td-agent.conf, logrotate.conf, toolbox cookie
   D->>C: common: check containers (fluentd, kolla_toolbox, cron), create kolla_logs volume, link /var/log/kolla
   D->>C: handlers: Restart fluentd → kolla_toolbox (+ toolbox init) → cron

@@ -36,7 +36,7 @@ Common mechanics that apply to every role below (all verified in code):
   - With the default serial 0, a handler restarts that container on **every host of the play at the same time**.
   - Ansible walks the play's handler list in order. It queues each notified handler on every notified host, then waits
     for all results before the next handler (ansible 2.9.27 `lib/ansible/plugins/strategy/__init__.py:979-987`,
-    `:1019-1035`). A notify sent by a handler is recorded while its results are processed (`:617-632`, `:785`;
+    `:1019-1035`). A notify sent by a handler is recorded while its results are processed (`:617-632`, `:784`;
     `lib/ansible/playbook/handler.py:47-51`), so a handler defined later and notified that way runs in the same flush.
 - **Handlers are not tag-filtered in Ansible 2.9.**
   - Tags filter only the play's compiled task blocks and dynamically included blocks (ansible 2.9.27
@@ -280,9 +280,9 @@ None.
 
 How the tags combine (the mechanics):
 1. **Play tag.** It is inherited by everything statically in the play: the role tasks, the `block`, and each
-   `include_role` statement. A role task ends up with tags `{haproxy}`, and common's tasks with `{common, haproxy}`
-   (`ansible/roles/common/tasks/main.yml:2-3`). `tags` is an extending attribute that collects the role, dependency
-   chain and play values (ansible 2.9.27 `lib/ansible/playbook/taggable.py:31`,
+   `include_role` statement. A role task ends up with tags `{haproxy}`, and common's two `main.yml` tasks with
+   `{common, haproxy}` (`ansible/roles/common/tasks/main.yml:2-3,9`). `tags` is an extending attribute that collects
+   the role, dependency chain and play values (ansible 2.9.27 `lib/ansible/playbook/taggable.py:31`,
    `lib/ansible/playbook/block.py:329-358`).
 2. **Include tags.** The `include_role` statement for keystone has tags `{keystone, haproxy}`.
 3. **Dynamic include boundary.** `include_role` is *dynamic*. Ansible 2.9 does not pass the include's own tags to the
@@ -667,8 +667,9 @@ All handlers have `when: kolla_action != "config"`. There is no `run_once`, `ser
     restart together.
   - NOT AVAILABLE: whether there is also an SB DB reconnect storm whose size scales with the number of computes.
 - **(D) Bootstrap cost scales with computes.** It runs 4 `docker exec ovs-vsctl` per compute (5 with
-  `computes_need_external_bridge`, counted from the `when` conditions of `bootstrap.yml:2-45`) on every deploy,
-  reconfigure and upgrade, always reported as changed.
+  `computes_need_external_bridge`), counted from the `when` conditions of `bootstrap.yml:2-45` for a compute in the
+  default `ovn-controller-compute` and `openvswitch` groups (`inventory/multinode:144-147,792-793`), on every
+  deploy, reconfigure and upgrade, always reported as changed.
   - NOT AVAILABLE: whether re-setting identical `external_ids` is a no-op for ovn-controller, and whether a changed
     `ovn_sb_connection` makes every chassis reconnect.
 - **(E) Gateway options are clobbered.**
@@ -725,7 +726,10 @@ role tag `ovs-dpdk`.
     (`ansible/roles/service-images-pull/tasks/main.yml:14`), which does not exist anywhere (grep).
   - For an undefined name and no `default`, the `vars` lookup raises `No variable found with this name: ovs_services`
     (ansible 2.9.27 `lib/ansible/plugins/lookup/vars.py:80-94`).
-  - So `kolla-ansible pull` should fail on DPDK hosts. The end-to-end outcome is NOT AVAILABLE.
+  - The lookup runs while Ansible builds the `with_dict` loop. The `Pull images` task has no `when` of its own, and
+    the role's `when` is true on DPDK hosts (`site.yml:730-732`), so Ansible re-raises that error and the task fails
+    on DPDK hosts (ansible 2.9.27 `lib/ansible/executor/task_executor.py:105-109,179-180,566-568`). The end-to-end
+    outcome of `kolla-ansible pull` is NOT AVAILABLE.
 - **stop** = service-stop with `ovsdpdk_services` (works).
 
 `config.yml` key tasks (all of them run on deploy, reconfigure, upgrade **and genconfig**):

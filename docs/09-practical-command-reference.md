@@ -130,8 +130,8 @@ ANSIBLE_SERIAL=10 kolla-ansible -i multinode -t nova reconfigure
   nova-scheduler, nova-super-conductor), so they repeat only if those groups are larger than the batch. The cell DB
   sync (`nova_cell_bootstrap`) is not `run_once`: it is gated on the first nova-conductor and runs once at any serial
   value. Compute discovery runs on the first compute of each nova-cell batch, so it repeats once per batch that
-  contains computes [CODE, 03 §2.5: with `kolla_serial=1` and the three `multinode` controllers,
-  `nova_api_bootstrap` ×3, `nova_cell_bootstrap` ×1, discovery once per compute].
+  contains computes [CODE, 03 §2.5 and `roles/nova-cell/tasks/bootstrap_service.yml:21`: with `kolla_serial=1` and
+  the three `multinode` controllers, `nova_api_bootstrap` ×3, `nova_cell_bootstrap` ×1, discovery once per compute].
 - Batches apply per play: the whole fleet passes the nova-cell play before the next play starts [CODE ansible 2.9.27
   `lib/ansible/executor/playbook_executor.py:161-169`].
 

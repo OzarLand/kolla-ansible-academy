@@ -156,7 +156,7 @@ Volumes: `/srv/node` with `:shared`, `/etc/kolla/swift` mounted at `/var/lib/kol
   2. It **fails if any listed container is not running** (`:32-41`), so reconfigure cannot repair a crashed container.
   3. It runs config.yml, then `docker exec -u root <c> kolla_set_configs --check` (`:45-53`).
   4. It removes and re-creates containers under COPY_ONCE (`:68-86`), or does a plain `restart_container` under COPY_ALWAYS when the check returns rc==1 (`:88-101`).
-  - Under COPY_ALWAYS (the default, `all.yml:43`), all changed containers on all hosts of the batch restart in the same task (`:88-101`). With default `kolla_serial=0` (`tools/kolla-ansible:236`) the batch is every host of the play (ansible 2.9.27 `lib/ansible/executor/playbook_executor.py:276-278`), so **all proxies restart in that one task**. **NOT AVAILABLE:** whether this opens an outage window.
+  - Under COPY_ALWAYS (the default, `all.yml:43`), all changed containers on all hosts of the batch restart in the same task (`:88-101`). With default `kolla_serial=0` (`tools/kolla-ansible:236`) the batch is every host of the play (ansible 2.9.27 `lib/ansible/executor/playbook_executor.py:276-278`), so **every changed proxy, on every proxy host, restarts in that one task**. **NOT AVAILABLE:** whether this opens an outage window.
 - **upgrade** (`tasks/upgrade.yml`) uses `rolling_upgrade.yml` by default (`swift_enable_rolling_upgrade: "yes"`, `defaults/main.yml:77`). Despite the name, it stops **all storage containers on all storage hosts at once** (`rolling_upgrade.yml:28-38`, with a TODO admitting it), restarts them, then stops and starts the proxies (`:48-66`). The proxy start here omits `/etc/timezone` and `kolla_logs` (`:62-65`), which is consistent with start.yml.
 - **stop** (`tasks/stop.yml`) contains a **bug**: the account-auditor stop checks `'swift_object_auditor' not in skip_stop_containers` (`:23-31`).
 
@@ -245,7 +245,7 @@ Default multinode membership (compute ∈): chrony (`multinode:50-55`), collectd
 ### 5.0 Summary table (compute-side)
 | Role (enable flag, default) | Compute containers | Restart trigger (handler) | Config: per-host or global? | Data-plane / VM impact |
 |---|---|---|---|---|
-| ceilometer (`enable_ceilometer` no; ipmi `enable_ceilometer_ipmi` no, `all.yml:594`) | `ceilometer_compute` (privileged, `/run:shared`, `nova_libvirt` volume), `ceilometer_ipmi` | `handlers/main.yml:32-46`, `:48-61` | **Global**: rabbit rpc and notify, memcached | none expected (polling only) |
+| ceilometer (`enable_ceilometer` no; ipmi `enable_ceilometer_ipmi` no, `all.yml:594`) | `ceilometer_compute` (privileged, `/run:shared`, `nova_libvirt` volume), `ceilometer_ipmi` | `handlers/main.yml:32-46`, `:48-61` | **Global**: rabbit rpc and notify, memcached | VM impact NOT AVAILABLE (`ceilometer_compute` runs only `ceilometer-polling`, `templates/ceilometer-compute.json.j2:2`) |
 | iscsi (`enable_iscsid` derived, `all.yml:651`) | `iscsid` (privileged, ipc host, `/dev`, `/run:shared`, `/sys/kernel/config`, `iscsi_info:/etc/iscsi`) | `handlers/main.yml:2-17` | Per-host (config.json only) | **Risk topic**, outcome NOT AVAILABLE; see 5.2 |
 | multipathd (`enable_multipathd` no) | `multipathd` (privileged, ipc host) | `handlers/main.yml:2-16` | Per-host (static template) | **Risk topic**, outcome NOT AVAILABLE; see 5.3 |
 | collectd (no) | `collectd` (privileged, `/sys`, `/dev` ro) | `handlers/main.yml:2-16` | Per-host | none |
@@ -425,7 +425,7 @@ Conversely, **adding a compute** changes non-compute configs: prometheus.yml (pr
 15. Barbican and other bootstraps (octavia, manila, ceilometer, masakari, zun, cyborg) re-run their DB sync container on every deploy/reconfigure (bootstrap containers are auto-removed, `kolla_docker.py:992`).
 
 ## 8. NOT AVAILABLE list
-- NOT AVAILABLE: whether a swift ring change makes `--check` return rc 1, so that `reconfigure` restarts the changed swift containers, and whether they then serve the new rings. That `deploy` leaves the old rings in running containers is settled in code (§3.4).
+- NOT AVAILABLE: whether the swift containers serve the new rings once `reconfigure` has restarted them. A changed ring file makes `--check` return rc 1 (the rings are `config_files` entries, `swift/templates/swift-object-server.json.j2:4-15`; kolla `docker/base/set_configs.py:160-171,213-235`; [annex/kolla-images.md §3.3](../kolla-images.md)), and `reconfigure` then restarts the container under COPY_ALWAYS (`swift/tasks/reconfigure.yml:88-101`). That `deploy` leaves the old rings in running containers is settled in code (§3.4).
 - NOT AVAILABLE: the effective value of `enable_swift_recon` in the rendered `object-server.conf`.
 - NOT AVAILABLE: what an iscsid, tgtd or multipathd restart does to attached volumes under I/O (session state, path failover, the guest view); for tgtd, whether the LVM targets come back without a cinder-volume restart.
 - NOT AVAILABLE: whether masakari-instancemonitor can connect to libvirt with SASL on.

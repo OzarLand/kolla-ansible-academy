@@ -6,7 +6,7 @@ This document consolidates three things:
 2. implementation limitations and bugs found in `ussuri-eol`;
 3. what the sources do not establish.
 
-Evidence levels (the study rests only on reading source code; nothing was executed):
+Evidence levels (the study rests only on reading source code; no run against a host is used as evidence):
 
 - **[CODE]** shown by the sources, with a `path:line` citation nearby: kolla-ansible `ussuri-eol`, the kolla image
   repository `ussuri-eol` (cited as kolla `docker/...`), the Ansible 2.9.27 source (2.8.20 for comparison), or
@@ -30,7 +30,7 @@ Evidence levels (the study rests only on reading source code; nothing was execut
 | F9 | **With `--limit`, all hosts' facts are gathered sequentially** by the limited hosts (delegated loop) | [CODE] `gather-facts.yml:29-50`; loop items run one after another (ansible 2.9.27 `lib/ansible/executor/task_executor.py:317,367`) | O(total hosts) serial latency on every limited run without fact caching |
 | F10 | **`kolla_serial` makes `run_once` steps repeat per batch** (API DB sync ×3 with serial 1 and the three controllers of the `multinode` inventory) and orders a play's restarts by host-pattern order (computes before conductors in the nova-cell play) | [CODE] ansible 2.9.27 `lib/ansible/executor/playbook_executor.py:161-169,257`, `lib/ansible/plugins/strategy/linear.py:288,315-316`, `lib/ansible/inventory/manager.py:411,428`; `roles/nova/tasks/bootstrap_service.yml:4-23`; `nova.yml:29-39,119-126`; `inventory/multinode:3-7,138-139,287-288` ([03 §2.5](03-ansible-roles-and-tags-mapping.md)) | Batching reduces blast radius but multiplies bootstrap work, and exposes ordering within a play |
 | F11 | **The `openvswitch_agent.ini` merge** includes the operator's `ml2_conf.ini` overrides | [CODE] `roles/neutron/tasks/config.yml:172-190` | Server-side ML2 changes restart every OVS agent |
-| F12 | **The L3 agent wrapper deletes all L3 namespaces at start** when `enable_neutron_agent_ha: yes` | [CODE] `neutron-l3-agent-wrapper.sh.j2:5-12` | Every L3 agent restart becomes a router data-plane outage on that node |
+| F12 | **The L3 agent wrapper runs `neutron-netns-cleanup --force --agent-type l3` at start** when `enable_neutron_agent_ha: yes`; its comment says this removes all L3 namespaces (what the command does is neutron code: NOT AVAILABLE) | [CODE] `neutron-l3-agent-wrapper.sh.j2:5-12` | [NOT AVAILABLE] Whether an L3 agent restart interrupts router traffic on that node (Q4) |
 | F13 | **The Nova deploy order** puts nova-compute before OVS and the Neutron agents on new computes | [CODE] `site.yml:710-780` | Expected and harmless on a running cloud; relevant when adding computes one by one |
 | F14 | **`kolla_set_configs --check` has blind spots.** It compares only the `config_files` entries of `config.json` (content, mode, owner). A change confined to `config.json` itself (`command`, `permissions`; all of memcached's settings) is never detected. A newly added optional file makes it exit 2, which fails `check-containers`, unless an entry listed before it already differs (then 1). `preserve_properties` entries (prometheus extras) and directory sources with subdirectories report drift on every run. A restart never removes the files of a dropped entry | [CODE] kolla `docker/base/set_configs.py:60-65,131-151,160-235,310-330,388-393,407-432`; `kolla_docker.py:566-578` ([annex/kolla-images.md §3](../annex/kolla-images.md)) | "`genconfig` + `--check`" ([09 §1](09-practical-command-reference.md)) under-reports some changes and over-reports others. A `config.json`-only change is applied by a normal deploy/reconfigure, because the changed template task notifies the restart handler. Once `genconfig` has written it, neither `deploy-containers` nor a later run (its template task is then unchanged) applies it until the container restarts for another reason |
 | F15 | **What the bootstrap containers run differs per image.** Nova's bootstrap containers run with `KOLLA_UPGRADE` (schema sync, no online data migrations outside `upgrade`). Placement's `KOLLA_BOOTSTRAP` container also runs `online_data_migrations`, on every deploy/reconfigure. Heat's does not re-apply a changed `heat_domain_admin_password` to Keystone. neutron-server's migrates `neutron-dynamic-routing`, which the rolling `upgrade` never migrates | [CODE] kolla `docker/nova/nova-api/extend_start.sh:9-25`, `docker/nova/nova-conductor/extend_start.sh:3-17`, `docker/placement/placement-api/extend_start.sh:5-9`, `docker/heat/heat-api/extend_start.sh:5-17`, `docker/neutron/neutron-server/extend_start.sh:5-12,34-38`; `roles/nova/tasks/bootstrap_service.yml:13`, `roles/nova-cell/tasks/bootstrap_service.yml:11`, `roles/placement/tasks/bootstrap_service.yml:11`, `roles/heat/tasks/bootstrap_service.yml:11,21`, `roles/neutron/defaults/main.yml:412` | What a "reconfigure" or a tag-changing "deploy" does to databases depends on the image, not only on kolla-ansible ([annex/kolla-images.md §4](../annex/kolla-images.md)) |
@@ -130,14 +130,14 @@ are [NOT AVAILABLE].
 
 ## 5. Limits of this study
 
-- **Nothing was executed.** The study rests only on reading source code: kolla-ansible `ussuri-eol`, the kolla
+- **Source code only.** The study rests only on reading source code: kolla-ansible `ussuri-eol`, the kolla
   image repository `ussuri-eol`, and the Ansible 2.9.27 source (2.8.20 for comparison). The only Ansible output used
   is its `--list-tags`/`--list-tasks` parse of the playbooks ([annex/listings/](../annex/listings/README.md)), which
   runs nothing against a host. The semantics of `kolla_set_configs --check` are read from the kolla source
   ([annex/kolla-images.md §3](../annex/kolla-images.md)).
-- **There are no timings.** Nothing was run, so no wall time is known; work can only be counted from the code
+- **There are no timings.** No run is used, so no wall time is known; work can only be counted from the code
   ([06](06-compute-scaling-and-performance.md)).
-- **No container or VM behaviour was observed.** Every statement about data-plane or VM impact is [NOT AVAILABLE].
+- **No container or VM behaviour is used as evidence.** Every statement about data-plane or VM impact is [NOT AVAILABLE].
 - **The depth of reading varies.** The core services are traced in the main documents; the other roles are covered
   by the fact sheets only.
 - **The kolla image sources were read, not built or run.** From the kolla `ussuri-eol` repository: the base start

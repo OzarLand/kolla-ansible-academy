@@ -376,7 +376,8 @@ How `kolla_docker` decides [CODE]:
     running 10 s after SIGTERM**. This holds for handler restarts, recreates and `stop`. The release note
     `docker-stop-timeout-c8089f6bf92d6c28.yaml` claims the default was raised to 60 s; it has no effect. A service
     needing a longer graceful shutdown (in-flight image uploads, cinder copies, heat-engine) is killed after 10 s.
-    [CODE]
+    [CODE; the SIGTERM-then-SIGKILL meaning of the timeout is kolla-ansible's own comment,
+    `ansible/group_vars/all.yml:153`: "Timeout after Docker sends SIGTERM before sending SIGKILL."]
 
 ---
 
@@ -390,8 +391,9 @@ How `kolla_docker` decides [CODE]:
 2. **Overrides are scoped by file location.** Putting a value into `/etc/kolla/config/nova.conf` affects **every nova
    container on every host** (nova-api, scheduler, conductor, novncproxy and every nova-compute). The content of
    `/etc/kolla/config/nova/nova-compute.conf` is merged only into nova-compute's `nova.conf`, so the control-plane
-   nova services are untouched [CODE: the `nova` role merges `nova/<service>.conf` only for its own services,
-   `roles/nova/tasks/config.yml:51-69`, `roles/nova/defaults/main.yml:2-50`]. Operationally, `-t nova reconfigure`
+   nova services are untouched [CODE: the `nova` and `nova-cell` roles each merge `nova/<service>.conf` only into
+   that service's own `nova.conf`, `roles/nova/tasks/config.yml:51-69`, `roles/nova-cell/tasks/config.yml:63-82`,
+   `roles/nova/defaults/main.yml:2-55`]. Operationally, `-t nova reconfigure`
    after changing it still restarts `nova_compute`, `nova_libvirt` and `nova_ssh` on every compute host [CODE]. The
    changed file makes `kolla_set_configs --check` report drift in `nova_compute` (`kolla_docker.py:543-578`). libvirt
    and ssh restart through loop-notify in the looped "Check nova-cell containers" task
