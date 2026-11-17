@@ -1,4 +1,25 @@
-# Factsheet E: Host bootstrap and the operational playbooks (Kolla-Ansible `ussuri-eol`)
+# Fact sheet E: Host bootstrap and the operational playbooks (Kolla-Ansible `ussuri-eol`)
+
+**Contents:** [0. Most important findings](#0-most-important-findings) · [1. `ansible/kolla-host.yml` (the
+`bootstrap-servers` command)](#1-ansiblekolla-hostyml-the-bootstrap-servers-command) · [2. Docker daemon configuration
+and restart: the exact trigger](#2-docker-daemon-configuration-and-restart-the-exact-trigger) · [3. `/etc/hosts`
+generation](#3-etchosts-generation) · [4. `ansible/gather-facts.yml` (confirmed) and its cost
+model](#4-ansiblegather-factsyml-confirmed-and-its-cost-model) · [5. `ansible/roles/prechecks` (`kolla-ansible
+prechecks`)](#5-ansiblerolesprechecks-kolla-ansible-prechecks) · [6. `destroy` (`ansible/destroy.yml`, role `destroy`,
+`tools/cleanup-*`)](#6-destroy-ansibledestroyyml-role-destroy-toolscleanup-) · [7. `prune-images`
+(`ansible/prune-images.yml`, role `prune-images`)](#7-prune-images-ansibleprune-imagesyml-role-prune-images) · [8.
+`post-deploy` (`ansible/post-deploy.yml`)](#8-post-deploy-ansiblepost-deployyml) · [9. `mariadb_backup.yml` and
+`mariadb_recovery.yml` (playbook level only)](#9-mariadb_backupyml-and-mariadb_recoveryyml-playbook-level-only) · [10.
+`certificates.yml` (playbook level)](#10-certificatesyml-playbook-level) · [11. `tools/kolla-ansible`
+CLI](#11-toolskolla-ansible-cli) · [12. Ansible configuration and documented
+tuning](#12-ansible-configuration-and-documented-tuning) · [13. Day-2 and scale knobs: `etc/kolla/globals.yml` and
+`ansible/group_vars/all.yml`](#13-day-2-and-scale-knobs-etckollaglobalsyml-and-ansiblegroup_varsallyml) · [14. Register
+of open questions (NOT AVAILABLE, or answered from
+code)](#14-register-of-open-questions-not-available-or-answered-from-code) · [15. Operational recommendations from this
+code](#15-operational-recommendations-from-this-code)
+
+**See also:** [verification and errata for all sheets](README.md#verification-and-errata) · [service
+index](../index.md#service-index) · [everything marked NOT AVAILABLE](../index.md#everything-marked-not-available)
 
 Source: `kolla-ansible` at tag `ussuri-eol` (HEAD `8a94fe9`). All paths below are relative to the repo root.
 Ansible behaviour claims cite the **Ansible 2.9.27** source (as ansible 2.9.27 `lib/ansible/...`), and the Ansible
@@ -17,11 +38,11 @@ systemd, Galera or libvirt behaviour that is not in them.
    `post-install.yml:231-237`, gated by `docker_configured.changed or docker_reloaded.changed`.
    In Ansible 2.8–2.9, `docker_reloaded` (a `systemd: daemon_reload: yes` task) **never reports changed**: the module
    runs `daemon-reload` but leaves `changed` False (ansible 2.9.27 `lib/ansible/modules/system/systemd.py:381-391`,
-   and the same file at `:374-384` in ansible 2.8.20; §2.2). **So the restart task runs if and only if the
-   `/etc/docker/daemon.json` write reports changed: the rendered content differs, or the file mode is not `0644`**
-   (`post-install.yml:139-145`; ansible 2.9.27 `lib/ansible/plugins/action/copy.py:288,363-383` and
-   `lib/ansible/module_utils/basic.py:1186,1234-1235`).
-   The restart is a plain task, not a handler. It runs at the same moment on every host in the batch, and the batch is all hosts by
+   and the same file at `:374-384` in ansible 2.8.20; [§2.2](#22-why-docker_reloaded-never-triggers-a-restart)). **So
+   the restart task runs if and only if the `/etc/docker/daemon.json` write reports changed: the rendered content
+   differs, or the file mode is not `0644`** (`post-install.yml:139-145`; ansible 2.9.27
+   `lib/ansible/plugins/action/copy.py:288,363-383` and `lib/ansible/module_utils/basic.py:1186,1234-1235`). The restart
+   is a plain task, not a handler. It runs at the same moment on every host in the batch, and the batch is all hosts by
    default: `kolla_serial` defaults to `0` (`kolla-host.yml:6`) and the CLI never passes it for `bootstrap-servers`.
 2. **The systemd drop-in is never applied.** `docker_custom_option` is written to `/etc/systemd/system/docker.service.d/kolla.conf`.
    Adding, changing or removing it does **not** restart Docker (`post-install.yml:147-180`, the template is not registered, and the
@@ -33,14 +54,14 @@ systemd, Galera or libvirt behaviour that is not in them.
    package change with containers running). Whether that unmask removes the path again, so that every later run
    masks again, is NOT AVAILABLE (systemd behaviour). If the run fails or is interrupted in between (package installs,
    PyPI pip installs, package removals, user creation, daemon.json), **the unmask at `post-install.yml:224-229` does
-   not run** (§2.3).
+   not run** ([§2.3](#23-the-debianubuntu-mask-window)).
    NOT AVAILABLE: whether docker then starts at the next reboot.
 4. **`/etc/hosts` lists every host.** The block loops over **all `groups['baremetal']` hosts** (`pre-install.yml:25-42`). So:
    (a) adding one host changes `/etc/hosts` on every host that bootstrap-servers runs on;
    (b) every baremetal host's facts are required: a baremetal host outside `bifrost` without gathered facts (for
    example unreachable during fact gathering, with no fact cache) makes `kolla_address` raise on **every** host
-   (`kolla_ansible/kolla_address.py:88-95`), which fails the task on every host and ends the play for them (§3);
-   (c) the per-run template work is O(N) per host, O(N²) in total.
+   (`kolla_ansible/kolla_address.py:88-95`), which fails the task on every host and ends the play for them
+   ([§3](#3-etchosts-generation)); (c) the per-run template work is O(N) per host, O(N²) in total.
 5. **Fact gathering with `--limit` is serial per limited host.** With `--limit` covering L of N hosts, the second play of
    `gather-facts.yml` makes each limited host loop over about N/L other hosts **in sequence** (`gather-facts.yml:34-49`;
    loop items run one after another, ansible 2.9.27 `lib/ansible/executor/task_executor.py:317,367`). With
@@ -105,7 +126,7 @@ systemd, Galera or libvirt behaviour that is not in them.
 |---|---|---|---|---|
 | 2-9 | Ensure `127.0.0.1 localhost` (lineinfile, regexp `^127.0.0.1.*`) | Replaces the **last** `127.0.0.1` line with exactly `127.0.0.1 localhost` | per host, O(1) | Yes. It may strip extra aliases from a hand-edited 127.0.0.1 line. |
 | 17-23 | Remove `127.0.1.1 ... <hostname>` line | Deletes the Ubuntu-style hostname→127.0.1.1 mapping (RabbitMQ bug refs in comment, lines 11-16) | per host | Yes |
-| 25-42 | **Generate /etc/hosts for all of the nodes** (blockinfile `# {mark} ANSIBLE GENERATED HOSTS`) | One line per **every host in `groups['baremetal']`**: `<api addr> <nodename> <hostname>` | **O(N) lines per host, O(N²) Jinja/hostvars work in total**. Needs facts of all N hosts. | Yes (no restart is attached). But see §3. |
+| 25-42 | **Generate /etc/hosts for all of the nodes** (blockinfile `# {mark} ANSIBLE GENERATED HOSTS`) | One line per **every host in `groups['baremetal']`**: `<api addr> <nodename> <hostname>` | **O(N) lines per host, O(N²) Jinja/hostvars work in total**. Needs facts of all N hosts. | Yes (no restart is attached). But see [§3](#3-etchosts-generation). |
 | 44-51 | sysctl `net.ipv4.ping_group_range=0 2147483647` (RedHat only) into `kolla_sysctl_conf_path` | Writes the file and reloads sysctl when changed | per host | Yes |
 | 57-71 | If `/etc/cloud/cloud.cfg` exists, write `/etc/cloud/cloud.cfg.d/99-kolla.cfg` = `manage_etc_hosts: false` | Stops cloud-init from rewriting /etc/hosts at boot | per host | Yes |
 | 73-77 | Ensure group `sudo` | | per host | Yes |
@@ -123,7 +144,7 @@ Defaults: `enable_docker_repo: true`, `customize_etc_hosts: True`, `create_kolla
 | 9-38 | **Firewall** (`when: disable_firewall`, default `True`, `defaults/main.yml:34`): `ufw state=disabled policy=allow` (Debian, `ignore_errors`), `rpm -q firewalld`, then **stop and disable firewalld** (RedHat) | **Silently removes any host firewall an operator added since the last run.** Per host. Containers are not restarted. |
 | 43-49 | `docker ps -f status=running -q` → `running_containers` | Snapshot taken before package changes |
 | 54-57 | stat `/etc/systemd/system/docker.service` | `stat` does not follow symlinks by default (`follow` defaults to False, ansible 2.9.27 `lib/ansible/modules/files/stat.py:435,461-464`) |
-| **59-69** | **Mask docker (symlink to /dev/null) on Debian/Ubuntu when that file does not exist** | Intended to stop apt from auto-starting docker on first install (comment 51-52). It also fires on any re-run where the path is absent. Whether the unmask (post-install 224-229) removes the symlink, so that **every re-run** masks again, is NOT AVAILABLE. See §2.3. |
+| **59-69** | **Mask docker (symlink to /dev/null) on Debian/Ubuntu when that file does not exist** | Intended to stop apt from auto-starting docker on first install (comment 51-52). It also fires on any re-run where the path is absent. Whether the unmask (post-install 224-229) removes the symlink, so that **every re-run** masks again, is NOT AVAILABLE. See [§2.3](#23-the-debianubuntu-mask-window). |
 | 71-77 / 87-94 | Install `debian_pkg_install` / `redhat_pkg_install` with **`state: present`** (RedHat also `update_cache: yes`) | **An already-installed `docker-ce` is NOT upgraded** (`present`, not `latest`). Lists: `defaults/main.yml:43-60` (docker-ce, git, python3-setuptools, python3-pip, python3-virtualenv if `virtualenv`, ntp if `enable_host_ntp`, sg3-utils-udev if `enable_multipathd`, iptables if `not docker_disable_default_iptables_rules`; RedHat adds `sudo`). A Docker upgrade only happens if `docker_apt_package`/`docker_yum_package` is changed to a pinned version, or on a first install or migration from legacy docker (doc: `bootstrap-servers.rst:64-67,90-93`). |
 | 79-85 | Install `drpm` (RedHat, `update_cache: yes`) | Refreshes the metadata cache each run |
 | 99-127 | If the install result changed **and** containers were running: `systemd docker started/enabled/unmasked`, wait for `docker info` (6×10 s), then `docker start <previously running IDs>` | Recovery path after a package change (comment at 40-41: an engine upgrade "may cause containers to stop"). What `docker start` does to containers that are still running is NOT AVAILABLE. |
@@ -141,15 +162,15 @@ Defaults: `enable_docker_repo: true`, `customize_etc_hosts: True`, `create_kolla
 | 30-38 | `chown -R` the virtualenv (if set) | Cost is O(files in venv) per run |
 | 40-56 | `node_config_directory` (`/etc/kolla`) owned by kolla:kolla, mode 0755 | |
 | 58-62 | `/etc/docker` dir | |
-| 64-137 | **Build `docker_config` dict** (see §2.1) | set_fact only |
+| 64-137 | **Build `docker_config` dict** (see [§2.1](#21-what-goes-into-etcdockerdaemonjson)) | set_fact only |
 | **139-145** | **Write `/etc/docker/daemon.json`** (`copy content: docker_config \| to_nice_json`), `register: docker_configured` | **The only effective trigger of a Docker restart** |
 | 147-154 | Remove `/etc/systemd/system/docker.service.d/kolla.conf` when `docker_custom_option` is empty and not a Zun compute | Not registered, so it **does not restart docker** |
 | 156-173 | Create the drop-in dir, then template `kolla.conf` (`templates/docker_systemd_service.j2`: overrides `ExecStart=/usr/bin/dockerd -H fd:// --containerd=... {{ docker_custom_option }} {{ docker_zun_options }}`) | Not registered, so it **does not restart docker** |
-| 175-180 | `systemd: name=docker daemon_reload=yes`, `register: docker_reloaded` | In Ansible 2.9, `changed` is always **False** here (§2.2) |
+| 175-180 | `systemd: name=docker daemon_reload=yes`, `register: docker_reloaded` | In Ansible 2.9, `changed` is always **False** here ([§2.2](#22-why-docker_reloaded-never-triggers-a-restart)) |
 | 182-193 | Ubuntu: if `/etc/apparmor.d/usr.sbin.libvirtd` exists, `apparmor_parser -R` it | No `changed_when`, so it runs every time the file exists. NOT AVAILABLE: whether `apparmor_parser -R` fails when the profile is already unloaded. (The file is not deleted, so a 2nd run before reboot runs it again.) |
 | 195-209 | Debian + `enable_chrony`: same for `usr.sbin.chronyd` | Same caveat |
 | 211-222 | group `docker`; add `kolla` to it | |
-| 224-229 | **`systemd docker state=started masked=no`** | **Unmasks** docker (§2.3). `started` only starts a unit that is not running (ansible 2.9.27 `lib/ansible/modules/system/systemd.py:533-535`). |
+| 224-229 | **`systemd docker state=started masked=no`** | **Unmasks** docker ([§2.3](#23-the-debianubuntu-mask-window)). `started` only starts a unit that is not running (ansible 2.9.27 `lib/ansible/modules/system/systemd.py:533-535`). |
 | **231-237** | **`systemd docker state=restarted` when `docker_configured.changed or docker_reloaded.changed`** | A **task, not a handler**. Runs at this point on all hosts in the batch. |
 | 239-244 | enable docker | |
 | 246-287 | `enable_host_ntp` (default **False**, `defaults/main.yml:27`): stop ntp/ntpd, then **`ntpd -gq` (task 'Synchronizing time one-time', no `changed_when`, runs every time)**, then start and enable ntp | With `enable_host_ntp: true`, every re-run runs `ntpd -gq` on every host (`post-install.yml:264-267`). Whether that steps the clock, harms Galera and RabbitMQ, or clashes with the default `enable_chrony: yes` container, is NOT AVAILABLE. |
@@ -251,9 +272,9 @@ Check after any failed run: `ls -l /etc/systemd/system/docker.service` should **
   image has no recovery logic for it. On a normal start the container runs plain `mysqld_safe` with every MariaDB host
   in `gcomm://`, and the image's start path has no `grastate.dat` or `safe_to_bootstrap` handling and no new-cluster
   decision (kolla `docker/mariadb/mariadb/extend_start.sh:28-58`; `ansible/roles/mariadb/templates/galera.cnf.j2:29`;
-  [annex/kolla-images.md §5.4](../kolla-images.md)). NOT AVAILABLE: whether Galera re-forms the cluster by itself or
-  `kolla-ansible mariadb_recovery` is needed. With a single MariaDB host, `gcomm://` is empty (`galera.cnf.j2:29`);
-  whether that host comes back without recovery is NOT AVAILABLE.
+  [annex/kolla-images.md §5.4](../kolla-images.md#54-mariadb-what-the-image-does-not-do)). NOT AVAILABLE: whether Galera
+  re-forms the cluster by itself or `kolla-ansible mariadb_recovery` is needed. With a single MariaDB host, `gcomm://`
+  is empty (`galera.cnf.j2:29`); whether that host comes back without recovery is NOT AVAILABLE.
 - Compute nodes: `nova_libvirt` runs with `pid_mode: host` and bind-mounts `/sys/fs/cgroup` (`nova-cell/defaults/main.yml:8,244`).
   NOT AVAILABLE: whether running QEMU processes survive the container restart; the sources do not show whether the
   guests sit in machined slices or in the container cgroup. Note `tools/cleanup-containers:5-11`: "Docker will not be
@@ -266,19 +287,21 @@ Check after any failed run: `ls -l /etc/systemd/system/docker.service` should **
 - Documented mitigations (`doc/source/reference/deployment-and-bootstrapping/bootstrap-servers.rst:59-93`): `--limit` batches
   keeping quorum, `-e kolla_serial=30%`, or Docker `live-restore` ("issues reported ... use it at your own risk"). The way to
   set live-restore in a supported way is `docker_custom_config: {"live-restore": true}`. FACT: adding it changes the
-  rendered daemon.json, so that run restarts Docker (§2.2); if the file on disk already matches the rendered content,
-  the restart task does not run. NOT AVAILABLE: whether containers survive that first restart, and whether pre-seeding
-  daemon.json by hand and running `systemctl reload docker` before bootstrap-servers activates live-restore.
+  rendered daemon.json, so that run restarts Docker ([§2.2](#22-why-docker_reloaded-never-triggers-a-restart)); if the
+  file on disk already matches the rendered content, the restart task does not run. NOT AVAILABLE: whether containers
+  survive that first restart, and whether pre-seeding daemon.json by hand and running `systemctl reload docker` before
+  bootstrap-servers activates live-restore.
 - Interaction with `config_strategy: COPY_ALWAYS` (`all.yml:43`, passed as `KOLLA_CONFIG_STRATEGY` in
   `docker_common_options`, `all.yml:162-163`). FACT (kolla image): every Kolla service container except
   `bifrost_deploy` (which runs `/sbin/init`, kolla `docker/bifrost/bifrost-deploy/Dockerfile.j2:29-30`) runs
   `kolla_set_configs` when it starts, and under `COPY_ALWAYS` that re-copies the files listed in its `config.json`
   from `/etc/kolla/<svc>/` and rewrites `/run_command` (kolla `docker/base/start.sh:8`,
-  `docker/base/set_configs.py:319-329,391-393`; [annex/kolla-images.md §2](../kolla-images.md)). A container that starts
-  again after a Docker restart therefore **activates any config that was rendered but not yet applied**, for example by
-  `kolla-ansible genconfig` (`tools/kolla-ansible:458-461`) or a failed reconfigure. Removals are not applied:
-  destinations of entries dropped from `config.json`, or of optional sources that are gone, stay in the container
-  ([annex/kolla-images.md §3.5](../kolla-images.md)).
+  `docker/base/set_configs.py:319-329,391-393`; [annex/kolla-images.md
+  §2](../kolla-images.md#2-start-path-common-to-every-image)). A container that starts again after a Docker restart
+  therefore **activates any config that was rendered but not yet applied**, for example by `kolla-ansible genconfig`
+  (`tools/kolla-ansible:458-461`) or a failed reconfigure. Removals are not applied: destinations of entries dropped
+  from `config.json`, or of optional sources that are gone, stay in the container ([annex/kolla-images.md
+  §3.5](../kolla-images.md#35-what-a-restart-applies)).
 
 ---
 
@@ -404,7 +427,8 @@ Cost model, with N = |groups['all']| (this **includes `localhost`** from `[deplo
   roles: [destroy]    # no serial, implicit gather_facts, no gather-facts.yml import
 ```
 - CLI: needs `--yes-i-really-really-mean-it` spelled in full (`tools/kolla-ansible:378-396`; `RAW_ARGS` check at 271-277).
-  `--include-images` sets `destroy_include_images=yes`. `--include-dev` sets `destroy_include_dev=yes`, **but see the bug in §11**.
+  `--include-images` sets `destroy_include_images=yes`. `--include-dev` sets `destroy_include_dev=yes`, **but see the
+  bug in [§11](#11-toolskolla-ansible-cli)**.
 - Role flow (`destroy/tasks/main.yml:1-8`): `validate-docker-execute.sh` (`sudo docker ps`), then `cleanup-containers`, then
   `cleanup-images --all` (only if `destroy_include_images`, default `enable_destroy_images: "no"`, `all.yml:730`), then
   `cleanup-host` (`become: true`, env vars passed in `cleanup_host.yml:5-17`). The role ignores `kolla_action` and has no tags.
@@ -460,7 +484,7 @@ docker_prune: {images: yes, images_filters: {label: kolla_version}, timeout: "{{
   `docker rmi`.
 - NOT AVAILABLE: whether Docker would prune an image that a container uses (Docker behaviour). Cost is one Docker API
   call per host, plus the full `gather-facts.yml` (which is not needed by the role, but is imported and pays the --limit
-  fact cost from §4).
+  fact cost from [§4](#4-ansiblegather-factsyml-confirmed-and-its-cost-model)).
 - CI: not covered.
 
 ## 8. `post-deploy` (`ansible/post-deploy.yml`)
@@ -472,7 +496,7 @@ docker_prune: {images: yes, images_filters: {label: kolla_version}, timeout: "{{
   endpoint, `all.yml:822`), `OS_INTERFACE=internal`, and optional `OS_CACERT` from `kolla_admin_openrc_cacert`
   (`admin-openrc.sh.j2:1-25`).
 - No `kolla_action` is passed (`tools/kolla-ansible:420-423`). Cost is O(1) and it is safe to re-run. **`destroy` deletes this
-  file on the deploy host** (§6).
+  file on the deploy host** ([§6](#6-destroy-ansibledestroyyml-role-destroy-toolscleanup-)).
 
 ## 9. `mariadb_backup.yml` and `mariadb_recovery.yml` (playbook level only)
 
@@ -599,17 +623,17 @@ still be overridden there.
 | Knob | Default (file:line) | Day-2 / scale relevance |
 |---|---|---|
 | `kolla_ansible_setup_filter` / `kolla_ansible_setup_gather_subset` | `omit` (`all.yml:31,37`; `globals.yml:12-22`) | Fact size and time per host. Biggest win on computes with many tap/qvo interfaces. |
-| `config_strategy` | `COPY_ALWAYS` (`all.yml:43`; `globals.yml:28`) | Containers re-copy config at every start, so a container that starts again after a Docker restart or reboot applies pending rendered config (§2.4) |
-| `openstack_release` / `openstack_tag` / `openstack_tag_suffix` | `ussuri` / `release~suffix` / `-centos8s` on Stream (`all.yml:530-533`; `globals.yml:37-43`) | Image tag. The suffix depends on `site.yml`-only facts (§9). Pin it explicitly for consistent ops playbooks. |
+| `config_strategy` | `COPY_ALWAYS` (`all.yml:43`; `globals.yml:28`) | Containers re-copy config at every start, so a container that starts again after a Docker restart or reboot applies pending rendered config ([§2.4](#24-blast-radius-of-a-restart)) |
+| `openstack_release` / `openstack_tag` / `openstack_tag_suffix` | `ussuri` / `release~suffix` / `-centos8s` on Stream (`all.yml:530-533`; `globals.yml:37-43`) | Image tag. The suffix depends on `site.yml`-only facts ([§9](#9-mariadb_backupyml-and-mariadb_recoveryyml-playbook-level-only)). Pin it explicitly for consistent ops playbooks. |
 | `docker_registry`, `docker_registry_insecure`, `docker_namespace` | empty / `yes if registry` / `kolla` (`all.yml:116-119`; `globals.yml:79-85`) | **Changing the registry rewrites daemon.json, which restarts Docker on every host** at the next bootstrap-servers |
 | `docker_log_max_file` / `docker_log_max_size` | `"5"` / `"50m"` (`all.yml:130-131`) | daemon.json, so a change means a restart |
 | `docker_disable_default_iptables_rules` / `_network` / `ip_forward` | `"no"` x3 (`all.yml:125-127`) | daemon.json, so a change means a restart. Defaults flip in Wallaby (warnings at `post-install.yml:94-133`). |
-| `docker_storage_driver` / `docker_runtime_directory` / `docker_custom_config` / `docker_custom_option` | `""`/`""`/`{}`/`""` (`baremetal/defaults/main.yml:36-38`, `all.yml:120`) | The first three are in daemon.json (restart). `docker_custom_option` is a systemd drop-in that is **never applied by Kolla** (§2.2). |
-| `docker_restart_policy` / `docker_restart_policy_retry` | `unless-stopped` / `10` (`all.yml:134,137`) | Whether containers return after a daemon restart or reboot is NOT AVAILABLE (Docker behaviour, §2.4) |
-| `docker_graceful_timeout` | `60` (`all.yml:154`) | **Ignored**: kolla_docker stops and restarts use the module default of 10 s (`kolla_docker.py:991,1037-1047`; [README](README.md) erratum; docs/01 §6). The stop timeout of a daemon restart is NOT AVAILABLE (§2.4). |
-| `docker_client_timeout` | `120` (`all.yml:122`; `globals.yml:88`) | **Ignored**: kolla_docker always uses its module default `client_timeout` of 120 s (`kolla_docker.py:1011`; docs/01 §6), so raising it has no effect |
+| `docker_storage_driver` / `docker_runtime_directory` / `docker_custom_config` / `docker_custom_option` | `""`/`""`/`{}`/`""` (`baremetal/defaults/main.yml:36-38`, `all.yml:120`) | The first three are in daemon.json (restart). `docker_custom_option` is a systemd drop-in that is **never applied by Kolla** ([§2.2](#22-why-docker_reloaded-never-triggers-a-restart)). |
+| `docker_restart_policy` / `docker_restart_policy_retry` | `unless-stopped` / `10` (`all.yml:134,137`) | Whether containers return after a daemon restart or reboot is NOT AVAILABLE (Docker behaviour, [§2.4](#24-blast-radius-of-a-restart)) |
+| `docker_graceful_timeout` | `60` (`all.yml:154`) | **Ignored**: kolla_docker stops and restarts use the module default of 10 s (`kolla_docker.py:991,1037-1047`; [README](README.md) erratum; [docs/01 §6](../../docs/01-repository-architecture.md#6-custom-modules--container-lifecycle-via-kolla_docker)). The stop timeout of a daemon restart is NOT AVAILABLE ([§2.4](#24-blast-radius-of-a-restart)). |
+| `docker_client_timeout` | `120` (`all.yml:122`; `globals.yml:88`) | **Ignored**: kolla_docker always uses its module default `client_timeout` of 120 s (`kolla_docker.py:1011`; [docs/01 §6](../../docs/01-repository-architecture.md#6-custom-modules--container-lifecycle-via-kolla_docker)), so raising it has no effect |
 | `docker_configure_for_zun` / `containerd_configure_for_zun` | `no` (`all.yml:140,146`) | Zun hosts: daemon.json includes **all etcd hosts**, and the containerd config is overwritten and restarted |
-| `customize_etc_hosts`, `create_kolla_user`, `disable_firewall`, `change_selinux`/`selinux_state`, `enable_host_ntp`, `enable_docker_repo`, `virtualenv` | True, True, True, True/permissive, False, true, none (`baremetal/defaults/main.yml`) | Host mutations made by bootstrap-servers (§1) |
+| `customize_etc_hosts`, `create_kolla_user`, `disable_firewall`, `change_selinux`/`selinux_state`, `enable_host_ntp`, `enable_docker_repo`, `virtualenv` | True, True, True, True/permissive, False, true, none (`baremetal/defaults/main.yml`) | Host mutations made by bootstrap-servers ([§1](#1-ansiblekolla-hostyml-the-bootstrap-servers-command)) |
 | `enable_chrony` | `yes` (`all.yml:597`; `globals.yml:262`) | Removes host chrony packages during bootstrap |
 | `neutron_plugin_agent` | `openvswitch` (`all.yml:257`; `globals.yml:155`) | Drives OVS and agent containers on every compute |
 | `enable_neutron_dvr` / `neutron_compute_dvr_mode` / `computes_need_external_bridge` | `no` / `dvr` / derived (`all.yml:670,948-949`; `globals.yml:339`) | DVR puts L3 and metadata agents on **every compute**, and an external bridge per compute |
@@ -636,22 +660,22 @@ still be overridden there.
 
 | # | Question | Status | What the code shows |
 |---|---|---|---|
-| H1 | Does daemon-reload report changed in Ansible 2.8? | **Answered from code** (FACT): no, as in 2.9.27 | ansible 2.8.20 `lib/ansible/modules/system/systemd.py:374-384` runs `daemon-reload` with `changed=False`; `changed` is set only at `:434,477,509` (§2.2) |
-| H2 | Does an interrupted bootstrap leave docker masked on Debian/Ubuntu, so that docker does not start after reboot? | Symlink left in place unless the recovery block `install.yml:99-127` (also `masked: no`) already ran: FACT. Effect at reboot: NOT AVAILABLE | No `rescue`/`always` in the role; a failed host runs no further task (ansible 2.9.27 `lib/ansible/executor/play_iterator.py:436-450`); systemd boot behaviour is not in the sources (§2.3) |
-| H3 | Does one fact-less baremetal host abort bootstrap-servers on all hosts (`/etc/hosts` task)? | **Answered from code** (FACT): yes, for a host outside `bifrost` with no gathered or cached facts | Empty `ansible_facts`, `kolla_address` raises on that host's line, and every host renders every line (§3) |
-| H4 | Does an unreachable non-limited host break `--limit` runs through delegated facts? | **Answered from code** (FACT): yes, unless its facts are cached | Its delegated item returns `unreachable`, which removes the limited host from the run (§4) |
-| H5 | What is the wall time of `--limit` fact gathering? | NOT AVAILABLE | Each limited host runs about N/L delegated `setup` calls one after another, L hosts in parallel (§4) |
-| H6 | What stop timeout does a Docker daemon restart apply to Kolla containers? | NOT AVAILABLE | `kolla_docker` sets no `StopTimeout`; `docker_graceful_timeout` is not passed to containers (§2.4) |
-| H7 | Does a simultaneous Docker restart on all controllers need `mariadb_recovery`? | NOT AVAILABLE | All hosts restart Docker in the same task; the image has no Galera recovery logic (§2.4) |
-| H8 | Do QEMU guests survive a nova_libvirt container restart? | NOT AVAILABLE | `pid_mode: host` and a `/sys/fs/cgroup` bind mount (§2.4) |
-| H9 | Does `kolla-libvirt-guests.service` (optional) shut guests down on a Docker restart? | NOT AVAILABLE | `Requires=docker.service`; `ExecStop` runs `libvirt-guests.sh shutdown` (§2.4) |
-| H10 | Does an option set both in the drop-in and in daemon.json make dockerd fail at the next restart? | NOT AVAILABLE | The role writes both files and restarts Docker only for daemon.json changes (§2.2) |
-| H11 | Does `apparmor_parser -R` fail on an already-unloaded profile (second run)? | NOT AVAILABLE | The task runs whenever the profile file exists, and the file is not deleted (§1.3) |
-| H12 | Do mariadb_backup and mariadb_recovery use the un-suffixed tag on CentOS Stream? | NOT AVAILABLE | `kolla_centos_release` is registered only in `site.yml:97-105`; the last step is Jinja2's `default()` (§9) |
-| H13 | Is the backend TLS cert regenerated for new hosts? | **Answered from code** (FACT): no | `creates:` guards on the CSR and certificate steps (§10) |
+| H1 | Does daemon-reload report changed in Ansible 2.8? | **Answered from code** (FACT): no, as in 2.9.27 | ansible 2.8.20 `lib/ansible/modules/system/systemd.py:374-384` runs `daemon-reload` with `changed=False`; `changed` is set only at `:434,477,509` ([§2.2](#22-why-docker_reloaded-never-triggers-a-restart)) |
+| H2 | Does an interrupted bootstrap leave docker masked on Debian/Ubuntu, so that docker does not start after reboot? | Symlink left in place unless the recovery block `install.yml:99-127` (also `masked: no`) already ran: FACT. Effect at reboot: NOT AVAILABLE | No `rescue`/`always` in the role; a failed host runs no further task (ansible 2.9.27 `lib/ansible/executor/play_iterator.py:436-450`); systemd boot behaviour is not in the sources ([§2.3](#23-the-debianubuntu-mask-window)) |
+| H3 | Does one fact-less baremetal host abort bootstrap-servers on all hosts (`/etc/hosts` task)? | **Answered from code** (FACT): yes, for a host outside `bifrost` with no gathered or cached facts | Empty `ansible_facts`, `kolla_address` raises on that host's line, and every host renders every line ([§3](#3-etchosts-generation)) |
+| H4 | Does an unreachable non-limited host break `--limit` runs through delegated facts? | **Answered from code** (FACT): yes, unless its facts are cached | Its delegated item returns `unreachable`, which removes the limited host from the run ([§4](#4-ansiblegather-factsyml-confirmed-and-its-cost-model)) |
+| H5 | What is the wall time of `--limit` fact gathering? | NOT AVAILABLE | Each limited host runs about N/L delegated `setup` calls one after another, L hosts in parallel ([§4](#4-ansiblegather-factsyml-confirmed-and-its-cost-model)) |
+| H6 | What stop timeout does a Docker daemon restart apply to Kolla containers? | NOT AVAILABLE | `kolla_docker` sets no `StopTimeout`; `docker_graceful_timeout` is not passed to containers ([§2.4](#24-blast-radius-of-a-restart)) |
+| H7 | Does a simultaneous Docker restart on all controllers need `mariadb_recovery`? | NOT AVAILABLE | All hosts restart Docker in the same task; the image has no Galera recovery logic ([§2.4](#24-blast-radius-of-a-restart)) |
+| H8 | Do QEMU guests survive a nova_libvirt container restart? | NOT AVAILABLE | `pid_mode: host` and a `/sys/fs/cgroup` bind mount ([§2.4](#24-blast-radius-of-a-restart)) |
+| H9 | Does `kolla-libvirt-guests.service` (optional) shut guests down on a Docker restart? | NOT AVAILABLE | `Requires=docker.service`; `ExecStop` runs `libvirt-guests.sh shutdown` ([§2.4](#24-blast-radius-of-a-restart)) |
+| H10 | Does an option set both in the drop-in and in daemon.json make dockerd fail at the next restart? | NOT AVAILABLE | The role writes both files and restarts Docker only for daemon.json changes ([§2.2](#22-why-docker_reloaded-never-triggers-a-restart)) |
+| H11 | Does `apparmor_parser -R` fail on an already-unloaded profile (second run)? | NOT AVAILABLE | The task runs whenever the profile file exists, and the file is not deleted ([§1.3](#13-task-by-task-post-installyml)) |
+| H12 | Do mariadb_backup and mariadb_recovery use the un-suffixed tag on CentOS Stream? | NOT AVAILABLE | `kolla_centos_release` is registered only in `site.yml:97-105`; the last step is Jinja2's `default()` ([§9](#9-mariadb_backupyml-and-mariadb_recoveryyml-playbook-level-only)) |
+| H13 | Is the backend TLS cert regenerated for new hosts? | **Answered from code** (FACT): no | `creates:` guards on the CSR and certificate steps ([§10](#10-certificatesyml-playbook-level)) |
 | H14 | Does `EXTRA_OPTS="--check --diff" kolla-ansible bootstrap-servers --limit X` preview daemon.json changes safely? | NOT AVAILABLE | `command` tasks without `creates`/`removes` are skipped in check mode (ansible 2.9.27 `lib/ansible/modules/commands/command.py:311-317`) |
-| H15 | Do running containers see `/etc/hosts` updates? | NOT AVAILABLE | The task edits the host's `/etc/hosts` only (§3) |
-| H16 | Does the `ansible_[!qt]*` filter break hosts whose api/tunnel interface starts with q or t? | **Answered from code** (FACT): yes | The filter is matched against fact names, and `kolla_address` raises for a missing interface (§4) |
+| H15 | Do running containers see `/etc/hosts` updates? | NOT AVAILABLE | The task edits the host's `/etc/hosts` only ([§3](#3-etchosts-generation)) |
+| H16 | Does the `ansible_[!qt]*` filter break hosts whose api/tunnel interface starts with q or t? | **Answered from code** (FACT): yes | The filter is matched against fact names, and `kolla_address` raises for a missing interface ([§4](#4-ansiblegather-factsyml-confirmed-and-its-cost-model)) |
 
 ## 15. Operational recommendations from this code
 

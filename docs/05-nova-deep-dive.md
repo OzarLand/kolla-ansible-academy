@@ -1,7 +1,48 @@
 # 05 — Nova Deep Dive (Kolla-Ansible Ussuri)
 
-Nova is split into two roles and ten plays. It is the component with the most hosts (every compute), the most
-coupling (Glance, Neutron, Placement, Cinder, Keystone, RabbitMQ, MariaDB) and the highest VM-impact risk.
+Nova is split into two roles and ten plays. It is the component with the most hosts (every compute), the most coupling
+(Glance, Neutron, Placement, Cinder, Keystone, RabbitMQ, MariaDB) and the highest VM-impact risk.
+
+> **Key answers**
+>
+> - **What restarts what:** any change of nova-compute's `nova.conf`, `config.json` or image restarts `nova_compute`
+>   and, through loop-notify, `nova_libvirt` and `nova_ssh` [CODE]
+>   ([§2.4](#24-operational-dependencies-what-restarts-what)).
+> - **Do running VMs survive a `nova_libvirt` restart?** [NOT AVAILABLE]. What the code shows about the container is
+>   [CODE]: `pid_mode: host`, state on named volumes, a start path that is passive towards running guests, the 10 s stop
+>   timeout, the restart handler's retries ([§5](#5-nova-libvirt-why-its-restart-is-special)).
+> - **Which inputs change `nova.conf` on every compute** (RabbitMQ group membership, several global `enable_*` flags,
+>   endpoints and service passwords, operator overrides) and which do not reach the nova containers on compute hosts
+>   (the memcached membership, MariaDB settings, `nova_keystone_password`):
+>   [§2.3](#23-configuration-dependencies-inputs-that-change-novas-files).
+> - **The ten nova plays:** which play runs on which action (plays 6–10 run on upgrade only), what the bootstrap
+>   one-shots run, and how compute discovery works, once per batch
+>   ([§4](#4-the-nova-plays-step-by-step-ansiblenovayml)).
+> - **Live migration, resize and consoles:** the containers each one depends on; whether a `nova_libvirt` or `nova_ssh`
+>   restart interrupts operations in progress is [NOT AVAILABLE] ([§6](#6-live-migration-resize-and-consoles)).
+> - **Upgrade:** the image pull is not part of `upgrade`; run `kolla-ansible pull` first
+>   ([§7](#7-upgrade-path-specifics)).
+
+**Contents**
+
+- [1. Components, roles, containers and placement](#1-components-roles-containers-and-placement)
+- [2. Dependency classification](#2-dependency-classification): [2.1 Installation (deploy-time)
+  dependencies](#21-installation-deploy-time-dependencies) · [2.2 Runtime
+  dependencies](#22-runtime-dependencies-what-nova-needs-to-operate) · [2.3 Configuration
+  dependencies](#23-configuration-dependencies-inputs-that-change-novas-files) · [2.4 Operational
+  dependencies](#24-operational-dependencies-what-restarts-what)
+- [3. What must be available before Nova can operate](#3-what-must-be-available-before-nova-can-operate)
+- [4. The nova plays step by step (`ansible/nova.yml`)](#4-the-nova-plays-step-by-step-ansiblenovayml)
+- [5. nova-libvirt: why its restart is special](#5-nova-libvirt-why-its-restart-is-special)
+- [6. Live migration, resize and consoles](#6-live-migration-resize-and-consoles)
+- [7. Upgrade path specifics](#7-upgrade-path-specifics)
+
+**Related:** [07 §A](07-day2-operational-impact.md#a-reconfigure-nova) (reconfigure Nova, step by step) · [03
+§2.4](03-ansible-roles-and-tags-mapping.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code)
+(loop-notify) · [08](08-operational-risk-matrix.md) ([R1](08-operational-risk-matrix.md#1-matrix)) ·
+[annex/kolla-images.md §5.1](../annex/kolla-images.md#51-nova-libvirt-the-start-path-is-passive) (nova-libvirt start
+path) · [annex/service-cards.md](../annex/service-cards.md#nova-api-level--role-nova) (service cards) ·
+[README](../README.md#evidence-labels) (evidence labels)
 
 ---
 
@@ -100,18 +141,19 @@ These change `nova.conf` on **every compute**. The result is a restart of `nova_
 Inputs that do **not** reach the nova containers on compute hosts: the memcached membership (no memcache settings
 in the nova-cell template; it does reach computes through `neutron.conf` of the Neutron agents and `ceilometer.conf`),
 MariaDB settings (no `[database]` on computes) and `nova_keystone_password`. Among the nova templates, the latter
-appears only in `[keystone_authtoken]` of the API-level template (`roles/nova/templates/nova.conf.j2:124`), rendered for `nova_api`,
-`nova_scheduler` and `nova_super_conductor`, so rotating it restarts no nova container on the computes. It does
-reach computes through the `[nova]` section of the Neutron agents' `neutron.conf` (`roles/neutron/templates/neutron.conf.j2:85`).
+appears only in `[keystone_authtoken]` of the API-level template (`roles/nova/templates/nova.conf.j2:124`), rendered for
+`nova_api`, `nova_scheduler` and `nova_super_conductor`, so rotating it restarts no nova container on the computes. It
+does reach computes through the `[nova]` section of the Neutron agents' `neutron.conf`
+(`roles/neutron/templates/neutron.conf.j2:85`).
 
 ### 2.4 Operational dependencies (what restarts what)
 
 | Trigger | Restarted on computes | Restarted on controllers | Evidence |
 |---|---|---|---|
-| Any change of `nova-compute`'s `nova.conf` / `config.json` / image | `nova_compute` **+ `nova_libvirt` + `nova_ssh`** (loop-notify), then "Create libvirt SASL user" | – | [CODE] `roles/nova-cell/tasks/config.yml:43-82`, `check-containers.yml:2-20`, `handlers/main.yml:70-140`; loop-notify, 03 §2.4 |
-| Change of `/etc/kolla/config/nova.conf` or a global flag | all three on every compute; a global `enable_*` flag that changes the `common` role's fluentd/logrotate config also restarts `cron`, `fluentd`, `kolla_toolbox` | nova_api, nova_scheduler, nova_conductor, nova_novncproxy (+ super conductor if `enable_cells`); same `common` restarts for such a flag | [CODE] only the nova and nova-cell roles merge `/etc/kolla/config/nova.conf` (`roles/nova/tasks/config.yml:59`, `roles/nova-cell/tasks/config.yml:71`), so a plain override restarts only nova containers; a flag such as `enable_barbican` also changes `common`'s files (§2.3), and `common` is a meta dependency (`roles/nova/meta/main.yml:3`, `roles/nova-cell/meta/main.yml:3`) |
-| Scheduler-only override | – | `nova_scheduler` **+ `nova_api`** (loop-notify) | [CODE] `roles/nova/tasks/config.yml:51-69`, `check-containers.yml:2-20`; loop-notify, 03 §2.4 |
-| New image for nova-compute (after `pull`) | `nova_compute` recreated, `nova_libvirt` + `nova_ssh` restarted | – | [CODE] `compare_image` makes the check report changed (`library/kolla_docker.py:403-418`); `recreate_or_restart_container` recreates `nova_compute`, whose image differs, and restarts the other two under `COPY_ALWAYS` (`kolla_docker.py:781-803`, `group_vars/all.yml:43`); loop-notify, 03 §2.4 |
+| Any change of `nova-compute`'s `nova.conf` / `config.json` / image | `nova_compute` **+ `nova_libvirt` + `nova_ssh`** (loop-notify), then "Create libvirt SASL user" | – | [CODE] `roles/nova-cell/tasks/config.yml:43-82`, `check-containers.yml:2-20`, `handlers/main.yml:70-140`; loop-notify, [03 §2.4](03-ansible-roles-and-tags-mapping.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code) |
+| Change of `/etc/kolla/config/nova.conf` or a global flag | all three on every compute; a global `enable_*` flag that changes the `common` role's fluentd/logrotate config also restarts `cron`, `fluentd`, `kolla_toolbox` | nova_api, nova_scheduler, nova_conductor, nova_novncproxy (+ super conductor if `enable_cells`); same `common` restarts for such a flag | [CODE] only the nova and nova-cell roles merge `/etc/kolla/config/nova.conf` (`roles/nova/tasks/config.yml:59`, `roles/nova-cell/tasks/config.yml:71`), so a plain override restarts only nova containers; a flag such as `enable_barbican` also changes `common`'s files ([§2.3](#23-configuration-dependencies-inputs-that-change-novas-files)), and `common` is a meta dependency (`roles/nova/meta/main.yml:3`, `roles/nova-cell/meta/main.yml:3`) |
+| Scheduler-only override | – | `nova_scheduler` **+ `nova_api`** (loop-notify) | [CODE] `roles/nova/tasks/config.yml:51-69`, `check-containers.yml:2-20`; loop-notify, [03 §2.4](03-ansible-roles-and-tags-mapping.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code) |
+| New image for nova-compute (after `pull`) | `nova_compute` recreated, `nova_libvirt` + `nova_ssh` restarted | – | [CODE] `compare_image` makes the check report changed (`library/kolla_docker.py:403-418`); `recreate_or_restart_container` recreates `nova_compute`, whose image differs, and restarts the other two under `COPY_ALWAYS` (`kolla_docker.py:781-803`, `group_vars/all.yml:43`); loop-notify, [03 §2.4](03-ansible-roles-and-tags-mapping.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code) |
 | Any `deploy`/`reconfigure` with `nova` or `nova-api` tag, even with no change | – | `nova_scheduler` receives `SIGHUP` (cell-cache refresh) | `roles/nova/tasks/refresh_scheduler_cell_cache.yml:10`; play tags and `kolla_action` condition in `nova.yml:140-156` |
 | Libvirt TLS certificate change | `nova_libvirt` + `nova_compute` (+ `nova_ssh` by loop-notify) | – | `nova-cell/tasks/config-libvirt-tls.yml` |
 | Ceph keyring / `ceph.conf` / secret change | `nova_compute` **+ `nova_libvirt` + `nova_ssh`**, then "Create libvirt SASL user". The files are listed in the `config.json` of nova-compute or nova-libvirt, so "Check nova-cell containers" finds `kolla_set_configs --check` drift and loop-notifies all three. Exception: the cinder keyring file is not in nova-compute's `config.json`, and its key reaches libvirt only through the cinder secret in `nova-libvirt/secrets`. A key change therefore still restarts all three; an edit that leaves the key unchanged restarts only `nova_compute` (direct notify) | – | `nova-cell/tasks/external_ceph.yml`, `check-containers.yml:2-20`, `templates/nova-compute.json.j2`, `nova-libvirt.json.j2` (same mechanism as the first row) |
@@ -120,8 +162,9 @@ reach computes through the `[nova]` section of the Neutron agents' `neutron.conf
 
 ## 3. What must be available before Nova can operate
 
-Ordered by necessity. What Kolla configures is [CODE] (templates cited in §2.2); upstream Nova behaviour is not in
-these sources and is marked [NOT AVAILABLE]:
+Ordered by necessity. What Kolla configures is [CODE] (templates cited in
+[§2.2](#22-runtime-dependencies-what-nova-needs-to-operate)); upstream Nova behaviour is not in these sources and is
+marked [NOT AVAILABLE]:
 
 1. **MariaDB (through HAProxy and the VIP)** with the `nova_api`, `nova_cell0` and `nova` (cell) schemas migrated.
    [NOT AVAILABLE] Whether API, scheduler and conductor fail without it, and whether computes keep running VMs and
@@ -168,7 +211,7 @@ and `nova-manage db sync`, whose `[database]` is cell0 (kolla `docker/nova/nova-
 `docker/nova/nova-conductor/extend_start.sh:9-12`). Neither runs online data migrations. Only plays 9 and 10 do,
 on upgrade, by setting `KOLLA_OSM` (`roles/nova*/tasks/online_data_migrations.yml:11`). No nova task sets
 `KOLLA_BOOTSTRAP`, so the images' bootstrap branches, which would add online data migrations, are never used. See
-[annex/kolla-images.md §4](../annex/kolla-images.md).
+[annex/kolla-images.md §4](../annex/kolla-images.md#4-one-shot-containers-what-the-environment-variables-run).
 
 **Discovery mechanics** (`roles/nova-cell/tasks/deploy.yml:24-42`, `wait_discover_computes.yml`,
 `discover_computes.yml`):
@@ -186,8 +229,8 @@ on upgrade, by setting `KOLLA_OSM` (`roles/nova*/tasks/online_data_migrations.ym
 
 Facts [CODE]:
 
-- **`pid_mode: host`, privileged, `/sys/fs/cgroup` mounted read-write** (`roles/nova-cell/defaults/main.yml:3-11,237-250`).
-  QEMU processes are started by libvirtd *inside* this container.
+- **`pid_mode: host`, privileged, `/sys/fs/cgroup` mounted read-write**
+  (`roles/nova-cell/defaults/main.yml:3-11,237-250`). QEMU processes are started by libvirtd *inside* this container.
 - **Persistent state lives on named volumes.** The `libvirtd` volume holds `/var/lib/libvirt` and the
   `nova_libvirt_qemu` volume holds domain XML in `/etc/libvirt/qemu`. Instance disks sit in
   `nova_instance_datadir_volume` (`/var/lib/nova`). All of them survive a container recreate. One more location
@@ -204,7 +247,8 @@ Facts [CODE]:
   (kolla `docker/nova/nova-libvirt/extend_start.sh:6-24`). None of these steps touches cgroups, QEMU processes,
   `/var/run/libvirt`, `/var/lib/libvirt` or `/etc/libvirt/qemu`, and `qemu.conf.j2`/`libvirtd.conf.j2` set no cgroup
   option. Whether guests survive is therefore decided by the stop path, by where libvirt's defaults placed QEMU, and by
-  libvirtd's reconnect on start. Start path in detail: [annex/kolla-images.md §5](../annex/kolla-images.md).
+  libvirtd's reconnect on start. Start path in detail: [annex/kolla-images.md
+  §5](../annex/kolla-images.md#5-per-image-start-behaviour).
 - **The restart handler retries 5 times.** "Restart nova-libvirt container" uses `retries: 5 / until: success`. The
   in-code note says: *"retry 5 to remove nova_libvirt container because when guests running, nova_libvirt will raise
   error even though it is removed"* (`roles/nova-cell/handlers/main.yml:87-109`). The authors therefore expect running
@@ -216,12 +260,13 @@ Facts [CODE]:
   every recreate: changed image or parameters, or `config_strategy: COPY_ONCE`
   (`library/kolla_docker.py:793-803,892-904`). The in-code note says the SASL user must exist for nova-compute to
   start (`handlers/main.yml:111`).
-- **Effective stop timeout is 10 s** (01 §6), and both signals go to dumb-init. The container's main process is
-  `dumb-init --single-child -- kolla_start` (kolla `docker/base/Dockerfile.j2:433-435,455`; `use-dumb-init` defaults to
-  True, kolla `kolla/common/config.py:170`). `kolla_start` `exec`s libvirtd (kolla `docker/base/start.sh:21`), so
-  libvirtd is dumb-init's direct child. `docker stop` (timeout 10, `library/kolla_docker.py:871-884,892-904`) sends
-  SIGTERM to dumb-init and, after 10 s, SIGKILL to dumb-init. [NOT AVAILABLE] Whether libvirtd itself is SIGKILLed if
-  it is still running then (the cgroup kill below).
+- **Effective stop timeout is 10 s** ([01
+  §6](01-repository-architecture.md#6-custom-modules--container-lifecycle-via-kolla_docker)), and both signals go to
+  dumb-init. The container's main process is `dumb-init --single-child -- kolla_start` (kolla
+  `docker/base/Dockerfile.j2:433-435,455`; `use-dumb-init` defaults to True, kolla `kolla/common/config.py:170`).
+  `kolla_start` `exec`s libvirtd (kolla `docker/base/start.sh:21`), so libvirtd is dumb-init's direct child. `docker
+  stop` (timeout 10, `library/kolla_docker.py:871-884,892-904`) sends SIGTERM to dumb-init and, after 10 s, SIGKILL to
+  dumb-init. [NOT AVAILABLE] Whether libvirtd itself is SIGKILLed if it is still running then (the cgroup kill below).
 - **Libvirt is restarted before nova-compute.** In the handler order `nova-libvirt` comes before `nova-compute`, so
   during the window nova-compute is still running against a libvirtd that is going away.
 - **Kolla ships, but does not install by default, a guest shutdown helper.** `tools/kolla-libvirt-guests.service`
@@ -270,7 +315,7 @@ to `nova:nova` recursively: one `chown` per directory and file of the instance d
 `docker/base/set_configs.py:359-363`). [NOT AVAILABLE] Whether, with `enable_shared_var_lib_nova_mnt` (cinder NFS or
 Quobyte, `roles/nova-cell/defaults/main.yml:294,450`), the walk also enters the cinder shares still mounted under
 `/var/lib/nova/mnt`, and whether start time grows with the number of files, in particular on NFS-backed trees such as
-those shares ([annex/kolla-images.md §6](../annex/kolla-images.md) item 10).
+those shares ([annex/kolla-images.md §6](../annex/kolla-images.md#6-day-2-consequences) item 10).
 
 nova-compute restart [NOT AVAILABLE: upstream Nova behaviour is not in these sources]:
 
@@ -286,7 +331,7 @@ nova-compute restart [NOT AVAILABLE: upstream Nova behaviour is not in these sou
 
 | Function | Mechanism in Ussuri Kolla | Dependency |
 |---|---|---|
-| Live migration | libvirt `qemu+tcp://<migration_interface_address>/system` (or `qemu+tls://<migration_hostname>` with `libvirt_tls`), SASL auth by default (`libvirt_enable_sasl: true`) | `nova_libvirt` on **both** source and destination computes, the `migration_interface` network, matching SASL credentials, and with TLS, hostnames resolvable on every compute (`/etc/hosts` from `bootstrap-servers`, fact sheet E §3) |
+| Live migration | libvirt `qemu+tcp://<migration_interface_address>/system` (or `qemu+tls://<migration_hostname>` with `libvirt_tls`), SASL auth by default (`libvirt_enable_sasl: true`) | `nova_libvirt` on **both** source and destination computes, the `migration_interface` network, matching SASL credentials, and with TLS, hostnames resolvable on every compute (`/etc/hosts` from `bootstrap-servers`, [fact sheet E §3](../annex/factsheets/E-host-bootstrap-ops-playbooks.md#3-etchosts-generation)) |
 | Cold migration / resize | `nova_ssh` sshd on port 8022, with keys from `passwords.yml` (`nova_ssh_key`) | `nova_ssh` on both hosts and a shared instance datadir layout |
 | VNC console | `nova_novncproxy` (controllers) → compute `server_proxyclient_address` | `api_interface` reachable from the proxy hosts. Public URL is built from `kolla_external_fqdn` |
 | Scheduling | `nova_scheduler` + Placement + host mappings | discovery must have run for new computes |
@@ -295,7 +340,7 @@ Impact of a Kolla run on these:
 
 - A run that restarts `nova_libvirt` (any nova-compute change, by loop-notify) does so on every affected compute.
   With `serial: 0`, that is every compute at once. [NOT AVAILABLE] Whether this **interrupts every live migration in
-  progress** there (§5).
+  progress** there ([§5](#5-nova-libvirt-why-its-restart-is-special)).
 - [NOT AVAILABLE] Whether a `nova_ssh` restart interrupts resizes or cold migrations that are copying disks.
 - Every `deploy`/`reconfigure` with `-t nova` or no tag SIGHUPs the schedulers and runs `discover_hosts`
   (`-t nova-api` only SIGHUPs, `-t nova-cell` only discovers). [NOT AVAILABLE] Whether either affects existing

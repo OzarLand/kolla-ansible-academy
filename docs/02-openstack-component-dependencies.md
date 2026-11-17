@@ -9,8 +9,48 @@ This document maps **what depends on what**, and keeps four kinds of dependency 
 | **Runtime dependency** | What must be reachable for the *service* to work? | The same templates (URLs, connections); upstream OpenStack behaviour |
 | **Operational dependency** | Which Kolla action on X changes or restarts Y? | Handlers, global `enable_*` flags, `common`, haproxy, loop-notify (see [07](07-day2-operational-impact.md)) |
 
-Kolla-Ansible **never declares inter-service dependencies** explicitly. Role meta lists only `common`. Every
-dependency below is implicit: play order in `site.yml`, a variable, a template, or a `delegate_to`.
+Kolla-Ansible **never declares inter-service dependencies** explicitly. Role meta lists only `common`. Every dependency
+below is implicit: play order in `site.yml`, a variable, a template, or a `delegate_to`.
+
+> **Key answers**
+>
+> - **The database is reached through the internal VIP and HAProxy; RabbitMQ and memcached hosts are listed one by one
+>   in the configs of the services that use them.** Adding or removing a RabbitMQ node therefore changes the config of
+>   every messaging service, including `nova-compute` and the neutron agents on every compute
+>   ([§1](#1-the-shared-substrate-what-every-openstack-service-uses)).
+> - **A compute host's configuration depends on global state** (enabled services, the membership of the RabbitMQ,
+>   memcached and etcd groups, the internal VIP and external NTP servers, service passwords), not only on the compute
+>   host itself. That is why changes that look small trigger fleet-wide restarts [CODE]
+>   ([§5](#5-compute-node-dependency-summary)).
+> - **What lands on a compute host**, container by container, with the global config source of each
+>   ([§5](#5-compute-node-dependency-summary)).
+> - **Per-service dependencies:** control-plane services with their use of the DB, RabbitMQ, memcached and Keystone and
+>   their deploy-time actions ([§3](#3-control-plane-services)); infrastructure components
+>   ([§2](#2-infrastructure-components)); networking containers and their placement
+>   ([§4](#4-networking-components-ml2ovs-default-ml2ovn-optional)).
+> - **L3 agent:** with `enable_neutron_agent_ha: yes`, every restart or recreate of `neutron_l3_agent` deletes all
+>   router namespaces on that host [CODE]; the DHCP and router outage per agent restart is [NOT AVAILABLE]
+>   ([§4](#4-networking-components-ml2ovs-default-ml2ovn-optional)).
+> - **Deployment order mostly respects runtime dependencies, with caveats:** Nova is deployed before Open vSwitch and
+>   Neutron, and nothing enforces a dependency when you use tags [CODE]
+>   ([§6](#6-deployment-order-vs-runtime-dependency)).
+
+**Contents**
+
+- [1. The shared substrate: what every OpenStack service
+  uses](#1-the-shared-substrate-what-every-openstack-service-uses)
+- [2. Infrastructure components](#2-infrastructure-components): [2.1 Infrastructure dependency
+  graph](#21-infrastructure-dependency-graph-runtime)
+- [3. Control-plane services](#3-control-plane-services): [3.1 Control-plane runtime
+  graph](#31-control-plane-runtime-graph)
+- [4. Networking components (ML2/OVS default, ML2/OVN
+  optional)](#4-networking-components-ml2ovs-default-ml2ovn-optional)
+- [5. Compute-node dependency summary](#5-compute-node-dependency-summary)
+- [6. Deployment order vs runtime dependency](#6-deployment-order-vs-runtime-dependency)
+
+**Related:** [05](05-nova-deep-dive.md) (Nova in depth) · [07](07-day2-operational-impact.md) (what these dependencies
+do to a Day-2 run) · [04](04-deployment-execution-flow.md) (deployment order) · [annex/index.md](../annex/index.md)
+(service index)
 
 A compact card per service (role, play, tags, task flow, templates, handlers, key variables, node types) is in
 [annex/service-cards.md](../annex/service-cards.md). Per-role detail with line references is in the fact sheets
@@ -25,11 +65,11 @@ A compact card per service (role, play, tags, task flow, templates, handlers, ke
 
 | Shared component | How services reach it | Evidence | Consequence |
 |---|---|---|---|
-| **MariaDB / Galera** | `database_address: "{{ kolla_internal_fqdn }}"`, i.e. through the **internal VIP and HAProxy** | `ansible/group_vars/all.yml:105` | Every DB connection depends on HAProxy and keepalived as well as on Galera. HAProxy sends DB traffic to **one** active backend; the others are `backup` (`roles/mariadb/defaults/main.yml:58`, fact sheet B §1.2) |
-| **RabbitMQ** | `rpc_transport_url` / `notify_transport_url` list **every host** of `groups['rabbitmq']` directly. Clients use their own failover, **not** the VIP | `ansible/group_vars/all.yml:206,216` | Adding or removing a RabbitMQ node changes the config of every messaging service, including `nova-compute` and the neutron agents on **every compute** ([07](07-day2-operational-impact.md) §F) |
-| **Memcached** | Templates loop `{% for host in groups['memcached'] %}` for `keystone_authtoken` / `[cache]` | e.g. `roles/ceilometer/templates/ceilometer.conf.j2:55`; templates of 37 roles contain this loop, and monasca builds the same list in `roles/monasca/defaults/main.yml:127` | Membership change = config change in about 38 services. A memcached restart flushes token caches and Horizon sessions (fact sheet A §3.8) |
+| **MariaDB / Galera** | `database_address: "{{ kolla_internal_fqdn }}"`, i.e. through the **internal VIP and HAProxy** | `ansible/group_vars/all.yml:105` | Every DB connection depends on HAProxy and keepalived as well as on Galera. HAProxy sends DB traffic to **one** active backend; the others are `backup` (`roles/mariadb/defaults/main.yml:58`, [fact sheet B §1.2](../annex/factsheets/B-mariadb-rabbitmq-keystone.md#12-mariadb_services-ansiblerolesmariadbdefaultsmainyml2-47)) |
+| **RabbitMQ** | `rpc_transport_url` / `notify_transport_url` list **every host** of `groups['rabbitmq']` directly. Clients use their own failover, **not** the VIP | `ansible/group_vars/all.yml:206,216` | Adding or removing a RabbitMQ node changes the config of every messaging service, including `nova-compute` and the neutron agents on **every compute** ([07 §F](07-day2-operational-impact.md#f-change-control-plane-membership-add-or-remove-a-controller)) |
+| **Memcached** | Templates loop `{% for host in groups['memcached'] %}` for `keystone_authtoken` / `[cache]` | e.g. `roles/ceilometer/templates/ceilometer.conf.j2:55`; templates of 37 roles contain this loop, and monasca builds the same list in `roles/monasca/defaults/main.yml:127` | Membership change = config change in about 38 services. A memcached restart flushes token caches and Horizon sessions ([fact sheet A §3.8](../annex/factsheets/A-infra-lb-ovn.md#38-operationally-notable)) |
 | **Keystone** | `www_authenticate_uri`/`auth_url` → internal/admin VIP endpoints; `service-ks-register` at deploy time | `roles/service-ks-register/tasks/main.yml` (39 roles use it) | Hard deploy-time dependency (registration runs `run_once` against the admin endpoint). Runtime: every API request is validated by keystonemiddleware (cached in memcached) |
-| **HAProxy + keepalived** | Every internal/admin/public endpoint and the DB address resolve to the VIPs | `roles/*/defaults/main.yml` `haproxy:` dicts → `roles/haproxy-config` | A single point of *path* failure for APIs and DB. HAProxy is **restarted, never reloaded**, on all haproxy hosts at once (fact sheet A §1.8) |
+| **HAProxy + keepalived** | Every internal/admin/public endpoint and the DB address resolve to the VIPs | `roles/*/defaults/main.yml` `haproxy:` dicts → `roles/haproxy-config` | A single point of *path* failure for APIs and DB. HAProxy is **restarted, never reloaded**, on all haproxy hosts at once ([fact sheet A §1.8](../annex/factsheets/A-infra-lb-ovn.md#18-operationally-notable-behaviour)) |
 | **fluentd / cron / kolla_toolbox** (`common`) | Deployed on every host (`group: all`) | `roles/common/defaults/main.yml:6-36` | `kolla_toolbox` is a **deploy-time** dependency of every role that touches MySQL, Keystone or RabbitMQ (`kolla_toolbox` module needs it running). fluentd is runtime-optional (logging only) |
 
 ```mermaid
@@ -57,7 +97,7 @@ flowchart LR
 |---|---|---|---|---|---|
 | **Keepalived** | `haproxy` role, `site.yml:126` | `haproxy` → `network` | `ip_vs` module, sysctl `ip_nonlocal_bind` | VRRP between haproxy hosts (multicast default, router id 51) | Everything addressed by VIP |
 | **HAProxy** | `haproxy` role + 49 `loadbalancer.yml` includes | `haproxy` | facts of **all backend hosts** (backend lists use `hostvars[host].ansible_facts.hostname`) | backends | All APIs, MariaDB (DB address = VIP) |
-| **MariaDB/Galera** | `mariadb` role, `site.yml:471` (no `serial`) | `mariadb` → `control` | `kolla_toolbox`; Galera bootstrap logic (fact sheet B §1) | HAProxy (clustercheck on port 4569) | Every service with a DB |
+| **MariaDB/Galera** | `mariadb` role, `site.yml:471` (no `serial`) | `mariadb` → `control` | `kolla_toolbox`; Galera bootstrap logic ([fact sheet B §1](../annex/factsheets/B-mariadb-rabbitmq-keystone.md#1-mariadb-ansiblerolesmariadb)) | HAProxy (clustercheck on port 4569) | Every service with a DB |
 | **RabbitMQ** | `rabbitmq` role, `site.yml:535` (no `serial`) | `rabbitmq` → `control` | erlang cookie, `/etc/hosts` (from `bootstrap-servers`) | – | Every service with RPC/notifications |
 | **Memcached** | `memcached` role, `site.yml:481` (no `common` dependency) | `memcached` → `control` | – | – | Keystone, all keystonemiddleware users, Horizon sessions |
 | **Fluentd** | `common` | all | – | (optional) Elasticsearch/Monasca outputs | Logging only. HAProxy syslogs to fluentd UDP |
@@ -90,22 +130,23 @@ flowchart TB
 
 Legend: **DB** = MariaDB through the VIP, **MQ** = RabbitMQ (all nodes listed), **MC** = memcached, **KS** = Keystone.
 A ✔ means the role's config templates (`roles/<role>/templates/*.j2`) reference it [CODE]. What each bootstrap
-container runs inside the image is listed in [annex/kolla-images.md §4](../annex/kolla-images.md).
+container runs inside the image is listed in [annex/kolla-images.md
+§4](../annex/kolla-images.md#4-one-shot-containers-what-the-environment-variables-run).
 
 | Service | DB | MQ | MC | KS | Other services referenced in config | Deploy-time actions | Notes (fact sheet) |
 |---|---|---|---|---|---|---|---|
-| **Keystone** | ✔ | ✔ (notifications) | ✔ | – | – | bootstrap container (db sync) **every deploy/reconfigure**; fernet keys distributed from first running node; admin bootstrap through `kolla_keystone_bootstrap` | B §3.6–3.10 |
-| **Glance** | ✔ | ✔ | ✔ | ✔ | Cinder (store), Ceph, Swift, Barbican | db sync + `db_load_metadefs` on every deploy/reconfigure (kolla `docker/glance/glance-api/extend_start.sh:5-9`); toggles **global** MariaDB `log_bin_trust_function_creators` | C §1. With the file backend only `groups['glance-api'][0]` runs glance |
-| **Placement** | ✔ | ✔ (unused) | ✔ | ✔ | (Nova credentials in migration helper) | db sync **and online data migrations** on every deploy/reconfigure (one `KOLLA_BOOTSTRAP` container, kolla `docker/placement/placement-api/extend_start.sh:5-9`) | C §2 |
+| **Keystone** | ✔ | ✔ (notifications) | ✔ | – | – | bootstrap container (db sync) **every deploy/reconfigure**; fernet keys distributed from first running node; admin bootstrap through `kolla_keystone_bootstrap` | [B §3.6–3.10](../annex/factsheets/B-mariadb-rabbitmq-keystone.md#36-fernet-key-lifecycle-fact-unless-marked) |
+| **Glance** | ✔ | ✔ | ✔ | ✔ | Cinder (store), Ceph, Swift, Barbican | db sync + `db_load_metadefs` on every deploy/reconfigure (kolla `docker/glance/glance-api/extend_start.sh:5-9`); toggles **global** MariaDB `log_bin_trust_function_creators` | [C §1](../annex/factsheets/C-glance-placement-cinder-horizon-heat.md#1-glance). With the file backend only `groups['glance-api'][0]` runs glance |
+| **Placement** | ✔ | ✔ (unused) | ✔ | ✔ | (Nova credentials in migration helper) | db sync **and online data migrations** on every deploy/reconfigure (one `KOLLA_BOOTSTRAP` container, kolla `docker/placement/placement-api/extend_start.sh:5-9`) | [C §2](../annex/factsheets/C-glance-placement-cinder-horizon-heat.md#2-placement) |
 | **Nova** | ✔ | ✔ | ✔ (API side only) | ✔ | Glance, Neutron, Placement, Cinder, Barbican, Ceph | API/cell0/cell DB sync on every deploy/reconfigure; cell create/update; host discovery | [05](05-nova-deep-dive.md) |
-| **Neutron** | ✔ (server) | ✔ | ✔ | ✔ | Nova (notifications to Nova), Placement, OVN | DB, user and grants on every deploy/reconfigure; db sync container on **deploy only** while `neutron_enable_rolling_upgrade` is on (the default; `roles/neutron/tasks/bootstrap_service.yml:21-22`) | §4 below |
-| **Cinder** | ✔ | ✔ | ✔ | ✔ | Glance, Nova (uses **nova** credentials), Barbican, Swift (backup), Ceph; etcd (first etcd host only) | db sync on every deploy/reconfigure | C §3 |
-| **Horizon** | only if `horizon_backend_database` | – | ✔ (sessions) | ✔ | every enabled API (internal endpoint type) | no Keystone registration | C §4 |
-| **Heat** | ✔ | ✔ | ✔ | ✔ | every API used by templates (internal); instances need the **external** CFN endpoint | db sync on every deploy/reconfigure; heat domain admin setup only when `heat_user_domain` does not exist yet (kolla `docker/heat/heat-api/extend_start.sh:8-14`): a changed `heat_domain_admin_password` reaches `heat.conf` (`roles/heat/templates/heat.conf.j2:13`) but is never applied in Keystone | C §5 |
-| **Barbican** | ✔ | ✔ | ✔ | ✔ | – | db sync on every deploy/reconfigure; `barbican_crypto_key` from `passwords.yml` | D §1 |
-| **Octavia** | ✔ | ✔ | ✔ | ✔ | Nova, Neutron, Glance (amphora image, flavor, network, secgroup — **all manual in Ussuri**) | db sync; no OpenStack resources created | D §2 |
-| **Swift** | – | ✔ | ✔ | ✔ | – | rings are operator-built; old-style role with no handlers | D §3 |
-| **Manila** | ✔ | ✔ | ✔ | ✔ | Glance, Neutron, Nova, Cinder, Ceph (CephFS) | db sync; manila-share hosts also get neutron agents | D §4 |
+| **Neutron** | ✔ (server) | ✔ | ✔ | ✔ | Nova (notifications to Nova), Placement, OVN | DB, user and grants on every deploy/reconfigure; db sync container on **deploy only** while `neutron_enable_rolling_upgrade` is on (the default; `roles/neutron/tasks/bootstrap_service.yml:21-22`) | [§4](#4-networking-components-ml2ovs-default-ml2ovn-optional) below |
+| **Cinder** | ✔ | ✔ | ✔ | ✔ | Glance, Nova (uses **nova** credentials), Barbican, Swift (backup), Ceph; etcd (first etcd host only) | db sync on every deploy/reconfigure | [C §3](../annex/factsheets/C-glance-placement-cinder-horizon-heat.md#3-cinder) |
+| **Horizon** | only if `horizon_backend_database` | – | ✔ (sessions) | ✔ | every enabled API (internal endpoint type) | no Keystone registration | [C §4](../annex/factsheets/C-glance-placement-cinder-horizon-heat.md#4-horizon) |
+| **Heat** | ✔ | ✔ | ✔ | ✔ | every API used by templates (internal); instances need the **external** CFN endpoint | db sync on every deploy/reconfigure; heat domain admin setup only when `heat_user_domain` does not exist yet (kolla `docker/heat/heat-api/extend_start.sh:8-14`): a changed `heat_domain_admin_password` reaches `heat.conf` (`roles/heat/templates/heat.conf.j2:13`) but is never applied in Keystone | [C §5](../annex/factsheets/C-glance-placement-cinder-horizon-heat.md#5-heat) |
+| **Barbican** | ✔ | ✔ | ✔ | ✔ | – | db sync on every deploy/reconfigure; `barbican_crypto_key` from `passwords.yml` | [D §1](../annex/factsheets/D-barbican-octavia-swift-manila-compute-roles.md#1-barbican) |
+| **Octavia** | ✔ | ✔ | ✔ | ✔ | Nova, Neutron, Glance (amphora image, flavor, network, secgroup — **all manual in Ussuri**) | db sync; no OpenStack resources created | [D §2](../annex/factsheets/D-barbican-octavia-swift-manila-compute-roles.md#2-octavia) |
+| **Swift** | – | ✔ | ✔ | ✔ | – | rings are operator-built; old-style role with no handlers | [D §3](../annex/factsheets/D-barbican-octavia-swift-manila-compute-roles.md#3-swift) |
+| **Manila** | ✔ | ✔ | ✔ | ✔ | Glance, Neutron, Nova, Cinder, Ceph (CephFS) | db sync; manila-share hosts also get neutron agents | [D §4](../annex/factsheets/D-barbican-octavia-swift-manila-compute-roles.md#4-manila) |
 
 ### 3.1 Control-plane runtime graph
 
@@ -133,7 +174,8 @@ The dotted edges are configuration couplings that are easy to overlook:
 
 - **Cinder → Nova** with Nova's own credentials (`roles/cinder/templates/cinder.conf.j2:83-93`).
 - **Glance → Cinder or Swift** as image stores. Enabling Swift *changes Glance's default backend*
-  (`group_vars/all.yml:862-869`, fact sheet C §1.8).
+  (`group_vars/all.yml:862-869`, [fact sheet C
+  §1.8](../annex/factsheets/C-glance-placement-cinder-horizon-heat.md#18-operational-notes)).
 - **Nova and Neutron → Placement** with the placement user (`roles/nova-cell/templates/nova.conf.j2:203-213`).
 
 ---
@@ -189,8 +231,9 @@ Runtime facts [CODE]:
   (kolla `docker/base/Dockerfile.j2:434`; `roles/neutron/templates/neutron-l3-agent-wrapper.sh.j2:14-18`) [CODE].
   [NOT AVAILABLE] Whether the SIGTERM of `docker stop` then reaches only bash and not the agent, and so whether the
   agent gets a graceful shutdown: that depends on how dumb-init forwards signals, which these sources do not show
-  ([annex/kolla-images.md §2.6, §5.3](../annex/kolla-images.md)).
-  [NOT AVAILABLE] The DHCP and router outage per agent restart.
+  ([annex/kolla-images.md §2.6](../annex/kolla-images.md#26-signals-and-pid-1),
+  [§5.3](../annex/kolla-images.md#53-neutron-l3-agent-the-wrapper)). [NOT AVAILABLE] The DHCP and router outage per
+  agent restart.
 - **The OVS bridge layout is set in a post-config step.** It is ensured on every deploy/reconfigure by
   `kolla_ensure_openvswitch_configured` (`roles/openvswitch/tasks/post-config.yml:7-17`). The command reports
   `changed` only when it actually changes the bridge.
@@ -212,9 +255,11 @@ Everything that lands on a compute host in a default Ussuri deployment (`enable_
 | `neutron_openvswitch_agent` | neutron | `neutron.conf` (all RabbitMQ hosts, memcached list) **and** `openvswitch_agent.ini`, which also merges the operator's `ml2_conf.ini` override |
 
 Optional compute-side containers come from ceilometer, collectd, telegraf, prometheus exporters, masakari, zun, kuryr,
-cyborg, skydive and monasca (fact sheet D §5). Each of them embeds host lists from other groups (RabbitMQ,
-memcached, influxdb, etcd, prometheus) in its config. The full list of templates that loop over groups is in
-[annex/generated-inventory.md §4](../annex/generated-inventory.md).
+cyborg, skydive and monasca ([fact sheet D
+§5](../annex/factsheets/D-barbican-octavia-swift-manila-compute-roles.md#50-summary-table-compute-side)). Each of them
+embeds host lists from other groups (RabbitMQ, memcached, influxdb, etcd, prometheus) in its config. The full list of
+templates that loop over groups is in [annex/generated-inventory.md
+§4](../annex/generated-inventory.md#4-templates-that-reference-inventory-groups).
 
 **Rule of thumb [CODE]:** a compute host's configuration depends on *global* state (enabled services, the
 membership of the RabbitMQ, memcached and etcd groups, the internal VIP and external NTP servers, service passwords),

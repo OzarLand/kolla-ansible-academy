@@ -1,15 +1,52 @@
 # 01 — Repository Architecture (Kolla-Ansible `ussuri-eol`)
 
-> Scope: the `ussuri-eol` tag of `openstack/kolla-ansible` (HEAD `8a94fe9`). Every path below is relative to the
-> root of that checkout; paths prefixed `kolla` or `ansible 2.9.27` point into the kolla image repository or the
-> Ansible source. Evidence labels used in all documents: **[CODE]** shown by the sources (kolla-ansible, the kolla
-> image repository, the Ansible 2.9.27 source, or the `--list-tags`/`--list-tasks` listings in
-> [annex/listings](../annex/listings/README.md)), with a `path:line` citation nearby; **[NOT AVAILABLE]** the
-> sources do not establish it. The fact sheets use FACT and NOT AVAILABLE for the same two levels.
-
 This document explains *how the machine is built*: which entry points exist, how a CLI command becomes an
 `ansible-playbook` run, how `site.yml` is laid out, what every service role has in common, and which custom modules
 actually touch the hosts. The other documents build on the vocabulary defined here.
+
+> **Key answers**
+>
+> - **`reconfigure` is `deploy`.** Of the 72 roles that have a `reconfigure.yml`, 67 only do `import_tasks: deploy.yml`,
+>   so `reconfigure` re-runs Keystone registration, DB creation and the bootstrap (DB sync) container of most services
+>   [CODE] ([§4.2](#42-reconfigure-is-deploy)).
+> - **A config change is applied by a full stop/start, never a reload.** A changed file, a changed container definition
+>   or drift reported by `kolla_set_configs --check` notifies the restart handler, which recreates the container when
+>   the image or parameters differ and otherwise restarts it [CODE] ([§4.3](#43-the-config--check--handler-pattern)).
+> - **The effective stop timeout is 10 s**, not the 60 s of `docker_graceful_timeout`, which is silently ignored [CODE]
+>   ([§6](#6-custom-modules--container-lifecycle-via-kolla_docker)).
+> - **Images are pulled only if absent locally.** A rebuilt image pushed under the same tag is not fetched by `deploy`
+>   or `reconfigure`; it takes an explicit `pull` [CODE]
+>   ([§6](#6-custom-modules--container-lifecycle-via-kolla_docker)).
+> - **Batching is off by default.** `ANSIBLE_SERIAL` defaults to 0, which means all hosts of a play in one batch, and
+>   the wrapper passes `kolla_serial` only for `reconfigure` and `upgrade` [CODE]
+>   ([§2](#2-from-cli-to-ansible-playbook)).
+> - **`common` runs in the first play in which a host appears**, guarded by the `common_run` fact; `-t common
+>   reconfigure` renders and restarts nothing [CODE] ([§5.1](#51-the-common-role-and-the-common_run-guard)).
+
+**Contents**
+
+- [1. Top-level layout](#1-top-level-layout)
+- [2. From CLI to `ansible-playbook`](#2-from-cli-to-ansible-playbook): [2.1 Variable precedence that
+  matters](#21-variable-precedence-that-matters)
+- [3. Anatomy of `site.yml`](#3-anatomy-of-siteyml)
+- [4. Anatomy of a service role](#4-anatomy-of-a-service-role): [4.1 `kolla_action` dispatch](#41-kolla_action-dispatch)
+  · [4.2 `reconfigure` is `deploy`](#42-reconfigure-is-deploy) · [4.3 The config → check → handler
+  pattern](#43-the-config--check--handler-pattern) · [4.4 Containers and placement](#44-containers-and-placement)
+- [5. Shared helper roles](#5-shared-helper-roles): [5.1 The `common` role and the `common_run`
+  guard](#51-the-common-role-and-the-common_run-guard)
+- [6. Custom modules — container lifecycle via `kolla_docker`](#6-custom-modules--container-lifecycle-via-kolla_docker)
+- [7. Configuration generation and overrides](#7-configuration-generation-and-overrides)
+- [8. Inventory model](#8-inventory-model)
+
+**Related:** [03](03-ansible-roles-and-tags-mapping.md) (how tags select this work) ·
+[04](04-deployment-execution-flow.md) (execution order and the action matrix) ·
+[annex/generated-inventory.md](../annex/generated-inventory.md) (every play, container, role and handler) ·
+[annex/index.md](../annex/index.md) (tag index, service index, glossary)
+
+> Scope: the `ussuri-eol` tag of `openstack/kolla-ansible` (HEAD `8a94fe9`). Every path below is relative to the root of
+> that checkout; paths prefixed `kolla` or `ansible 2.9.27` point into the kolla image repository or the Ansible source.
+> The evidence labels **[CODE]** and **[NOT AVAILABLE]** are defined once, in the
+> [README](../README.md#evidence-labels).
 
 ---
 
@@ -17,24 +54,25 @@ actually touch the hosts. The other documents build on the vocabulary defined he
 
 | Path | What it is | Why it matters for Day 2 |
 |---|---|---|
-| `tools/kolla-ansible` | Bash wrapper. Maps sub-commands to a playbook plus `-e kolla_action=<action>` | Decides which playbook runs and whether `kolla_serial` is passed (§2) |
+| `tools/kolla-ansible` | Bash wrapper. Maps sub-commands to a playbook plus `-e kolla_action=<action>` | Decides which playbook runs and whether `kolla_serial` is passed ([§2](#2-from-cli-to-ansible-playbook)) |
 | `ansible/site.yml` | The main playbook (84 plays once `nova.yml` and `gather-facts.yml` are expanded) | Every `deploy`, `reconfigure`, `upgrade`, `pull`, `stop`, `prechecks`, `genconfig`, `deploy-containers` run goes through it |
 | `ansible/gather-facts.yml` | Imported first by `site.yml` | Fact gathering, including the special `--limit` path (see [06](06-compute-scaling-and-performance.md)) |
 | `ansible/nova.yml` | Imported by `site.yml:710` | Nova is split into 10 plays (see [05](05-nova-deep-dive.md)) |
 | `ansible/kolla-host.yml` + `roles/baremetal` | `bootstrap-servers` | Installs Docker and changes the host OS. Can restart the Docker daemon |
 | `ansible/destroy.yml`, `prune-images.yml`, `mariadb_backup.yml`, `mariadb_recovery.yml`, `post-deploy.yml`, `certificates.yml`, `bifrost.yml` | Single-purpose playbooks | See [09](09-practical-command-reference.md) |
-| `ansible/roles/` | 85 roles: 68 with a `common` meta-dependency (service roles); 17 without — the helper or utility roles plus `memcached` and `multipathd` | §4 and §5 |
+| `ansible/roles/` | 85 roles: 68 with a `common` meta-dependency (service roles); 17 without — the helper or utility roles plus `memcached` and `multipathd` | [§4](#4-anatomy-of-a-service-role) and [§5](#5-shared-helper-roles) |
 | `ansible/group_vars/all.yml` | 1,130 lines of defaults (every `enable_*`, ports, transport URLs, Docker options) | Lowest-priority defaults. `globals.yml` overrides them |
 | `ansible/inventory/{all-in-one,multinode}` | Example inventories that define 235 groups each | Group membership drives where every container runs |
-| `ansible/library/` | Custom modules: `kolla_docker`, `kolla_toolbox`, `kolla_container_facts`, `bslurp` | Main Docker interface: the service roles' container lifecycle goes through `kolla_docker`. Many role tasks also run `docker exec`/`docker inspect` directly (§6) |
-| `ansible/action_plugins/` | `merge_configs` (INI merge) and `merge_yaml` | How `/etc/kolla/config` overrides are merged (§7) |
-| `ansible/filter_plugins/`, `kolla_ansible/*.py` | Jinja filters: `service_enabled_and_mapped_to_host`, `kolla_address`, `extract_cell`, `customise_fluentd`, … | Decide placement of a service on a host (§4.4) |
-| `etc/kolla/globals.yml`, `etc/kolla/passwords.yml` | Templates copied to `/etc/kolla/` by the operator | `globals.yml` is passed as **extra-vars** (§2.1) |
+| `ansible/library/` | Custom modules: `kolla_docker`, `kolla_toolbox`, `kolla_container_facts`, `bslurp` | Main Docker interface: the service roles' container lifecycle goes through `kolla_docker`. Many role tasks also run `docker exec`/`docker inspect` directly ([§6](#6-custom-modules--container-lifecycle-via-kolla_docker)) |
+| `ansible/action_plugins/` | `merge_configs` (INI merge) and `merge_yaml` | How `/etc/kolla/config` overrides are merged ([§7](#7-configuration-generation-and-overrides)) |
+| `ansible/filter_plugins/`, `kolla_ansible/*.py` | Jinja filters: `service_enabled_and_mapped_to_host`, `kolla_address`, `extract_cell`, `customise_fluentd`, … | Decide placement of a service on a host ([§4.4](#44-containers-and-placement)) |
+| `etc/kolla/globals.yml`, `etc/kolla/passwords.yml` | Templates copied to `/etc/kolla/` by the operator | `globals.yml` is passed as **extra-vars** ([§2.1](#21-variable-precedence-that-matters)) |
 | `tools/cleanup-*`, `tools/kolla-libvirt-guests.service`, `tools/virt-guest-shutdown.target` | Host utilities | `cleanup-host` deletes network namespaces and links (see [08](08-operational-risk-matrix.md)) |
 | `doc/source/` | Documentation (`ansible-tuning.rst`, `bootstrap-servers.rst`, …) | Used only to cross-check, never as the source of truth |
 
-No `ansible.cfg` is shipped for operators [CODE, fact sheet E §12]. Forks, pipelining, fact caching and SSH settings
-come from whatever `ansible.cfg` or environment the operator provides.
+No `ansible.cfg` is shipped for operators [CODE, [fact sheet E
+§12](../annex/factsheets/E-host-bootstrap-ops-playbooks.md#12-ansible-configuration-and-documented-tuning)]. Forks,
+pipelining, fact caching and SSH settings come from whatever `ansible.cfg` or environment the operator provides.
 
 ---
 
@@ -71,8 +109,8 @@ Consequences [CODE]:
   The comment there reads "Serial is not recommended and disabled by default".
 - **`kolla_serial` is overridden for `reconfigure` and `upgrade`.** The wrapper appends
   `-e kolla_serial=${ANSIBLE_SERIAL}` *after* the user's `-e` options. For those two commands a user-supplied
-  `-e kolla_serial=N` is therefore silently replaced by `ANSIBLE_SERIAL`. Use the environment variable instead (fact
-  sheet E §11).
+  `-e kolla_serial=N` is therefore silently replaced by `ANSIBLE_SERIAL`. Use the environment variable instead ([fact
+  sheet E §11](../annex/factsheets/E-host-bootstrap-ops-playbooks.md#11-toolskolla-ansible-cli)).
 - **Other commands default to 0.** For `deploy` and the rest, `kolla_serial` is not passed, and the plays fall back
   to `kolla_serial|default("0")`.
 - **`--tags`, `--skip-tags`, `--limit` and `--forks` pass straight through** (`:251-259`, `:305-313`). `EXTRA_OPTS` from
@@ -127,7 +165,8 @@ Facts about the structure [CODE, `ansible/site.yml`]:
    - **Exceptions with no `serial` key:** the setup plays `Group hosts based on configuration`, `Check CentOS
      variant` and `Apply role prechecks` (`site.yml:7-112`), plus `mariadb` (`site.yml:471-479`), `rabbitmq` and
      `outward rabbitmq` (`:535-572`). The clustering logic of the last three needs all members in one batch. Rolling
-     behaviour is implemented *inside* their handlers instead (fact sheet B §1–2).
+     behaviour is implemented *inside* their handlers instead ([fact sheet B
+     §1–2](../annex/factsheets/B-mariadb-rabbitmq-keystone.md#1-mariadb-ansiblerolesmariadb)).
    - **Bug: `cyborg` (`:1028`)** uses `serial|default("0")`, not `kolla_serial`, so `ANSIBLE_SERIAL` has no effect on
      cyborg.
    - **Tag placement varies:**
@@ -138,10 +177,10 @@ Facts about the structure [CODE, `ansible/site.yml`]:
 4. **`common` is reached through meta dependencies.** Almost every service role declares
    `dependencies: - { role: common }` in `meta/main.yml`. Exceptions are the helper roles plus `memcached` and
    `multipathd`, which have no `meta/`. `common` therefore runs in the *first* play in which a host appears, guarded by
-   a host fact (§5.1).
+   a host fact ([§5.1](#51-the-common-role-and-the-common_run-guard)).
 
 The complete table of 84 plays (hosts, tags, serial) is generated from the source in
-[annex/generated-inventory.md §1](../annex/generated-inventory.md).
+[annex/generated-inventory.md §1](../annex/generated-inventory.md#1-plays-executed-by-siteyml-in-order).
 
 ---
 
@@ -178,9 +217,10 @@ roles/<svc>/
   walks the compiled play and does not load dynamically included files (ansible 2.9.27
   `lib/ansible/cli/playbook.py:159-182`). You cannot use `--list-tasks` to see what a tag will do in Kolla-Ansible.
 - **Tags reach the role's tasks only through inheritance.** The included tasks inherit the *role and play* tags (e.g.
-  `nova`), not tags written on the `include_tasks` statement itself (see [03](03-ansible-roles-and-tags-mapping.md)
-  §2). An include is not statically loaded, so the block of included tasks skips the include's tags and inherits
-  those of the role, its dependency chain and the play (ansible 2.9.27 `lib/ansible/playbook/task_include.py:56`,
+  `nova`), not tags written on the `include_tasks` statement itself (see [03
+  §2](03-ansible-roles-and-tags-mapping.md#2-ansible-29-semantics-that-kolla-relies-on)). An include is not statically
+  loaded, so the block of included tasks skips the include's tags and inherits those of the role, its dependency chain
+  and the play (ansible 2.9.27 `lib/ansible/playbook/task_include.py:56`,
   `lib/ansible/playbook/block.py:311-314,329-360`).
 
 ### 4.2 `reconfigure` is `deploy`
@@ -188,15 +228,19 @@ roles/<svc>/
 Of the 72 roles that have a `reconfigure.yml`, 67 only do `import_tasks: deploy.yml`. `congress`, `mongodb` and
 `nova-hyperv` do the same with `include_tasks`. `swift` and `bifrost` have their own reconfigure logic: swift fails if a
 container is down, runs `kolla_set_configs --check` and restarts only drifted containers
-(`roles/swift/tasks/reconfigure.yml`). The bifrost copy cannot work and no `kolla-ansible` command runs it: it uses a
-group and a container named `bifrost-deploy`, but the container is `bifrost_deploy`, which runs `/sbin/init` with no
-`config.json` (`roles/bifrost/tasks/reconfigure.yml:2-23`, `start.yml:8`). See the generated column "reconf→deploy" in
-[annex/generated-inventory.md §3](../annex/generated-inventory.md).
-So `reconfigure` re-runs Keystone registration, DB creation and the **bootstrap (DB sync) container** of most
-services, exactly like `deploy` [CODE] (e.g. `roles/glance/tasks/reconfigure.yml:2`,
-`roles/glance/tasks/deploy.yml:2-12`). The only built-in differences between `deploy` and `reconfigure` are:
+(`roles/swift/tasks/reconfigure.yml`).
 
-- **`kolla_serial`** is passed from `ANSIBLE_SERIAL` (§2).
+The bifrost copy cannot work and no `kolla-ansible` command runs it: it uses a group and a container named
+`bifrost-deploy`, but the container is `bifrost_deploy`, which runs `/sbin/init` with no `config.json`
+(`roles/bifrost/tasks/reconfigure.yml:2-23`, `start.yml:8`).
+
+See the generated column "reconf→deploy" in [annex/generated-inventory.md
+§3](../annex/generated-inventory.md#3-role-task-structure-handlers-and-helper-role-usage). So `reconfigure` re-runs
+Keystone registration, DB creation and the **bootstrap (DB sync) container** of most services, exactly like `deploy`
+[CODE] (e.g. `roles/glance/tasks/reconfigure.yml:2`, `roles/glance/tasks/deploy.yml:2-12`). The only built-in
+differences between `deploy` and `reconfigure` are:
+
+- **`kolla_serial`** is passed from `ANSIBLE_SERIAL` ([§2](#2-from-cli-to-ansible-playbook)).
 - **A few `when: kolla_action == ...` conditions.** Example: Neutron's DB-sync container (`bootstrap_neutron`) runs
   only on `deploy` while `neutron_enable_rolling_upgrade` keeps its default `yes`
   (`roles/neutron/tasks/bootstrap_service.yml:21-22`, `roles/neutron/defaults/main.yml:411`). Neutron's DB, user and
@@ -253,7 +297,8 @@ sequenceDiagram
   - **recreate** when the image or parameters differ;
   - otherwise **restart** (`dc.stop(timeout=graceful_timeout)` then `dc.start`, `:892-904`).
 
-  The effective stop timeout is **10 s**, not the 60 s of `docker_graceful_timeout` (§6).
+  The effective stop timeout is **10 s**, not the 60 s of `docker_graceful_timeout`
+  ([§6](#6-custom-modules--container-lifecycle-via-kolla_docker)).
 - **Handlers run in definition order, on every notified host of the batch at once.** Unless `kolla_serial` is set,
   "Restart nova-compute container" restarts nova_compute on all notified computes in the same step [CODE: ansible
   2.9.27 `lib/ansible/plugins/strategy/__init__.py:979-986` walks the play's handlers in order; `:1019-1035` queues
@@ -269,7 +314,8 @@ Each role's `defaults/main.yml` defines a `<role>_services` dict with an entry p
 - `host_in_groups` (a per-host boolean expression) wins over `group`.
 - `group: all` means every host.
 
-All 195 container definitions are listed in [annex/generated-inventory.md §2](../annex/generated-inventory.md).
+All 195 container definitions are listed in [annex/generated-inventory.md
+§2](../annex/generated-inventory.md#2-containers-defined-by-each-role-role_services-in-defaultsmainyml).
 
 ---
 
@@ -321,19 +367,22 @@ All 195 container definitions are listed in [annex/generated-inventory.md §2](.
   rendered from the **global** `enable_*` flags (`roles/common/tasks/config.yml:109-240`). Enabling a service listed in
   `fluentd_input_openstack_services` (`roles/common/defaults/main.yml:105-185`) and/or `cron_logrotate_services`
   (`roles/common/tasks/config.yml:170-233`), such as nova, neutron or barbican, changes `td-agent.conf` and/or
-  `logrotate.conf` on *every* host. Services only in the logrotate list (e.g. chrony, mariadb, rabbitmq, zun,
-  vitrage) change only `logrotate.conf`, and some flags change neither file (e.g. `enable_placement`,
-  `enable_prometheus`, `enable_redis`, `enable_memcached`, `enable_ovn`). The next run that actually executes
-  `common` on a host restarts the container whose file changed (`fluentd` and/or `cron`) there. Through loop-notify
-  on the looped `Check common containers` task (`roles/common/tasks/check-containers.yml:2-17`) it also restarts the
-  other common containers (`kolla_toolbox`, plus `fluentd` or `cron` when only one of the two files changed),
-  although their config did not change [CODE: when any item of a looped task changes, Ansible notifies the handlers
-  of every item that was not skipped, ansible 2.9.27 `lib/ansible/executor/task_executor.py:118-121,557-559,789-790`,
-  `lib/ansible/plugins/strategy/__init__.py:613-623`]. `-t common reconfigure` is not such a run: the tag on the
-  dynamic include does not reach the included tasks, so nothing is rendered or restarted [CODE:
-  `roles/common/tasks/main.yml:3,9` are the only `tags:` lines in `roles/common/tasks/`; included blocks are
-  filtered by tag, ansible 2.9.27 `lib/ansible/plugins/strategy/linear.py:371`, and do not inherit the include's
-  tags, `lib/ansible/playbook/block.py:311-314`].
+  `logrotate.conf` on *every* host. Services only in the logrotate list (e.g. chrony, mariadb, rabbitmq, zun, vitrage)
+  change only `logrotate.conf`, and some flags change neither file (e.g. `enable_placement`, `enable_prometheus`,
+  `enable_redis`, `enable_memcached`, `enable_ovn`).
+
+  The next run that actually executes `common` on a host restarts the container whose file changed (`fluentd` and/or
+  `cron`) there. Through loop-notify on the looped `Check common containers` task
+  (`roles/common/tasks/check-containers.yml:2-17`) it also restarts the other common containers (`kolla_toolbox`, plus
+  `fluentd` or `cron` when only one of the two files changed), although their config did not change [CODE: when any item
+  of a looped task changes, Ansible notifies the handlers of every item that was not skipped, ansible 2.9.27
+  `lib/ansible/executor/task_executor.py:118-121,557-559,789-790`, `lib/ansible/plugins/strategy/__init__.py:613-623`].
+
+  `-t common reconfigure` is not such a run: the tag on the dynamic include does not reach the included tasks, so
+  nothing is rendered or restarted [CODE: `roles/common/tasks/main.yml:3,9` are the only `tags:` lines in
+  `roles/common/tasks/`; included blocks are filtered by tag, ansible 2.9.27
+  `lib/ansible/plugins/strategy/linear.py:371`, and do not inherit the include's tags,
+  `lib/ansible/playbook/block.py:311-314`].
 
 ---
 
@@ -398,26 +447,29 @@ How `kolla_docker` decides [CODE]:
    changed file makes `kolla_set_configs --check` report drift in `nova_compute` (`kolla_docker.py:543-578`). libvirt
    and ssh restart through loop-notify in the looped "Check nova-cell containers" task
    (`roles/nova-cell/tasks/check-containers.yml:2-20`, handlers `roles/nova-cell/handlers/main.yml:70-140`; Ansible
-   lines in §5.1), not because their config changed.
+   lines in [§5.1](#51-the-common-role-and-the-common_run-guard)), not because their config changed.
 3. **Some overrides leak to other services.** Neutron's `openvswitch_agent.ini` merges
    `/etc/kolla/config/neutron/ml2_conf.ini` on top of the agent template (`roles/neutron/tasks/config.yml:172-190`,
    "TODO(mnasiadka): Remove in V"). A change meant for `neutron-server` therefore also restarts
    `neutron_openvswitch_agent` on every compute and network node [CODE].
-4. **The container receives its config through a manifest.** The `config.json` (rendered from `<service>.json.j2`)
-   tells `kolla_set_configs`, inside the image, which files to copy from `/var/lib/kolla/config_files` (bind-mounted
-   from `/etc/kolla/<service>/`) to their final location. It also names the command to start. With
-   `config_strategy: COPY_ALWAYS` (`group_vars/all.yml:43`) the copy happens at every container start. That is why a
-   restart is enough to apply a changed or added config file, and why Kolla-Ansible never applies config by reloading
-   a service. A restart does not apply a removal [CODE]. `kolla_set_configs` rewrites only the destinations listed in
-   the current `config.json` and skips an optional entry whose source is missing (kolla
+4. **The container receives its config through a manifest.** The `config.json` (rendered from `<service>.json.j2`) tells
+   `kolla_set_configs`, inside the image, which files to copy from `/var/lib/kolla/config_files` (bind-mounted from
+   `/etc/kolla/<service>/`) to their final location. It also names the command to start. With `config_strategy:
+   COPY_ALWAYS` (`group_vars/all.yml:43`) the copy happens at every container start. That is why a restart is enough to
+   apply a changed or added config file, and why Kolla-Ansible never applies config by reloading a service.
+
+   A restart does not apply a removal [CODE]. `kolla_set_configs` rewrites only the destinations listed in the current
+   `config.json` and skips an optional entry whose source is missing (kolla
    `docker/base/set_configs.py:135-148,310-315`). A file whose entry was dropped (e.g. a removed Keystone policy file,
    `roles/keystone/templates/keystone.json.j2:30-36`), or whose optional source is gone, keeps its old copy in the
    container until the container is recreated, or even after that when the destination is on a named volume (e.g.
    nova-compute's SASL `auth.conf` under `/var/lib/nova`), and `kolla_set_configs --check` does not flag it
    (`set_configs.py:217-220,407-410`). Deleting a custom file such as `/etc/kolla/config/keystone/keystone-paste.ini`
-   also leaves its rendered copy in `/etc/kolla/keystone/` (`roles/keystone/tasks/config.yml:165-187`), which is
-   copied in again even after a recreate. The image-side start path and `--check` are described in
-   [annex/kolla-images.md §2-§3](../annex/kolla-images.md).
+   also leaves its rendered copy in `/etc/kolla/keystone/` (`roles/keystone/tasks/config.yml:165-187`), which is copied
+   in again even after a recreate.
+
+   The image-side start path and `--check` are described in [annex/kolla-images.md
+   §2-§3](../annex/kolla-images.md#2-start-path-common-to-every-image).
 
 ---
 
@@ -442,7 +494,9 @@ How `kolla_docker` decides [CODE]:
   (`site.yml:761-780`); the agents' `host_in_groups` decides what lands there.
 - **Inventory order is semantically significant** [CODE]. `groups['<grp>'][0]` is the target of almost every
   `run_once`/`delegate_to` bootstrap step. Examples: `groups['nova-conductor'][0]` for cell creation and compute
-  discovery; `groups['glance-api'][0]` as the only glance host with the default file backend (fact sheet C). Other
-  index-sensitive logic:
-  - keepalived priority is the index in `groups['haproxy']` (fact sheet A §1.8 C);
-  - MariaDB restart waves use the index modulo 4 (fact sheet B §1.5).
+  discovery; `groups['glance-api'][0]` as the only glance host with the default file backend ([fact sheet
+  C](../annex/factsheets/C-glance-placement-cinder-horizon-heat.md)). Other index-sensitive logic:
+  - keepalived priority is the index in `groups['haproxy']` ([fact sheet A
+    §1.8](../annex/factsheets/A-infra-lb-ovn.md#18-operationally-notable-behaviour) C);
+  - MariaDB restart waves use the index modulo 4 ([fact sheet B
+    §1.5](../annex/factsheets/B-mariadb-rabbitmq-keystone.md#1-mariadb-ansiblerolesmariadb)).

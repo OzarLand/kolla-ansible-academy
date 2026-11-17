@@ -13,6 +13,9 @@ Ansible source (ansible 2.9.27 `lib/ansible/...`). Anything these sources do not
 | [D — Barbican / Octavia / Swift / Manila + compute-side roles](D-barbican-octavia-swift-manila-compute-roles.md) | control-plane roles and every role that places containers on compute hosts; templates embedding host lists |
 | [E — host bootstrap and operational playbooks](E-host-bootstrap-ops-playbooks.md) | `bootstrap-servers` (Docker restart conditions, `/etc/hosts`), prechecks, destroy, prune-images, fact gathering, CLI, tuning docs |
 
+To go from a service or a tag to the right sheet section, use the [service index](../index.md#service-index) and the
+[tag index](../index.md#tag-index).
+
 ## Verification and errata
 
 How the sheets were checked:
@@ -31,9 +34,13 @@ effective stop timeout of every `kolla_docker` stop/restart is **10 s**. In `kol
 parameter that is not `None` overrides `common_options`, and `graceful_timeout` defaults to `10`. The code shows it:
 the argument spec sets `default=10` (`ansible/library/kolla_docker.py:991`), the merge loop skips only `None` values
 (`:1037-1047`), and `stop_container` and `restart_container` pass the value to `docker stop` (`:871-884,892-903`).
-Sheet C states it correctly. Sheet A (common mechanics, §1.8), sheet B's "Graceful stop" row and sheet E (§2.4,
-§13) had the same error and are now corrected.
-Sheet E's §13 also listed `docker_client_timeout` as a working knob; the module ignores it the same way (docs/01 §6).
+Sheet C states it correctly. Sheet A (common mechanics, [§1.8](A-infra-lb-ovn.md#18-operationally-notable-behaviour)),
+sheet B's "Graceful stop" row and sheet E ([§2.4](E-host-bootstrap-ops-playbooks.md#24-blast-radius-of-a-restart),
+[§13](E-host-bootstrap-ops-playbooks.md#13-day-2-and-scale-knobs-etckollaglobalsyml-and-ansiblegroup_varsallyml)) had
+the same error and are now corrected. Sheet E's
+[§13](E-host-bootstrap-ops-playbooks.md#13-day-2-and-scale-knobs-etckollaglobalsyml-and-ansiblegroup_varsallyml) also
+listed `docker_client_timeout` as a working knob; the module ignores it the same way ([docs/01
+§6](../../docs/01-repository-architecture.md#6-custom-modules--container-lifecycle-via-kolla_docker)).
 
 **Erratum (sheet A, "There is no reload path anywhere in scope").** This holds for the handler path: every
 handler stops and starts or recreates its container, and `kolla_docker` has no reload action. Outside the handlers,
@@ -42,9 +49,9 @@ nova-scheduler hosts. It does so on `deploy` and `reconfigure` runs that select 
 `nova-refresh-scheduler-cell-cache` tag, or no tag (`ansible/nova.yml:140-156`,
 `roles/nova/tasks/refresh_scheduler_cell_cache.yml:10`).
 
-**Erratum (sheet B §3.10, memcached counts).** In `ussuri-eol`, **35** roles have `memcache_secret_key` in their
-templates, not 34, and **37** (not 36) have `memcache_servers`/`memcached_servers`. The memcached *host list* is
-embedded by **38** roles:
+**Erratum (sheet B [§3.10](B-mariadb-rabbitmq-keystone.md#3-keystone-ansibleroleskeystone), memcached counts).** In
+`ussuri-eol`, **35** roles have `memcache_secret_key` in their templates, not 34, and **37** (not 36) have
+`memcache_servers`/`memcached_servers`. The memcached *host list* is embedded by **38** roles:
 - 37 loop over `groups['memcached']` in their templates (this includes horizon, whose `CACHES.LOCATION` uses the
   loop);
 - monasca builds the list in `monasca_memcached_servers` (`roles/monasca/defaults/main.yml:127`).
@@ -75,12 +82,12 @@ sheets were written. The main changes, now made in the sheets, are:
   `docker/base/set_configs.py:391-393`). Only `swift_rsyncd` fixes `/srv/node` ownership at start (kolla
   `docker/swift/swift-rsyncd/extend_start.sh:3`).
 
-In the same pass, sheet E §11 was corrected: like `reconfigure`, `upgrade` overrides a user `-e kolla_serial`
-(`tools/kolla-ansible:430`). Sheets B and C also now cite the kolla source for several image-side statements that
-were earlier only inferred and that it confirms, for example the keystone, cinder and horizon bootstrap commands and
-glance's recursive chown of `/var/lib/glance`. Statements that cite a kolla path (kolla `docker/...`, relative to the
-root of the kolla image repository at `ussuri-eol`) are [CODE]. Other image-side statements in the sheets are
-**NOT AVAILABLE**. See [annex/kolla-images.md](../kolla-images.md).
+In the same pass, sheet E [§11](E-host-bootstrap-ops-playbooks.md#11-toolskolla-ansible-cli) was corrected: like
+`reconfigure`, `upgrade` overrides a user `-e kolla_serial` (`tools/kolla-ansible:430`). Sheets B and C also now cite
+the kolla source for several image-side statements that were earlier only inferred and that it confirms, for example the
+keystone, cinder and horizon bootstrap commands and glance's recursive chown of `/var/lib/glance`. Statements that cite
+a kolla path (kolla `docker/...`, relative to the root of the kolla image repository at `ussuri-eol`) are [CODE]. Other
+image-side statements in the sheets are **NOT AVAILABLE**. See [annex/kolla-images.md](../kolla-images.md).
 
 **Context the sheets do not repeat.** The sheets were written before the Ansible 2.9 source was read for looped
 tasks: when any item changes, Ansible notifies the handlers of *every* executed loop item. Every executed item
@@ -88,4 +95,5 @@ carries the task's `notify`, skipped items return before it is set, the task cou
 changed, and the strategy then notifies the handlers named by each item (ansible 2.9.27
 `lib/ansible/executor/task_executor.py:118-121,559,789-790`, `lib/ansible/plugins/strategy/__init__.py:609-623`).
 Wherever a sheet says "restarts container X if its config changed", read it as "restarts **all containers of that
-role on that host** if any of them changed" (see [docs/03 §2.4](../../docs/03-ansible-roles-and-tags-mapping.md)).
+role on that host** if any of them changed" (see [docs/03
+§2.4](../../docs/03-ansible-roles-and-tags-mapping.md#2-ansible-29-semantics-that-kolla-relies-on)).

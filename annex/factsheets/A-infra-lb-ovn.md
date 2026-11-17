@@ -1,5 +1,15 @@
 # Fact sheet A: infra / load balancing / OVN (Kolla-Ansible `ussuri-eol`)
 
+**Contents:** [0. Plays in `ansible/site.yml` (summary table)](#0-plays-in-ansiblesiteyml-summary-table) · [1. `haproxy`
+role (haproxy + keepalived)](#1-haproxy-role-haproxy--keepalived) · [2. `haproxy-config` role](#2-haproxy-config-role) ·
+[3. `memcached` role](#3-memcached-role) · [4. `chrony` role](#4-chrony-role) · [5. `ovn` role](#5-ovn-role) · [6.
+`ovs-dpdk` role](#6-ovs-dpdk-role) · [7. `service-cert-copy` role](#7-service-cert-copy-role) · [8. `certificates.yml`
+playbook / `certificates` role](#8-certificatesyml-playbook--certificates-role) · [9. Cross-cutting summary: restart
+triggers and blast radius](#9-cross-cutting-summary-restart-triggers-and-blast-radius)
+
+**See also:** [verification and errata for all sheets](README.md#verification-and-errata) · [service
+index](../index.md#service-index) · [everything marked NOT AVAILABLE](../index.md#everything-marked-not-available)
+
 Scope: roles `haproxy` (incl. keepalived and the per-service `loadbalancer.yml` fan-out), `haproxy-config`,
 `memcached`, `chrony`, `ovn`, `ovs-dpdk`, `service-cert-copy`, and the `certificates.yml` playbook/role.
 
@@ -206,8 +216,8 @@ None.
     (through the VIP, `group_vars/all.yml:105`), RabbitMQ management, etc. is served by a haproxy that is restarting.
   - NOT AVAILABLE: how long the outage lasts per run, and whether established connections are cut. From the code:
     `haproxy_run.sh` does not `exec` haproxy (`haproxy_run.sh.j2:7-9`), so dumb-init's child is bash, not haproxy
-    ([annex/kolla-images.md §2.6](../kolla-images.md)). Whether haproxy itself gets the SIGTERM of `docker stop` is
-    NOT AVAILABLE; a container still running after 10 s is stopped with SIGKILL.
+    ([annex/kolla-images.md §2.6](../kolla-images.md#26-signals-and-pid-1)). Whether haproxy itself gets the SIGTERM of
+    `docker stop` is NOT AVAILABLE; a container still running after 10 s is stopped with SIGKILL.
 - **(B) Whether a haproxy restart causes VIP failover or a VIP outage is NOT AVAILABLE.**
   - keepalived tracks `check_alive` with `interval 2 fall 2 rise 10` (`keepalived.conf.j2:1-6`).
   - NOT AVAILABLE: whether keepalived goes to FAULT and drops the VIP while haproxy is down on the VIP holder, and how
@@ -661,7 +671,8 @@ All handlers have `when: kolla_action != "config"`. There is no `run_once`, `ser
   or when a deploy/reconfigure rewrites its `config.json`, and hit **all computes and network nodes in parallel**.
   The OVN manifests have no `config_files` (`roles/ovn/templates/*.json.j2`), so `kolla_set_configs --check` always
   exits 0: a command-line change written by `genconfig` is applied neither by `deploy-containers` nor by a later run,
-  until the container restarts for another reason ([annex/kolla-images.md §3](../kolla-images.md)).
+  until the container restarts for another reason ([annex/kolla-images.md
+  §3](../kolla-images.md#3-kolla_set_configs---check-what-it-compares-and-its-exit-codes)).
   - NOT AVAILABLE: whether Ussuri-era OVN clears and re-installs OpenFlow flows on restart, and so whether there is a
     short data-plane interruption per chassis, plus north-south traffic loss when all gateway chassis (network nodes)
     restart together.
@@ -821,7 +832,7 @@ The loop is `with_dict: project_services | select_services_enabled_and_mapped_to
   - The kolla image does install them: keepalived starts through `kolla_start`, which runs `kolla_copy_cacerts` at
     every start. That script deletes the old `kolla-customca-*` entries and installs every file of
     `/var/lib/kolla/config_files/ca-certificates/` (kolla `docker/base/start.sh:13`, `docker/base/copy_cacerts.sh:7-27`;
-    [annex/kolla-images.md §2.4](../kolla-images.md)).
+    [annex/kolla-images.md §2.4](../kolla-images.md#24-kolla_copy_cacerts-and-kolla_httpd_setup)).
 - **A CA or backend cert rotation restarts every container of every service using it** (whole fleet,
   per-play parallel).
 - It is a pure file copy, with no expiry check.

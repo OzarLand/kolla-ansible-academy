@@ -3,8 +3,49 @@
 How Kolla-Ansible Ussuri decides *what runs when*: play order, the steps inside each role, handler flush points,
 batching, and how `deploy`, `reconfigure`, `upgrade`, `deploy-containers`, `genconfig`, `pull` and `stop` differ.
 
-> Deployment order (this document) ≠ runtime communication (see [02](02-openstack-component-dependencies.md)).
-> Arrows in the diagrams below mean "runs before", unless a diagram explicitly says it shows runtime calls.
+> **Key answers**
+>
+> - **There is no dependency resolution.** Order comes from five mechanisms only: play order, the `common` meta
+>   dependency, task order inside a role, handler flush points and `serial` [CODE] ([§1](#1-how-the-order-is-decided)).
+> - **What each action does** (`deploy`, `reconfigure`, `upgrade`, `deploy-containers`, `genconfig`, `pull`, `stop`,
+>   `precheck`, `check`): the action matrix ([§4](#4-action-matrix-what-each-kolla_action-does)). `genconfig`, then
+>   `deploy-containers --limit <batch>`, is the only built-in way to separate "write the config" from "apply it"
+>   ([§4](#4-action-matrix-what-each-kolla_action-does)).
+> - **Batching:** a batch runs the complete play, handler restarts included, before the next batch starts, but each play
+>   is still traversed batch by batch for the whole fleet before the next play starts. mariadb and rabbitmq always run
+>   all hosts in one batch ([§5](#5-batching-serial-and-its-interaction-with-order)).
+> - **`reconfigure` on a running cloud still runs the DB sync containers** of keystone, glance, cinder, placement, nova,
+>   heat and others [CODE]; Neutron's DB sync is skipped by default
+>   ([§6](#6-initial-deployment-vs-reconfiguration-what-actually-differs)).
+> - **What one compute host goes through in a full `deploy`**, in order
+>   ([§2.4](#24-compute-node-deployment-what-one-compute-host-experiences)). On a fresh compute, `nova_compute` is
+>   started before `openvswitch` and `neutron_openvswitch_agent` exist on that host.
+> - **Restart order is handler definition order**, not notification order [CODE], and the handlers of a play run on all
+>   notified hosts in parallel ([§7](#7-dependencies-introduced-by-handlers)).
+
+**Contents**
+
+- [1. How the order is decided](#1-how-the-order-is-decided)
+- [2. The five diagrams](#2-the-five-diagrams): [2.1 Infrastructure
+  services](#21-infrastructure-services-deployment-order) · [2.2 OpenStack control
+  plane](#22-openstack-control-plane-deployment-order) · [2.3 Nova deployment](#23-nova-deployment-ansiblenovayml) ·
+  [2.4 Compute node deployment](#24-compute-node-deployment-what-one-compute-host-experiences) · [2.5 Networking
+  components](#25-networking-components)
+- [3. Inside a role: the standard `deploy` sequence](#3-inside-a-role-the-standard-deploy-sequence)
+- [4. Action matrix: what each `kolla_action` does](#4-action-matrix-what-each-kolla_action-does)
+- [5. Batching (`serial`) and its interaction with order](#5-batching-serial-and-its-interaction-with-order)
+- [6. Initial deployment vs reconfiguration: what actually
+  differs](#6-initial-deployment-vs-reconfiguration-what-actually-differs)
+- [7. Dependencies introduced by handlers](#7-dependencies-introduced-by-handlers)
+
+**Related:** [02](02-openstack-component-dependencies.md) (runtime dependencies) · [03
+§2.5](03-ansible-roles-and-tags-mapping.md#25-run_once-with-serial-code) (`run_once` with `serial`) ·
+[05](05-nova-deep-dive.md) (the nova plays) · [07
+§H](07-day2-operational-impact.md#h-separate-write-config-from-apply-recommended-pattern) (`genconfig` then
+`deploy-containers`) · [annex/index.md](../annex/index.md) (glossary)
+
+> Deployment order (this document) ≠ runtime communication (see [02](02-openstack-component-dependencies.md)). Arrows in
+> the diagrams below mean "runs before", unless a diagram explicitly says it shows runtime calls.
 
 ---
 
@@ -14,9 +55,9 @@ There is **no dependency resolution** in Kolla-Ansible Ussuri. Order comes from 
 
 | Mechanism | Effect | Evidence |
 |---|---|---|
-| Play order in `site.yml` / `nova.yml` | Services are applied strictly in file order. Ansible's default `linear` strategy runs play N on all its hosts (per batch) before play N+1 | `ansible/site.yml`, generated list in [annex/generated-inventory.md §1](../annex/generated-inventory.md) |
+| Play order in `site.yml` / `nova.yml` | Services are applied strictly in file order. Ansible's default `linear` strategy runs play N on all its hosts (per batch) before play N+1 | `ansible/site.yml`, generated list in [annex/generated-inventory.md §1](../annex/generated-inventory.md#1-plays-executed-by-siteyml-in-order) |
 | Role meta dependency on `common` | `common` runs *before* the first role a host meets | `roles/*/meta/main.yml`, `roles/common/tasks/main.yml:1-10` |
-| Task order inside a role | Fixed sequence: register → config(-host) → check-containers → bootstrap → flush handlers (§3) | `roles/*/tasks/deploy.yml` |
+| Task order inside a role | Fixed sequence: register → config(-host) → check-containers → bootstrap → flush handlers ([§3](#3-inside-a-role-the-standard-deploy-sequence)) | `roles/*/tasks/deploy.yml` |
 | Handler flush points | Restarts happen at `meta: flush_handlers` (end of most `deploy.yml`) or at the end of the play. haproxy deliberately defers to the end of its play | e.g. `roles/nova/tasks/deploy.yml:8-9`; haproxy `deploy.yml:8-11` |
 | `serial` / `kolla_serial` | Splits a play into batches; each batch completes the whole play, handlers included, before the next starts | `serial: '{{ kolla_serial\|default("0") }}'` on every service play except mariadb, rabbitmq and outward rabbitmq (no `serial` key) and cyborg, which reads `serial: '{{ serial\|default("0") }}'` (`site.yml:1028`), so `kolla_serial` never batches it. The group_by, CentOS-check and prechecks plays have no `serial` key either |
 
@@ -66,7 +107,7 @@ Notable order facts [CODE]:
 
 - **Keystone comes after MariaDB, RabbitMQ and memcached, but before any service that registers with it.**
   `service-ks-register` targets the admin endpoint through the VIP.
-- **Placement, Glance and Cinder come before Nova.** Neutron comes *after* Nova (see §2.5).
+- **Placement, Glance and Cinder come before Nova.** Neutron comes *after* Nova (see [§2.5](#25-networking-components)).
 - **Barbican comes after Nova, Cinder and Glance**, even though they can be configured to use it as a key manager.
   With `enable_barbican`, Nova and Cinder render a `[barbican]` section (`roles/nova/templates/nova.conf.j2:200-203`,
   `roles/nova-cell/templates/nova.conf.j2:234-237`, `roles/cinder/templates/cinder.conf.j2:198-201`), and their
@@ -74,7 +115,8 @@ Notable order facts [CODE]:
   with a `[barbican]` section before Barbican exists. [NOT AVAILABLE] Whether this has any effect before encrypted
   volumes are used.
 - **Octavia is near the end.** Its amphora resources (image, flavor, network, security group, keypair, certificates)
-  are not created by Kolla in Ussuri; they are manual (fact sheet D).
+  are not created by Kolla in Ussuri; they are manual ([fact sheet
+  D](../annex/factsheets/D-barbican-octavia-swift-manila-compute-roles.md)).
 
 ### 2.3 Nova deployment (`ansible/nova.yml`)
 
@@ -144,8 +186,9 @@ controller also runs the `run_once` and delegated bootstrap tasks (e.g. `roles/n
 
 **Ordering consequence:** on a fresh compute, `nova_compute` is started (and its registration awaited) *before*
 `openvswitch` and `neutron_openvswitch_agent` exist on that host. [NOT AVAILABLE] Whether instances can be scheduled
-there successfully before the later plays finish (05 §3 item 6). On a running cloud this ordering matters when you
-add computes with `--limit` (see [07](07-day2-operational-impact.md) §G).
+there successfully before the later plays finish ([05
+§3](05-nova-deep-dive.md#3-what-must-be-available-before-nova-can-operate) item 6). On a running cloud this ordering
+matters when you add computes with `--limit` (see [07 §G](07-day2-operational-impact.md#g-add-a-compute-node)).
 
 ### 2.5 Networking components
 
@@ -176,7 +219,8 @@ first.
 
 ## 3. Inside a role: the standard `deploy` sequence
 
-Typical `deploy.yml` (Nova shown; Neutron adds `config-host`, and by default skips its DB-sync container on reconfigure):
+Typical `deploy.yml` (Nova shown; Neutron adds `config-host`, and by default skips its DB-sync container on
+reconfigure):
 
 | Step | Typical task file | Scope | Runs on `reconfigure`? |
 |---|---|---|---|
@@ -192,7 +236,9 @@ Order caveats:
 
 - **Some roles bootstrap *before* containers start, some after.** Nova bootstraps in separate plays before the
   service plays (`nova.yml:24-96`). Neutron runs its bootstrap *after* check-containers but *before* the flush
-  (`roles/neutron/tasks/deploy.yml:11-21`). Keystone, Glance and Cinder vary (fact sheets B, C).
+  (`roles/neutron/tasks/deploy.yml:11-21`). Keystone, Glance and Cinder vary (fact sheets
+  [B](../annex/factsheets/B-mariadb-rabbitmq-keystone.md),
+  [C](../annex/factsheets/C-glance-placement-cinder-horizon-heat.md)).
 - **haproxy does not flush in `deploy.yml`.** The NOTE in `roles/haproxy/tasks/deploy.yml:8-11` explains that site.yml
   handles all haproxy changes in that play, so the restart happens once, after all per-service frontends are
   rendered.
@@ -204,28 +250,31 @@ Order caveats:
 | Action (CLI) | Config written | Containers compared | Handlers (restarts) | Bootstrap / DB sync | Keystone registration | Images pulled | Notes |
 |---|---|---|---|---|---|---|---|
 | `deploy` | yes | yes | yes | yes | yes | only if absent | Full flow |
-| `reconfigure` | yes | yes | yes | yes (most roles) | yes | only if absent | Identical to deploy in most roles (01 §4.2). `kolla_serial` passed |
-| `upgrade` | yes | yes | yes | yes: most roles re-run the deploy `KOLLA_BOOTSTRAP` one-shot with the new image (cinder, heat, barbican, octavia, manila, horizon, placement, legacy glance/neutron). Upgrade-only one-shots: keystone `KOLLA_UPGRADE` (expand + migrate) then `KOLLA_FINISH_UPGRADE` (contract); neutron rolling (default) `NEUTRON_DB_EXPAND`/`NEUTRON_DB_CONTRACT`; glance rolling (opt-in) `GLANCE_DB_EXPAND`/`MIGRATE`/`CONTRACT`; mariadb `mysql_upgrade`; `KOLLA_OSM` online migrations (nova, placement, cinder, rolling ironic). Nova `bootstrap_upgrade` re-runs its deploy db-sync container, minus DB creation and cell0 mapping ([annex/kolla-images.md §4](../annex/kolla-images.md)) | yes (some roles) | only if absent → run `pull` first | Nova reload plays and the separate `KOLLA_OSM` online-migration containers are active only here. Placement's bootstrap container also runs `placement-manage db online_data_migrations` on every deploy/reconfigure (kolla `docker/placement/placement-api/extend_start.sh:5-9`); so does Ironic's with `ironic_enable_rolling_upgrade: no` |
+| `reconfigure` | yes | yes | yes | yes (most roles) | yes | only if absent | Identical to deploy in most roles ([01 §4.2](01-repository-architecture.md#42-reconfigure-is-deploy)). `kolla_serial` passed |
+| `upgrade` | yes | yes | yes | yes: most roles re-run the deploy `KOLLA_BOOTSTRAP` one-shot with the new image (cinder, heat, barbican, octavia, manila, horizon, placement, legacy glance/neutron). Upgrade-only one-shots: keystone `KOLLA_UPGRADE` (expand + migrate) then `KOLLA_FINISH_UPGRADE` (contract); neutron rolling (default) `NEUTRON_DB_EXPAND`/`NEUTRON_DB_CONTRACT`; glance rolling (opt-in) `GLANCE_DB_EXPAND`/`MIGRATE`/`CONTRACT`; mariadb `mysql_upgrade`; `KOLLA_OSM` online migrations (nova, placement, cinder, rolling ironic). Nova `bootstrap_upgrade` re-runs its deploy db-sync container, minus DB creation and cell0 mapping ([annex/kolla-images.md §4](../annex/kolla-images.md#4-one-shot-containers-what-the-environment-variables-run)) | yes (some roles) | only if absent → run `pull` first | Nova reload plays and the separate `KOLLA_OSM` online-migration containers are active only here. Placement's bootstrap container also runs `placement-manage db online_data_migrations` on every deploy/reconfigure (kolla `docker/placement/placement-api/extend_start.sh:5-9`); so does Ironic's with `ironic_enable_rolling_upgrade: no` |
 | `deploy-containers` | **no** | yes (incl. drift of the files listed in `config_files`; not `command`/`permissions` changes inside `config.json`, see below) | yes | no | no | only if absent | `tasks/deploy-containers.yml` = `check-containers.yml`. haproxy includes skipped (`site.yml:392`) |
-| `genconfig` (`config`) | yes | no | **all container restarts skipped** (`when: kolla_action != "config"`; only the deprecated nova-hyperv Windows-service handlers can actually run, since the other unguarded handlers are chained to guarded ones or never notified by genconfig, 08 §3) | no | no | no | Fluentd label check still pulls the fluentd image if missing (`roles/common/tasks/config.yml:26-37`) |
+| `genconfig` (`config`) | yes | no | **all container restarts skipped** (`when: kolla_action != "config"`; only the deprecated nova-hyperv Windows-service handlers can actually run, since the other unguarded handlers are chained to guarded ones or never notified by genconfig, [08 §3](08-operational-risk-matrix.md#3-pre-execution-checklist-applies-to-every-production-run)) | no | no | no | Fluentd label check still pulls the fluentd image if missing (`roles/common/tasks/config.yml:26-37`) |
 | `pull` | no | no | no | no | no | **yes**, every enabled container mapped to the host, plus `common` | `service-images-pull` |
 | `stop` | no | no | no | no | no | no | `stop_container` for every enabled container on the host, honouring `skip_stop_containers` |
 | `precheck` | no | no | no | no | no | no | `prechecks` role + each role's `precheck.yml` (port checks, group validation) |
 | `check` | no | no | no | no | no | no | `check.yml` (mostly empty; sanity checks disabled by default) |
 
 The combination **`genconfig` → (review the diff) → `deploy-containers --limit <batch>`** is the only built-in way to
-separate "write the config" from "apply it", and to apply in controlled batches. It works because
-`compare_container` detects drift in the files listed in each `config.json`'s `config_files` (content, mode, owner)
-through `kolla_set_configs --check` [CODE `kolla_docker.py:543-578`, kolla
-`docker/base/set_configs.py:160-235,407-410`]. Changes confined to `config.json` itself (`command`, `permissions`;
-e.g. every memcached setting, `roles/memcached/templates/memcached.json.j2:2-3`) are NOT detected. `deploy-containers`
-therefore does not apply them after `genconfig`, and a later `deploy`/`reconfigure` does not either: the config tasks
-that notify the restart, the `config.json` template task included (memcached's only one,
-`roles/memcached/tasks/config.yml:13-26`), are then unchanged. Such changes take effect only at the next restart for
-another reason. An `optional` file that newly appears, and whose destination does not exist in the container yet,
-makes the check exit 2 and the task fail, unless an entry listed before it already differs (then exit 1 and a restart
-that copies the file) [CODE kolla `docker/base/set_configs.py:162-167,407-410,430-432`, `kolla_docker.py:575-578`].
-See [07](07-day2-operational-impact.md) §H and [annex/kolla-images.md §3](../annex/kolla-images.md).
+separate "write the config" from "apply it", and to apply in controlled batches. It works because `compare_container`
+detects drift in the files listed in each `config.json`'s `config_files` (content, mode, owner) through
+`kolla_set_configs --check` [CODE `kolla_docker.py:543-578`, kolla `docker/base/set_configs.py:160-235,407-410`].
+
+Changes confined to `config.json` itself (`command`, `permissions`; e.g. every memcached setting,
+`roles/memcached/templates/memcached.json.j2:2-3`) are NOT detected. `deploy-containers` therefore does not apply them
+after `genconfig`, and a later `deploy`/`reconfigure` does not either: the config tasks that notify the restart, the
+`config.json` template task included (memcached's only one, `roles/memcached/tasks/config.yml:13-26`), are then
+unchanged. Such changes take effect only at the next restart for another reason.
+
+An `optional` file that newly appears, and whose destination does not exist in the container yet, makes the check exit 2
+and the task fail, unless an entry listed before it already differs (then exit 1 and a restart that copies the file)
+[CODE kolla `docker/base/set_configs.py:162-167,407-410,430-432`, `kolla_docker.py:575-578`]. See [07
+§H](07-day2-operational-impact.md#h-separate-write-config-from-apply-recommended-pattern) and [annex/kolla-images.md
+§3](../annex/kolla-images.md#3-kolla_set_configs---check-what-it-compares-and-its-exit-codes).
 
 ---
 
@@ -248,10 +297,12 @@ gantt
   discovery. Batches therefore bound the number of simultaneous restarts *per play*, but **each play is still
   traversed batch by batch for the whole fleet before the next play starts**. The neutron agents on compute001 are
   restarted only after *all* computes have finished the nova-cell and openvswitch plays.
-- **`run_once` tasks run once per batch** (03 §2.5). Examples: DB sync, Keystone registration, compute discovery
-  (`wait_discover_computes.yml` runs for `all_computes_in_batch[0]`).
+- **`run_once` tasks run once per batch** ([03
+  §2.5](03-ansible-roles-and-tags-mapping.md#25-run_once-with-serial-code)). Examples: DB sync, Keystone registration,
+  compute discovery (`wait_discover_computes.yml` runs for `all_computes_in_batch[0]`).
 - **mariadb and rabbitmq always run all hosts in one batch** (no `serial` key). Their handlers implement the rolling
-  restart themselves (fact sheet B). cyborg is not batched by `kolla_serial` either: its play reads `serial` instead.
+  restart themselves ([fact sheet B](../annex/factsheets/B-mariadb-rabbitmq-keystone.md)). cyborg is not batched by
+  `kolla_serial` either: its play reads `serial` instead.
 - **How `kolla_serial` is set depends on the action.** For `reconfigure` and `upgrade` the wrapper sets it from
   `ANSIBLE_SERIAL` (`tools/kolla-ansible:430,439`), after your own `-e`, so use the environment variable. For `deploy`
   the wrapper does not set it: pass `-e kolla_serial=N` yourself.
@@ -264,10 +315,10 @@ gantt
 |---|---|---|
 | Containers | All `create+start`: the container check finds no container, and the restart handler then starts a new one [CODE `kolla_docker.py:326-332,781-791`]. Exception: on the bootstrap host (`groups['mariadb'][0]`), mariadb runs first as the one-shot `bootstrap_mariadb`, then its handlers start it with `--wsrep-new-cluster` and run `recreate_or_restart_container` on it (`roles/mariadb/tasks/bootstrap.yml:4-7`, `bootstrap_cluster.yml:2-23`, `roles/mariadb/handlers/main.yml:2-20,89-91`, `tasks/restart_services.yml:2-13`). [NOT AVAILABLE] Container counts, which depend on the inventory and the enable flags | Restart (config) or recreate (image or params) **only if** drift is detected; otherwise none [CODE `kolla_docker.py:326-332,781-803`] |
 | One-shot containers | DB bootstrap for every service, MariaDB and RabbitMQ bootstrap, fernet key generation, cell creation | DB sync containers **still run** for keystone, glance, cinder, placement, nova (API and cell DB sync, plus map_cell0 and list_cells ×2), heat, plus barbican, octavia and others [CODE: in these roles `reconfigure.yml` imports `deploy.yml` and the bootstrap containers have no `kolla_action` guard, e.g. `roles/keystone/tasks/bootstrap_service.yml:32-49`; nova: `nova.yml:45-51,81-87`, `roles/nova/tasks/map_cell0.yml:2-23`, `list_cells` from `roles/nova-cell/tasks/create_cells.yml:2` and `discover_computes.yml:5`]. MariaDB/RabbitMQ bootstrap are not re-run |
-| Handler order effects | Every handler fires | Only notified handlers fire, but loop-notify widens them to all containers of the role on that host (03 §2.4) |
+| Handler order effects | Every handler fires | Only notified handlers fire, but loop-notify widens them to all containers of the role on that host ([03 §2.4](03-ansible-roles-and-tags-mapping.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code)) |
 | Neutron DB sync (`bootstrap_neutron`) | runs | skipped by default (`neutron_enable_rolling_upgrade: yes`). The DB/user/grant tasks still run |
 | Nova cell | `create_cell` | `update_cell` only if the transport URL or DB URL changed (`roles/nova-cell/tasks/create_cells.yml:31-55`) |
-| Fernet keys | generated | **re-distributed** from the first running keystone_fernet node to the others (fact sheet B §3.6, task flow in §3.3) |
+| Fernet keys | generated | **re-distributed** from the first running keystone_fernet node to the others ([fact sheet B §3.6](../annex/factsheets/B-mariadb-rabbitmq-keystone.md#36-fernet-key-lifecycle-fact-unless-marked), task flow in [§3.3](../annex/factsheets/B-mariadb-rabbitmq-keystone.md#33-task-flow-per-kolla_action)) |
 | MariaDB | Galera bootstrap on the first host | cluster lookup; rolling restart waves if config changed |
 | Duration drivers | image pulls, first container starts | per-task SSH overhead across all hosts, `compare_container` exec per container (see [06](06-compute-scaling-and-performance.md)) |
 
@@ -278,7 +329,8 @@ gantt
 Handlers create ordering that is not visible in task files:
 
 1. **Within a role, restart order = handler definition order, not notification order.**
-   - nova-cell restarts `nova_ssh` → `nova_libvirt` (→ SASL user) → `nova_compute` (`roles/nova-cell/handlers/main.yml`).
+   - nova-cell restarts `nova_ssh` → `nova_libvirt` (→ SASL user) → `nova_compute`
+     (`roles/nova-cell/handlers/main.yml`).
    - openvswitch restarts `openvswitch_db` → waits → `openvswitch_vswitchd`.
    - [CODE] Ansible 2.9.27 runs the notified handlers in the order of the play's handler list
      (`lib/ansible/plugins/strategy/__init__.py:979-985`).
@@ -295,4 +347,5 @@ Handlers create ordering that is not visible in task files:
    haproxy role's `Restart haproxy container`. This is why the haproxy play includes the haproxy role even for
    `-t <svc>`.
 5. **The MariaDB restart is itself a sequence of handler-driven waves** (`index % 4`), with port and WSREP waits
-   between waves (fact sheet B §1.5).
+   between waves ([fact sheet B
+   §1.5](../annex/factsheets/B-mariadb-rabbitmq-keystone.md#1-mariadb-ansiblerolesmariadb)).
