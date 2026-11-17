@@ -1,0 +1,16 @@
+<!-- Tiny TCG guest: no disk, no NIC, no display. SeaBIOS finds no boot device and keeps the QEMU process alive.
+     Persistent (virsh define + start), like the domains nova-compute defines. -->
+<domain type='qemu'>
+  <name>@NAME@</name>
+  <memory unit='MiB'>64</memory>
+  <vcpu>1</vcpu>
+  <os><type arch='x86_64' machine='pc'>hvm</type><boot dev='hd'/></os>
+  <clock offset='utc'/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+  <devices>
+    <emulator>/usr/bin/qemu-system-x86_64</emulator>
+    <memballoon model='none'/>
+  </devices>
+</domain>
