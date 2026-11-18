@@ -138,7 +138,9 @@ hand (Actions, "Docs", "Run workflow").
   started always finishes, deployment included, and the next one waits. If several runs are waiting, only the newest
   is kept.
 
-Actions used, by major version:
+Actions used. The workflow references each one by the full commit of the version shown, with the version in a
+comment: with a version tag such as `@v4`, every run in this repository ended with the conclusion `startup_failure`
+before any job started, and the same step referenced by commit started.
 
 | Action | Version |
 |---|---|
@@ -154,16 +156,8 @@ Actions used, by major version:
 
 A repository administrator does this once:
 
-1. Open **Settings**, then **Actions**, then **General**. Under **Actions permissions**, allow the actions the
-   workflow uses, all created by GitHub: `actions/checkout`, `actions/setup-python`, `actions/cache`,
-   `actions/upload-artifact`, `actions/upload-pages-artifact`, `actions/configure-pages` and `actions/deploy-pages`.
-   If the organization restricts actions, the same setting is under the organization's **Settings**, **Actions**,
-   **General**.
-2. Open **Settings**, then **Pages**.
-3. Under **Build and deployment**, set **Source** to **GitHub Actions**.
-
-Step 1 is needed here: with the settings found when the workflow was added, every run of it ended with the conclusion
-`startup_failure` before any job started, while a workflow with `run` steps only and no action succeeded.
+1. Open **Settings**, then **Pages**.
+2. Under **Build and deployment**, set **Source** to **GitHub Actions**.
 
 GitHub creates the `github-pages` environment and, by default, limits its deployments to the default branch. The
 workflow deploys from `main`, which must stay the default branch or be added under **Settings**, **Environments**,
@@ -212,8 +206,9 @@ still exists (1 day); after that, re-run all the jobs of the run.
   `make docs-deps docs-check docs-build` and look at a few pages with `make docs-serve`.
 - **Upgrading Mermaid.** See `docs/assets/vendor/mermaid/README.md`. Changing `fetch_vendor.py` changes the cache
   key in CI.
-- **Upgrading the actions.** The workflow uses major version tags. Move to a new major one action at a time and
-  read its release notes for changed inputs.
+- **Upgrading the actions.** The workflow references each action by commit. To upgrade, replace the commit with
+  the one of the new version tag and update the comment, one action at a time, and read the release notes for
+  changed inputs.
 - **Required status checks.** The workflow only runs when one of the listed paths changes. If the `build` job is
   made a required check in a branch protection rule, a pull request that touches none of these paths waits for a
   check that never starts. Either leave the check optional or remove the `paths` filter of `pull_request`.
