@@ -1,7 +1,7 @@
 ---
 title: HAProxy + Keepalived
 description: Where the study covers HAProxy and keepalived (role haproxy), from what the tag and the service tags run to the restart risk, the VIP unknowns and known bugs.
-tags: [haproxy, keepalived, tags, handlers, serial, risk, dependencies, bugs, unknowns]
+tags: [haproxy, keepalived, tags, handlers, serial, inventory, risk, dependencies, bugs, unknowns]
 ---
 
 # HAProxy + Keepalived
@@ -56,6 +56,8 @@ the service card follows them.
   batch with `ANSIBLE_SERIAL=1 … reconfigure`. Prerequisites: facts of every backend host; certificates if TLS is on.
 - [R8](../risk/risk-register.md#r8), precautions for a HAProxy config change: `ANSIBLE_SERIAL=1` for haproxy changes;
   `--skip-tags haproxy` when you don't intend to change frontends.
+- [R22](../risk/risk-register.md#r22), inventory reordering (haproxy, mariadb, glance, nova-conductor, keystone groups):
+  keepalived priorities change. Precautions: treat inventory order as configuration; never reorder casually.
 - [Reconfigure a single service
   §3](../operations/reconfigure-a-service.md#3-sequence-impact-risks-and-verification-of--t-svc-reconfigure),
   verification of `-t <svc> reconfigure`: before, a diff of `/etc/kolla/haproxy/services.d/<svc>*.cfg` against the
@@ -94,7 +96,7 @@ the service card follows them.
 
 ## Service card
 
-The rows of the card are explained on the [Components](index.md) page.
+The rows of the card are explained in [How to read a service card](index.md#how-to-read-a-service-card).
 
 <!-- BEGIN GENERATED: tools/service_cards.py haproxy -->
 
@@ -124,7 +126,7 @@ The rows of the card are explained on the [Components](index.md) page.
 - [Component dependencies §1](dependencies.md#1-the-shared-substrate-what-every-openstack-service-uses) — every
   internal, admin and public endpoint and the DB address resolve to the VIPs
 - [MariaDB/Galera](mariadb.md) — HAProxy sends DB traffic to one active backend
-- [Chrony](chrony.md) — in the default inventory `chrony-server` is the haproxy group, and the VIP is the internal time
+- [Chrony](chrony.md) — in the example inventory `chrony-server` is the haproxy group, and the VIP is the internal time
   source
 - [Pre-execution checklist](../operations/pre-execution-checklist.md) — the eight checks before every production run
 - [Components](index.md) — the other component pages

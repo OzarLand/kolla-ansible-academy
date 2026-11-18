@@ -7,9 +7,10 @@ tags: [memcached, kolla-set-configs, inventory, risk, dependencies, bugs, unknow
 # Memcached
 
 This page is the starting point for memcached, the `memcached` role: one container, `memcached`, on the control nodes of
-the example inventory, selected by the tags `memcached` and `memcache`. Unlike most roles, it has no `common`
-dependency. The lists below say where the study covers how to operate it, its impact, its dependencies and the evidence,
-what to check around a run and what stays open; the service card follows them.
+the example inventory, selected by the tags `memcached` and `memcache`. Unlike most roles, it has no `common` dependency
+([fact sheet A §3.8](../reference/factsheets/a-infra-lb-ovn.md#38-operationally-notable)). The lists below say where the
+study covers how to operate it, its impact, its dependencies and the evidence, what to check around a run and what stays
+open; the service card follows them.
 
 ## Where to look
 
@@ -73,7 +74,7 @@ what to check around a run and what stays open; the service card follows them.
 
 ## Service card
 
-The rows of the card are explained on the [Components](index.md) page.
+The rows of the card are explained in [How to read a service card](index.md#how-to-read-a-service-card).
 
 <!-- BEGIN GENERATED: tools/service_cards.py memcached -->
 

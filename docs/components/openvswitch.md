@@ -19,6 +19,9 @@ check around a run and what stays open; the service card follows them.
 - **Scenario:** [Reconfigure Neutron §4](../operations/reconfigure-neutron.md#4-impact-on-networking) (row "Open
   vSwitch"), [Update container images §4](../operations/update-container-images.md#4-risks) (OVS image change)
 - **Command:** [Reconfigure Neutron §1.1](../operations/reconfigure-neutron.md#11-neutron)
+- [Command quick lookup by tag](../operations/command-quick-lookup.md), row `-t openvswitch reconfigure`: hosts touched
+  with the default inventory: network, all computes; can restart, only if drift is detected: openvswitch_db/vswitchd;
+  typical duration driver: the number of computes.
 
 ### Impact and risk
 
@@ -84,7 +87,7 @@ check around a run and what stays open; the service card follows them.
 
 ## Service card
 
-The rows of the card are explained on the [Components](index.md) page.
+The rows of the card are explained in [How to read a service card](index.md#how-to-read-a-service-card).
 
 <!-- BEGIN GENERATED: tools/service_cards.py openvswitch -->
 

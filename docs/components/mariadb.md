@@ -1,7 +1,7 @@
 ---
 title: MariaDB/Galera
 description: Where the study covers MariaDB/Galera (role mariadb), from the backup and recovery commands to tag impact, risks, dependencies, known bugs and open points.
-tags: [mariadb, mariadb-backup, mariadb-recovery, serial, risk, dependencies, bugs, unknowns]
+tags: [mariadb, mariadb-backup, mariadb-recovery, serial, inventory, risk, dependencies, bugs, unknowns]
 ---
 
 # MariaDB/Galera
@@ -56,6 +56,9 @@ and what stays open; the service card follows them.
   and `Synced` on all nodes before; take a backup (`mariadb_backup`); watch between waves.
 - [R18](../risk/risk-register.md#r18), precautions for `mariadb_recovery`: only when the cluster is fully down; identify
   the node with the highest seqno manually first.
+- [R22](../risk/risk-register.md#r22), inventory reordering (haproxy, mariadb, glance, nova-conductor, keystone groups):
+  MariaDB restart waves and active backend move. Precautions: treat inventory order as configuration; never reorder
+  casually.
 - [fact sheet B
   §1.8](../reference/factsheets/b-mariadb-rabbitmq-keystone.md#18-operationally-notable-behaviour-risks-and-oddities),
   item 4 (fail-fast guards): reconfigure aborts if the cluster is fully stopped (multi-node) or any alive node is not
@@ -86,10 +89,12 @@ and what stays open; the service card follows them.
   the whole cluster.
 - [Kolla images §6](../concepts/kolla-images.md#6-day-2-consequences), items 10 and 16: recursive chown on data volumes
   at every start, the MariaDB datadir among them [CODE]; MariaDB has no automatic Galera recovery.
+- [R20](../risk/risk-register.md#r20): a Glance reconfigure or deploy toggles the global MariaDB
+  `log_bin_trust_function_creators` 1→0 around db sync.
 
 ## Service card
 
-The rows of the card are explained on the [Components](index.md) page.
+The rows of the card are explained in [How to read a service card](index.md#how-to-read-a-service-card).
 
 <!-- BEGIN GENERATED: tools/service_cards.py mariadb -->
 

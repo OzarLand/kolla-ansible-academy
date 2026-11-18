@@ -6,11 +6,13 @@ tags: [chrony, fluentd, cron, kolla-toolbox, tags, risk, dependencies, unknowns]
 
 # Chrony
 
-This page is the starting point for chrony, the `chrony` role: one container, `chrony`, on every node type of the
-example inventory, selected by the tag `chrony`. Its play is the first service play and, with the default inventory,
-reaches every host, which makes `-t chrony` the recommended way to push `common` changes. The lists below say where the
-study covers how to operate it, its impact, its dependencies and the evidence, what to check around a run and what stays
-open; the service card follows them.
+This page is the starting point for chrony, the `chrony` role: one container, `chrony`, on the compute, control,
+monitoring, network and storage nodes of the example inventory, selected by the tag `chrony`. Its play is the first play
+for every host ([Tags §3](../risk/tags.md#3-what-a-tag-really-executes-master-table), row `chrony`), and `-t chrony` is
+the recommended way to push `common` changes ([Apply `common` changes (fluentd, cron, kolla_toolbox)
+§3](../operations/apply-common-changes.md#3-how-common-actually-reaches-hosts)). The lists below say where the study
+covers how to operate it, its impact, its dependencies and the evidence, what to check around a run and what stays open;
+the service card follows them.
 
 ## Where to look
 
@@ -20,6 +22,9 @@ open; the service card follows them.
   §3](../operations/apply-common-changes.md#3-how-common-actually-reaches-hosts) (the way to push `common` changes)
 - **Command:** [Apply `common` changes (fluentd, cron, kolla_toolbox)
   §1.1](../operations/apply-common-changes.md#11-apply-common-changes-fluentd-cron-kolla_toolbox)
+- [Command quick lookup by tag](../operations/command-quick-lookup.md), row `-t chrony reconfigure`: hosts touched with
+  the default inventory: all hosts; can restart, only if drift is detected: chrony + common (fluentd, cron, toolbox);
+  typical duration driver: the number of hosts.
 
 ### Impact and risk
 
@@ -73,7 +78,7 @@ open; the service card follows them.
 
 ## Service card
 
-The rows of the card are explained on the [Components](index.md) page.
+The rows of the card are explained in [How to read a service card](index.md#how-to-read-a-service-card).
 
 <!-- BEGIN GENERATED: tools/service_cards.py chrony -->
 
@@ -99,7 +104,7 @@ The rows of the card are explained on the [Components](index.md) page.
 - [Apply `common` changes (fluentd, cron, kolla_toolbox)](../operations/apply-common-changes.md) —
   `-t chrony reconfigure`, the command that pushes `common` changes
 - [Common: fluentd, cron, kolla_toolbox](common.md) — the containers that a `-t chrony` run also checks
-- [HAProxy + Keepalived](haproxy-keepalived.md) — in the default inventory `chrony-server` is the haproxy group, and the
+- [HAProxy + Keepalived](haproxy-keepalived.md) — in the example inventory `chrony-server` is the haproxy group, and the
   VIP is the internal time source
 - [Component dependencies §5](dependencies.md#5-compute-node-dependency-summary) — the global inputs of a compute's
   `chrony.conf`

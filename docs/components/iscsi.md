@@ -7,9 +7,10 @@ tags: [iscsi, bootstrap-servers, dependencies, bugs, unknowns]
 # iscsid / tgtd
 
 This page is the starting point for the `iscsi` role: the containers `iscsid` and `tgtd`, on the compute, control and
-storage nodes of the example inventory, selected by the tag `iscsi`. The role applies only if `enable_iscsid` (cinder
-LVM/iSCSI or ironic). The lists below say where the study covers how to operate it, its impact, its dependencies and the
-evidence, what to check around a run and what stays open; the service card follows them.
+storage nodes of the example inventory, selected by the tag `iscsi`. [Component dependencies
+§2](dependencies.md#2-infrastructure-components) lists it "only if `enable_iscsid` (cinder LVM/iSCSI or ironic)". The
+lists below say where the study covers how to operate it, its impact, its dependencies and the evidence, what to check
+around a run and what stays open; the service card follows them.
 
 ## Where to look
 
@@ -76,7 +77,7 @@ the study says about running it is in the rows linked under [Impact and risk](#i
 
 ## Service card
 
-The rows of the card are explained on the [Components](index.md) page.
+The rows of the card are explained in [How to read a service card](index.md#how-to-read-a-service-card).
 
 <!-- BEGIN GENERATED: tools/service_cards.py iscsi -->
 

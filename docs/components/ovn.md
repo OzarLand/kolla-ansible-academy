@@ -72,10 +72,12 @@ study says about running it is in the rows linked under [Impact and risk](#impac
 - [Kolla images §7](../concepts/kolla-images.md#7-what-is-not-available-from-the-sources): not available from the
   sources: `ovn-ctl` schema creation and upgrade with Kolla-Ansible's direct call, and its hard-coded
   `/usr/share/ovn/scripts/` path on distributions that ship `ovn-ctl` elsewhere.
+- [Known bugs and limitations](../troubleshooting/known-bugs-and-limitations.md) and
+  [Findings](../reference/findings.md) have no entry on OVN.
 
 ## Service card
 
-The rows of the card are explained on the [Components](index.md) page.
+The rows of the card are explained in [How to read a service card](index.md#how-to-read-a-service-card).
 
 <!-- BEGIN GENERATED: tools/service_cards.py ovn -->
 

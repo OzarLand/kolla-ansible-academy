@@ -6,11 +6,12 @@ tags: [fluentd, cron, kolla-toolbox, tags, loop-notify, kolla-set-configs, risk,
 
 # Common: fluentd, cron, kolla_toolbox
 
-This page is the starting point for the `common` role: the containers `fluentd`, `kolla_toolbox` and `cron`, on every
-node type of the example inventory. The role is a meta dependency of 68 roles (not `memcached`, `multipathd` or the
-helper roles): it runs in the first play that reaches each host and inherits the tag of that play, and `-t common` alone
-is a no-op. The lists below say where the study covers how to operate it, its impact, its dependencies and the evidence,
-what to check around a run and what stays open; the service card follows them.
+This page is the starting point for the `common` role: the containers `fluentd`, `kolla_toolbox` and `cron`, on the
+compute, control, monitoring, network and storage nodes of the example inventory. The role is a meta dependency of 68
+roles (not `memcached`, `multipathd` or the helper roles): it runs in the first play that reaches each host and inherits
+the tag of that play, and `-t common` alone is a no-op. The lists below say where the study covers how to operate it,
+its impact, its dependencies and the evidence, what to check around a run and what stays open; the service card follows
+them.
 
 ## Where to look
 
@@ -66,6 +67,8 @@ what to check around a run and what stays open; the service card follows them.
 - [F2](../reference/findings.md#f2), "`-t common` is a no-op": tags on the dynamic `include_tasks` do not propagate to
   the included tasks [CODE]. Why it matters: `common` changes (fluentd/cron/toolbox) are applied by whatever run first
   reaches the host, often unexpectedly.
+- [F1](../reference/findings.md#f1), "Loop-notify amplification": a change for one container restarts every container of
+  that role on that host [CODE].
 - [Q10](../troubleshooting/open-questions.md#q10), answered from the source [CODE]: the code that produces
   [F1](../reference/findings.md#f1) and [F2](../reference/findings.md#f2) is the same in Ansible 2.8.20 and 2.9.27.
 - [F6](../reference/findings.md#f6), "Global inputs are rendered into per-host files": `enable_*` flags,
@@ -82,7 +85,7 @@ what to check around a run and what stays open; the service card follows them.
 
 ## Service card
 
-The rows of the card are explained on the [Components](index.md) page.
+The rows of the card are explained in [How to read a service card](index.md#how-to-read-a-service-card).
 
 <!-- BEGIN GENERATED: tools/service_cards.py common -->
 

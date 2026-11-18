@@ -86,7 +86,7 @@ evidence, what to check around a run and what stays open; the service card follo
 
 ## Service card
 
-The rows of the card are explained on the [Components](index.md) page.
+The rows of the card are explained in [How to read a service card](index.md#how-to-read-a-service-card).
 
 <!-- BEGIN GENERATED: tools/service_cards.py rabbitmq -->
 
@@ -115,6 +115,7 @@ The rows of the card are explained on the [Components](index.md) page.
   `deploy`, RabbitMQ is restarted node by node, not stopped cluster-wide
 - [Component dependencies §1](dependencies.md#1-the-shared-substrate-what-every-openstack-service-uses) — RabbitMQ hosts
   are listed one by one in the configs of the services that use them
-- [Common: fluentd, cron, kolla_toolbox](common.md) — `kolla_toolbox` holds a copy of the Erlang cookie
+- [Common: fluentd, cron, kolla_toolbox](common.md) — `kolla_toolbox` gets the new cookie when
+  `rabbitmq_cluster_cookie` changes
 - [Pre-execution checklist](../operations/pre-execution-checklist.md) — the eight checks before every production run
 - [Components](index.md) — the other component pages
