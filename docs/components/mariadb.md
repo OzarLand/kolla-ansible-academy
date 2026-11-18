@@ -68,15 +68,22 @@ and what stays open; the service card follows them.
 ### Known limits and open points
 
 - [Known bugs and limitations](../troubleshooting/known-bugs-and-limitations.md), row `mariadb`: the restart waves have
-  no `any_errors_fatal`; recovery stops healthy nodes; clustercheck started even when disabled. Status: [CODE]; whether
-  later waves continue after a failed WSREP wait [NOT AVAILABLE].
+  no `any_errors_fatal`; recovery stops healthy nodes; clustercheck started even when disabled. Status: [CODE]: a node
+  that fails its WSREP wait marks only its own host failed, and the next wave still restarts its nodes
+  ([R9](../risk/risk-register.md#r9)); whether the failed node is then still joining, and how large the quorum and
+  availability risk is, [NOT AVAILABLE].
 - [Q6](../troubleshooting/open-questions.md#q6): "MariaDB rolling restart under load with a failure in wave 1: do later
-  waves proceed?" Status: [NOT AVAILABLE].
+  waves proceed?" Status: control flow answered from the source [CODE]: a node that fails its WSREP wait marks only its
+  own host failed, and the next wave still restarts its nodes. [NOT AVAILABLE] Whether the failed node is then still
+  joining, whether that can leave a single Synced node acting as donor, and so how large the quorum and availability
+  risk is.
 - [What is not
   known](../troubleshooting/what-is-not-known.md#control-plane-haproxy-mariadb-rabbitmq-keystone-memcached-heat), row
-  "MariaDB": the sources do not establish whether node 0's restart wave runs first, and whether later waves continue
-  after a failed WSREP wait; nor whether the DB containers come back as a non-primary cluster after a full stop, and
-  whether a manual start left with `--wsrep-new-cluster` bootstraps a new cluster.
+  "MariaDB": the sources do not establish whether node 0's restart wave runs first; after a failed WSREP wait (the next
+  wave still restarts its nodes [CODE], [R9](../risk/risk-register.md#r9)), whether the failed node is then still
+  joining, whether that can leave a single Synced node acting as donor, and how large the quorum and availability risk
+  is; nor whether the DB containers come back as a non-primary cluster after a full stop, and whether a manual start
+  left with `--wsrep-new-cluster` bootstraps a new cluster.
 - [What is not known](../troubleshooting/what-is-not-known.md#signals-the-container-runtime-and-image-start-behaviour):
   the sources do not establish dumb-init signal forwarding for `mysqld_safe` under the MariaDB image's own entrypoint,
   whether xtrace writes one-shot secrets (the MariaDB root password among them) to the container's stderr, or the cost

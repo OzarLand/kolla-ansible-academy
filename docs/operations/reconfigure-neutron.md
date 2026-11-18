@@ -24,8 +24,9 @@ dependence](index.md#code-guarantees-and-environment-dependence).
 >   ([§4](#4-impact-on-networking)).
 
 > [!WARNING]
-> [R6](../risk/risk-register.md#r6): restarting `neutron_l3_agent` deletes namespaces if `enable_neutron_agent_ha` —
-> see [§4](#4-impact-on-networking).
+> [R6](../risk/risk-register.md#r6): with `enable_neutron_agent_ha`, the L3 agent wrapper runs
+> `neutron-netns-cleanup` before the agent starts, at every `neutron_l3_agent` restart; what that command deletes is
+> [NOT AVAILABLE] — see [§4](#4-impact-on-networking).
 
 ## 1. Commands
 
@@ -38,8 +39,9 @@ kolla-ansible -i multinode -t openvswitch reconfigure --limit compute042  # OVS 
 ```
 
 - `-t neutron` targets every compute (the neutron play includes `compute`).
-- Network nodes should be done one at a time. Restarting `neutron_l3_agent` deletes namespaces if
-  `enable_neutron_agent_ha` ([R6](../risk/risk-register.md#r6)).
+- Network nodes should be done one at a time. With `enable_neutron_agent_ha`, the L3 agent wrapper runs
+  `neutron-netns-cleanup` before the agent starts, at every `neutron_l3_agent` restart; what that command deletes is
+  [NOT AVAILABLE] ([R6](../risk/risk-register.md#r6)).
 
 ## 2. Execution and targets
 
@@ -72,7 +74,7 @@ runs on every reconfigure regardless (`bootstrap_service.yml:24-46`).
 |---|---|---|
 | neutron-server | API unavailable during the stop/start, on all controllers at once | [NOT AVAILABLE] Whether existing traffic is unaffected, and whether port bindings and new instances fail during the window |
 | neutron-openvswitch-agent | container stop/start | [NOT AVAILABLE] Whether flows in OVS persist while the agent is down, whether and how the agent resyncs and re-installs flows on start with the Ussuri defaults, and whether a VM loses packets during the agent restart |
-| neutron-l3-agent | stop/start; with `enable_neutron_agent_ha: yes` the wrapper **deletes all L3 namespaces** before start (`neutron-l3-agent-wrapper.sh.j2:5-12`) | [CODE] Without the HA cleanup nothing in the wrapper deletes namespaces, and `/run/netns` is shared with the host (`roles/neutron/defaults/main.yml:259`). [NOT AVAILABLE] Whether the namespaces then persist, whether keepalived/haproxy child processes die with the container, whether with the cleanup all routers on that node lose N-S/FIP connectivity until rebuilt, and whether HA routers fail over |
+| neutron-l3-agent | stop/start; with `enable_neutron_agent_ha: yes` the wrapper runs `neutron-netns-cleanup --force --agent-type l3` **before** the agent starts (the wrapper's comment: "Remove all l3 related netns"; `neutron-l3-agent-wrapper.sh.j2:5-12`) | [CODE] Without the HA cleanup nothing in the wrapper deletes namespaces, and `/run/netns` is shared with the host (`roles/neutron/defaults/main.yml:259`). [NOT AVAILABLE] What the cleanup command deletes: it is neutron code, which is not in these sources ([F12](../reference/findings.md#f12)). [NOT AVAILABLE] Whether the namespaces then persist, whether keepalived/haproxy child processes die with the container, whether with the cleanup all routers on that node lose N-S/FIP connectivity until rebuilt, and whether HA routers fail over |
 | neutron-dhcp-agent | stop/start | [NOT AVAILABLE] Whether dnsmasq processes die with the container, whether VMs renewing leases in the window fail to renew, and whether new ports wait for the agent to come back |
 | neutron-metadata-agent | stop/start | [NOT AVAILABLE] Whether metadata requests (cloud-init) fail during the window |
 | Open vSwitch | **not touched** by `-t neutron` (separate play/tag) | – |

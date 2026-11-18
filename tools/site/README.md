@@ -43,7 +43,8 @@ forces another interpreter.
 | `docs-clean` | Removes `site/`, `.cache/`, `docs/assets/data/updates.json` and the `__pycache__` directories under `tools/`. The Mermaid bundle stays. |
 
 `STRICT=1` (`make docs-check STRICT=1`, `make docs-build STRICT=1`) passes `--strict` to both check scripts:
-their warnings become errors.
+their warnings become errors. CI runs both targets with `STRICT=1`, so run them the same way before opening a pull
+request.
 
 `site/`, `.cache/`, `.venv/`, `docs/assets/data/updates.json` and the Mermaid bundle are generated or downloaded.
 They are listed in `.gitignore` and must not be committed.
@@ -120,18 +121,22 @@ hand (Actions, "Docs", "Run workflow").
 
 | Job | When | What it does |
 |---|---|---|
-| `build` | Always | Full-history checkout (the "Last updated" dates come from the Git history), Python 3.13, `make docs-deps`, `make docs-check`, `make docs-build`. |
+| `build` | Always | Full-history checkout (the "Last updated" dates come from the Git history), Python 3.13, `make docs-deps`, `make docs-check STRICT=1`, `make docs-build STRICT=1`. |
 | `deploy` | Push to `main`, or manual run on `main`, after `build` succeeded | `actions/configure-pages`, then `actions/deploy-pages` to the `github-pages` environment. |
 
+- Both check scripts run with `--strict`: a warning (a missing `description`, a leftover `<!-- TODO editorial`
+  marker, a duplicate `id` in a built page) fails the `build` job like an error.
 - A pull request is never deployed. Its built site is uploaded as the artifact `site`, kept 7 days: download it from
   the page of the run, unpack it and serve it with `python3 -m http.server --directory <unpacked directory>`.
-- On `main` the `build` job uploads the Pages artifact that `deploy` publishes.
+- On `main` the `build` job uploads the Pages artifact that `deploy` publishes. The artifact is kept 1 day (the
+  default of `actions/upload-pages-artifact`).
 - The workflow token is read-only (`contents: read`). Only the `deploy` job gets more: `pages: write` and
   `id-token: write`.
 - The pip download cache is keyed on `requirements-docs.txt`. The Mermaid bundle is cached with a key computed
   from `fetch_vendor.py`, which pins its version and checksums; `fetch_vendor.py` verifies the file in both cases.
-- A newer commit on a pull request cancels the run in progress for that pull request. A run on `main` is never
-  cancelled: the next one waits, so a deployment in progress always finishes.
+- A newer commit on a pull request cancels the run in progress for that pull request. On `main` a run that has
+  started always finishes, deployment included, and the next one waits. If several runs are waiting, only the newest
+  is kept.
 
 Actions used, by major version:
 
@@ -162,14 +167,17 @@ For a private repository:
   Enterprise for a repository owned by an organization. With GitHub Free, Pages is offered for public repositories
   only.
 - The published site is public even though the repository is private. Restricting the site to people who can read
-  the repository requires GitHub Enterprise Cloud.
+  the repository requires GitHub Enterprise Cloud and a repository owned by an organization.
+
+The other way is to make the repository public: Pages is then available with every plan.
 
 The expected address is `https://ozarland.github.io/kolla-ansible-day2/`, the `site_url` of `zensical.toml`. If the
 site is published at another address (custom domain, or a generated address when access is restricted), set
 `site_url` to it: the canonical links and the sitemap use it.
 
-After the setup, start a deployment: re-run the failed `deploy` job of the last run on `main`, or use
-"Run workflow" on `main`, or push to `main`.
+After the setup, start a deployment: use "Run workflow" on `main` (Actions, "Docs"), or push a change of the site
+to `main`. Re-running only the failed `deploy` job of an earlier run works while the Pages artifact of that run
+still exists (1 day); after that, re-run all the jobs of the run.
 
 ### Before GitHub Pages is enabled
 
@@ -183,14 +191,14 @@ After the setup, start a deployment: re-run the failed `deploy` job of the last 
 
   The message ends with the error returned by the GitHub API. Nothing is published and the run on `main` is
   marked as failed until the setup above is done.
-- The workflow does not enable Pages itself: the `enablement` option of `actions/configure-pages` needs a token
-  with administration rights, which the workflow token does not have.
+- The workflow does not enable Pages itself: the `enablement` option of `actions/configure-pages` requires a token
+  other than the workflow token (`GITHUB_TOKEN`), and the workflow uses no other token.
 
 ## Maintenance
 
-- **Warnings as errors in CI.** CI runs the checks without `STRICT=1`. To make a missing `description`, a
-  leftover `<!-- TODO editorial` marker and the other warnings fail the build, change the two steps of the
-  workflow to `make docs-check STRICT=1` and `make docs-build STRICT=1`.
+- **Warnings as errors in CI.** CI runs `make docs-check STRICT=1` and `make docs-build STRICT=1`: every warning
+  of the two check scripts fails the build. Without `STRICT=1`, which is the default of the Makefile, warnings are
+  printed and do not fail the run.
 - **Upgrading Zensical.** `requirements-docs.txt` pins Zensical and every package it depends on. Install the new
   version in an empty virtual environment, replace the pins with the output of `pip freeze`, then run
   `make docs-deps docs-check docs-build` and look at a few pages with `make docs-serve`.

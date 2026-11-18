@@ -19,7 +19,7 @@ The study consolidates three things. This page holds the first:
 >
 > - **Fifteen headline findings ([F1–F15](#f1))**, each with its evidence and why it matters, among them loop-notify
 >   amplification ([F1](#f1)), the `-t common` no-op ([F2](#f2)), the ignored stop timeout ([F3](#f3)), same-tag image
->   rebuilds ([F4](#f4)) and `reconfigure` = `deploy` ([F5](#f5)).
+>   rebuilds ([F4](#f4)) and `reconfigure` = `deploy` ([F5](#f5)) ([Headline findings](#headline-findings)).
 
 Evidence levels: **[CODE]** and **[NOT AVAILABLE]**, defined once, in [Evidence
 labels](../start/conventions.md#evidence-labels). The study rests only on reading source code; no run against a host is
@@ -161,7 +161,7 @@ used as evidence.
 
 | | |
 |---|---|
-| **Finding** | **The L3 agent wrapper runs `neutron-netns-cleanup --force --agent-type l3` at start** when `enable_neutron_agent_ha: yes`; its comment says this removes all L3 namespaces (what the command does is neutron code: NOT AVAILABLE) |
+| **Finding** | **The L3 agent wrapper runs `neutron-netns-cleanup --force --agent-type l3` at start** when `enable_neutron_agent_ha: yes`; its comment says this removes all L3 namespaces (what the command does is neutron code: [NOT AVAILABLE]) |
 | **Evidence** | [CODE] `neutron-l3-agent-wrapper.sh.j2:5-12` |
 | **Why it matters** | [NOT AVAILABLE] Whether an L3 agent restart interrupts router traffic on that node ([Q4](../troubleshooting/open-questions.md#q4)) |
 

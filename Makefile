@@ -15,7 +15,8 @@
 #   make docs-check docs-build
 #
 # Variables: PYTHON=<interpreter> forces an interpreter, STRICT=1 reports the
-# warnings of the checks as errors, DEV_ADDR=<ip:port> moves the preview.
+# warnings of the checks as errors (CI runs docs-check and docs-build with
+# STRICT=1), DEV_ADDR=<ip:port> moves the preview.
 
 VENV ?= .venv
 ifneq ($(wildcard $(VENV)/bin/python),)

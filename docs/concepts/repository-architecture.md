@@ -6,9 +6,9 @@ tags: [deploy, reconfigure, genconfig, handlers, kolla-set-configs, serial, imag
 
 # Repository architecture
 
-This document explains *how the machine is built*: which entry points exist, how a CLI command becomes an
+This page explains *how the machine is built*: which entry points exist, how a CLI command becomes an
 `ansible-playbook` run, how `site.yml` is laid out, what every service role has in common, and which custom modules
-actually touch the hosts. The other documents build on the vocabulary defined here.
+actually touch the hosts. The other pages build on the vocabulary defined here.
 
 > [!NOTE]
 > **Key answers**

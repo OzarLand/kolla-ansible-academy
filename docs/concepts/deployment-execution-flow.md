@@ -30,7 +30,7 @@ batching, and how `deploy`, `reconfigure`, `upgrade`, `deploy-containers`, `genc
 > - **Restart order is handler definition order**, not notification order [CODE], and the handlers of a play run on all
 >   notified hosts in parallel ([§7](#7-dependencies-introduced-by-handlers)).
 
-> Deployment order (this document) ≠ runtime communication (see [Component
+> Deployment order (this page) ≠ runtime communication (see [Component
 > dependencies](../components/dependencies.md)). Arrows in the diagrams below mean "runs before", unless a diagram
 > explicitly says it shows runtime calls.
 

@@ -57,8 +57,8 @@ them.
   maintenance; batch with `--limit`; verify RabbitMQ cluster health first.
 - [R4](../risk/risk-register.md#r4), precautions for a change of memcached membership: plan as a dataplane change, like
   R3/R5: batch with `--limit` or `ANSIBLE_SERIAL`, network nodes one at a time; low-traffic window.
-- [R12](../risk/risk-register.md#r12), precautions for a change of `openstack_tag` / `*_tag`: use `pull` then `upgrade`
-  (Ussuri docs); per-service tags; `ANSIBLE_SERIAL`.
+- [R12](../risk/risk-register.md#r12), precautions for changing `openstack_tag` / `*_tag` and running `deploy` instead
+  of `upgrade`: use `pull` then `upgrade` (Ussuri docs); per-service tags; `ANSIBLE_SERIAL`.
 - [Reconfigure Neutron §2](../operations/reconfigure-neutron.md#2-execution-and-targets): the bootstrap step always runs
   the Neutron DB and user/grant tasks (skipped only with `use_preconfigured_databases`) [CODE], so MariaDB must be
   reachable.
@@ -116,7 +116,8 @@ them.
 - [F15](../reference/findings.md#f15), "What the bootstrap containers run differs per image": neutron-server's bootstrap
   container migrates `neutron-dynamic-routing`, which the rolling `upgrade` never migrates [CODE].
 - [Component dependencies §4](dependencies.md#4-networking-components-ml2ovs-default-ml2ovn-optional), "Runtime
-  facts" [CODE]: the L3 agent can wipe its namespaces on start; agent containers do not share the host PID namespace;
+  facts" [CODE]: the L3 agent wrapper runs a namespace cleanup on start; agent containers do not share the host PID
+  namespace;
   the OVS bridge layout is set in a post-config step.
 - [Kolla images §6](../concepts/kolla-images.md#6-day-2-consequences), items 8 and 12: Neutron upgrade gaps [CODE]; the
   L3 agent wrapper does not `exec` the agent, and [NOT AVAILABLE] whether SIGTERM then reaches only bash, so that the
@@ -152,8 +153,9 @@ The rows of the card are explained on the [Components](index.md#how-to-read-a-se
 - [Open vSwitch](openvswitch.md) — `openvswitch_db` and `openvswitch_vswitchd` forward all VM traffic and have their own
   play and tag
 - [OVN](ovn.md) — the role used if `neutron_plugin_agent: ovn`
-- [Change control-plane membership](../operations/change-control-plane-membership.md) — a RabbitMQ or memcached
-  membership change restarts every neutron container
+- [Change control-plane membership](../operations/change-control-plane-membership.md) — in the default inventory a
+  controller change (RabbitMQ and memcached membership) restarts all nova and neutron containers on all computes; a
+  `memcached`-only change still restarts the neutron agents on computes
 - [Update container images §4](../operations/update-container-images.md#4-risks) — what a tag change applied with
   `deploy` runs against the Neutron DB
 - [Pre-execution checklist](../operations/pre-execution-checklist.md) — the eight checks before every production run

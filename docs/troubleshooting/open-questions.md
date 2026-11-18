@@ -13,14 +13,15 @@ why it matters and its status.
 > **Key answers**
 >
 > - **Open questions [Q1–Q14](#q1):** all are [NOT AVAILABLE], except [Q10](#q10) and [Q14](#q14), which are answered
->   from the source [CODE] ([Questions](#questions)). [Q1](#q1) asks whether running VMs survive a
->   `nova_libvirt` restart or recreate.
+>   from the source [CODE], and the control-flow part of [Q6](#q6), which is also answered from the source [CODE]
+>   ([Questions](#questions)). [Q1](#q1) asks whether running VMs survive a `nova_libvirt` restart or recreate.
 
 ## Summary
 
 These questions cannot be settled by reading the sources, except Q10 and Q14, which are answered from the source in
-their sections: Q10 by comparing the Ansible 2.8.20 and 2.9.27 code, Q14 by reading the kolla image sources. The
-others are [NOT AVAILABLE].
+their sections: Q10 by comparing the Ansible 2.8.20 and 2.9.27 code, Q14 by reading the kolla image sources. For Q6,
+the Ansible 2.9.27 code answers whether later waves proceed; the state of the failed node and the availability risk
+stay [NOT AVAILABLE]. The others are [NOT AVAILABLE].
 
 | # | Question |
 |---|---|
@@ -93,13 +94,13 @@ others are [NOT AVAILABLE].
 
 <a id="q6"></a>
 
-### Q6 — MariaDB rolling restart, failure in wave 1: do later waves proceed?
+### Q6 — MariaDB rolling restart under load, failure in wave 1: do later waves proceed?
 
 | | |
 |---|---|
 | **Question** | MariaDB rolling restart under load with a failure in wave 1: do later waves proceed? |
 | **Why it matters** | [R9](../risk/risk-register.md#r9) |
-| **Status** | [NOT AVAILABLE] |
+| **Status** | **Control flow answered from the source** [CODE]: a node that fails its WSREP wait marks only its own host failed, and the next wave still restarts its nodes (`roles/mariadb/handlers/main.yml:66-78`, `roles/mariadb/tasks/restart_services.yml:28-39`; ansible 2.9.27 `lib/ansible/plugins/strategy/__init__.py:548-561,1019-1020,1045-1063`; no MariaDB play sets `any_errors_fatal`; [R9](../risk/risk-register.md#r9), [fact sheet B §1.5](../reference/factsheets/b-mariadb-rabbitmq-keystone.md#15-handlers-ansiblerolesmariadbhandlersmainyml-in-definition-order)). [NOT AVAILABLE] Whether the failed node is then still joining, whether that can leave a single Synced node acting as donor, and so how large the quorum and availability risk is |
 
 <a id="q7"></a>
 

@@ -6,7 +6,7 @@ tags: [dependencies, haproxy, keepalived, mariadb, rabbitmq, memcached, keystone
 
 # Component dependencies
 
-This document maps **what depends on what**, and keeps four kinds of dependency apart:
+This page maps **what depends on what**, and keeps four kinds of dependency apart:
 
 | Kind | Question it answers | Where it lives in the code |
 |---|---|---|
@@ -35,9 +35,10 @@ below is implicit: play order in `site.yml`, a variable, a template, or a `deleg
 >   their deploy-time actions ([§3](#3-control-plane-services)); infrastructure components
 >   ([§2](#2-infrastructure-components)); networking containers and their placement
 >   ([§4](#4-networking-components-ml2ovs-default-ml2ovn-optional)).
-> - **L3 agent:** with `enable_neutron_agent_ha: yes`, every restart or recreate of `neutron_l3_agent` deletes all
->   router namespaces on that host [CODE]; the DHCP and router outage per agent restart is [NOT AVAILABLE]
->   ([§4](#4-networking-components-ml2ovs-default-ml2ovn-optional)).
+> - **L3 agent:** with `enable_neutron_agent_ha: yes`, the L3 agent wrapper runs
+>   `neutron-netns-cleanup --force --agent-type l3` before the agent starts, on every restart or recreate of
+>   `neutron_l3_agent` on that host [CODE]; what that command deletes, and the DHCP and router outage per agent
+>   restart, are [NOT AVAILABLE] ([§4](#4-networking-components-ml2ovs-default-ml2ovn-optional)).
 > - **Deployment order mostly respects runtime dependencies, with caveats:** Nova is deployed before Open vSwitch and
 >   Neutron, and nothing enforces a dependency when you use tags [CODE]
 >   ([§6](#6-deployment-order-vs-runtime-dependency)).
@@ -211,11 +212,12 @@ flowchart TB
 
 Runtime facts [CODE]:
 
-- **The L3 agent can wipe its namespaces on start.** With `enable_neutron_agent_ha: yes`, its start wrapper runs
-  `neutron-netns-cleanup --force --agent-type l3` *before* starting the agent
-  (`roles/neutron/templates/neutron-l3-agent-wrapper.sh.j2:5-12`). Every restart or recreate of `neutron_l3_agent` on
-  such a host therefore deletes all router namespaces there (the wrapper's comment: "Remove all l3 related netns").
-  [NOT AVAILABLE] Whether and when the agent rebuilds them ([Risk register R6](../risk/risk-register.md#r6)).
+- **The L3 agent wrapper runs a namespace cleanup on start.** With `enable_neutron_agent_ha: yes`, its start wrapper
+  runs `neutron-netns-cleanup --force --agent-type l3` *before* starting the agent
+  (`roles/neutron/templates/neutron-l3-agent-wrapper.sh.j2:5-12`), on every restart or recreate of `neutron_l3_agent`
+  on such a host (the wrapper's comment: "Remove all l3 related netns"). [NOT AVAILABLE] What the command deletes: it
+  is neutron code, which is not in these sources ([F12](../reference/findings.md#f12)); whether and when
+  `neutron-l3-agent` rebuilds the namespaces ([Risk register R6](../risk/risk-register.md#r6)).
 - **Agent containers do not share the host PID namespace.** They have no `pid_mode` (`roles/neutron/defaults/main.yml`).
   Processes they spawn (dnsmasq, keepalived, haproxy for metadata) live in the container's PID namespace.
   [NOT AVAILABLE] Whether they die with the container and are respawned by the agent on start. For the L3 agent, its

@@ -37,7 +37,7 @@ Real `kolla-ansible` (Ussuri) invocations with what they select, their scope and
 
 One row per operation page, in the order of the navigation. The commands are copied from each page. The impact classes
 are defined in [Operation impact classes](../start/conventions.md#operation-impact-classes). The risk numbers are those
-the page itself names as its risks.
+the page cites, in its text or in its "Related" list.
 
 | Operation | Commands covered | Impact | Risks |
 |---|---|---|---|

@@ -21,7 +21,8 @@ tags: [reconfigure, deploy, tags, risk, evidence, unknowns]
 
     ---
 
-    Troubleshooting: a symptom index, the known bugs and limitations, the open questions, and what is not known.
+    Troubleshooting: where to start during an incident. A symptom index, the known bugs and limitations, the open
+    questions, and what is not known.
 
 - **[I need the facts about one component](components/index.md)**
 
@@ -50,6 +51,9 @@ tags: [reconfigure, deploy, tags, risk, evidence, unknowns]
     limits of the study.
 
 </div>
+
+Seven operator situations, from an incident to a failed VM deployment, are mapped to the pages to open first in [Start
+from a situation](start/find-it-fast.md#start-from-a-situation).
 
 ## Frequently used procedures
 

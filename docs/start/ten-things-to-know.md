@@ -1,6 +1,6 @@
 ---
 title: Ten things to know before a production run
-description: Ten things to know before running Kolla-Ansible Ussuri on production, each with the section that gives the evidence.
+description: Ten things to know before running Kolla-Ansible Ussuri on production, most of them with the section that gives the evidence.
 tags: [reconfigure, deploy, loop-notify, serial, tags, limit, images, kolla-set-configs, genconfig, handlers, risk]
 ---
 

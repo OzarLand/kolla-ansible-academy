@@ -21,9 +21,9 @@ before running them. Ratings are relative to a production cloud with running VMs
 >   a nova tag or no tag, restarts `nova_compute`, `nova_libvirt` and `nova_ssh` on every affected compute, all at once
 >   with the default serial 0; whether live migrations in flight fail and whether running VMs keep running are
 >   [NOT AVAILABLE].
-> - **Network data plane:** [R5](#r5) (an `ml2_conf.ini` override restarts every OVS agent), [R6](#r6) (an L3 agent
->   restart with `enable_neutron_agent_ha: yes` deletes all router namespaces on that node) and [R7](#r7); whether VM
->   traffic is interrupted is [NOT AVAILABLE].
+> - **Network data plane:** [R5](#r5) (an `ml2_conf.ini` override restarts every OVS agent), [R6](#r6) (with
+>   `enable_neutron_agent_ha: yes`, the L3 agent wrapper runs `neutron-netns-cleanup --force --agent-type l3` before
+>   the agent starts) and [R7](#r7); whether VM traffic is interrupted is [NOT AVAILABLE].
 > - **Likelihood × severity at a glance:** the [heat map](#heat-map-likelihood--severity).
 
 - **Likelihood** = how likely the operation is to cause the impact *when the triggering condition is present*.
@@ -47,7 +47,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 | [R10](#r10) | RabbitMQ image change (`upgrade`) | Certain on upgrade | High |
 | [R11](#r11) | `kolla-ansible pull` | – | Low (bandwidth) |
 | [R12](#r12) | Image tag change run with `deploy` instead of `upgrade` | Certain | Critical |
-| [R13](#r13) | Rebuilt image under the same tag, then a run without `pull` | – | Medium (drift) |
+| [R13](#r13) | Rebuilt image under the same tag, then `deploy`/`reconfigure` without `pull` | – | Medium (drift) |
 | [R14](#r14) | `bootstrap-servers` re-run on a live host | Medium | Critical |
 | [R15](#r15) | `kolla-ansible stop` | Certain | Critical |
 | [R16](#r16) | `kolla-ansible destroy` | Certain | Critical |
@@ -148,7 +148,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 | | |
 |---|---|
 | **Operation / trigger** | Any restart of `neutron_l3_agent` with `enable_neutron_agent_ha: yes` |
-| **What actually happens** | the wrapper runs `neutron-netns-cleanup --force --agent-type l3` **before** the agent starts → all router namespaces on that node are deleted (the wrapper's comment: "Remove all l3 related netns"), then `neutron-l3-agent` starts |
+| **What actually happens** | the wrapper runs `neutron-netns-cleanup --force --agent-type l3` **before** the agent starts (the wrapper's comment: "Remove all l3 related netns"), then `neutron-l3-agent` starts [CODE]. [NOT AVAILABLE] What the command deletes: it is neutron code, which is not in these sources ([F12](../reference/findings.md#f12)) |
 | **Blast radius** | network nodes (and DVR computes) |
 | **VM impact** | [NOT AVAILABLE] whether north-south and floating-IP traffic of the routers on that node stops, whether and when `neutron-l3-agent` rebuilds the namespaces, and whether HA routers fail over |
 | **API impact** | none |
@@ -255,7 +255,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r13"></a>
 
-### R13 — Rebuilt image under the same tag, then a run without `pull`
+### R13 — Rebuilt image under the same tag, then `deploy`/`reconfigure` without `pull`
 
 | | |
 |---|---|

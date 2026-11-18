@@ -7,7 +7,7 @@ study](docs/reference/method-and-limits.md)).
 
 ## Portal
 
-<https://ozarland.github.io/kolla-ansible-day2/> — published by the Documentation workflow
+<https://ozarland.github.io/kolla-ansible-day2/> — published by the Docs workflow
 ([.github/workflows/docs.yml](.github/workflows/docs.yml)) once GitHub Pages is enabled for the repository ([one-time
 setup](tools/site/README.md#one-time-setup-enable-github-pages)).
 

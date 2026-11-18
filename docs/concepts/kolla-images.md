@@ -27,7 +27,8 @@ matched against Kolla-Ansible `ussuri-eol` (`8a94fe9`). The images were read, no
 >   image, and which Kolla-Ansible task sets them ([§4](#4-one-shot-containers-what-the-environment-variables-run)).
 > - **Per-image start behaviour:** the table in [§5](#5-per-image-start-behaviour). The nova-libvirt start path is
 >   passive towards running guests ([§5.1](#51-nova-libvirt-the-start-path-is-passive)); with `enable_neutron_agent_ha`,
->   the L3 agent wrapper deletes all L3 namespaces on every container start ([§5.3](#53-neutron-l3-agent-the-wrapper)).
+>   the L3 agent wrapper runs `neutron-netns-cleanup --force --agent-type l3` on every container start
+>   ([§5.3](#53-neutron-l3-agent-the-wrapper)).
 > - **Day-2 consequences:** 19 items ([§6](#6-day-2-consequences)). **What is not available from the sources:**
 >   [§7](#7-what-is-not-available-from-the-sources).
 
@@ -472,9 +473,11 @@ How long such a start takes.
 
 The command is Kolla-Ansible's `/usr/local/bin/neutron-l3-agent-wrapper.sh`
 (`roles/neutron/templates/neutron-l3-agent.json.j2:2-9`) [CODE]. It sets errexit. With `enable_neutron_agent_ha`
-(default `no`) it first runs `neutron-netns-cleanup --force --agent-type l3`, which deletes all L3 namespaces on the
-node; it then runs `neutron-l3-agent` without `exec` (`neutron-l3-agent-wrapper.sh.j2:3-18`). The cleanup runs on every
-container start: handler restart, recreate, Docker restart policy, reboot. A cleanup failure aborts the start.
+(default `no`) it first runs `neutron-netns-cleanup --force --agent-type l3` (the wrapper's comment: "Remove all l3
+related netns"); it then runs `neutron-l3-agent` without `exec` (`neutron-l3-agent-wrapper.sh.j2:3-18`). The cleanup
+runs on every container start: handler restart, recreate, Docker restart policy, reboot. A cleanup failure aborts the
+start. [NOT AVAILABLE] What the command deletes: it is neutron code, which is not in these sources
+([F12](../reference/findings.md#f12)).
 Because the wrapper does not `exec` the agent, bash stays dumb-init's only child ([§2.6](#26-signals-and-pid-1)) [CODE].
 [NOT AVAILABLE] Whether `docker stop`'s SIGTERM then reaches only bash, so that the agent gets no graceful shutdown, and
 whether its keepalived, haproxy and radvd children die with the container.
@@ -553,8 +556,9 @@ they use the same manifest.
     deep dive §5](../components/nova-deep-dive.md#5-nova-libvirt-why-its-restart-is-special),
     [Q1](../troubleshooting/open-questions.md#q1)).
 12. **The L3 agent wrapper does not `exec` the agent.** [NOT AVAILABLE] Whether SIGTERM then reaches only bash, so that
-    the agent is killed without a graceful shutdown. With `enable_neutron_agent_ha` every start also deletes all L3
-    namespaces [CODE] ([Risk register R6](../risk/risk-register.md#r6), [Component dependencies
+    the agent is killed without a graceful shutdown. With `enable_neutron_agent_ha` every start also runs
+    `neutron-netns-cleanup --force --agent-type l3` before the agent starts [CODE]; what that command deletes is
+    [NOT AVAILABLE] ([Risk register R6](../risk/risk-register.md#r6), [Component dependencies
     §4](../components/dependencies.md#4-networking-components-ml2ovs-default-ml2ovn-optional)).
 13. **An `openvswitch_vswitchd` restart replaces only the userspace daemon.** The kernel module stays loaded and
     `conf.db` keeps bridges and ports [CODE]. [NOT AVAILABLE] Whether the OpenFlow tables are lost and must be

@@ -61,7 +61,8 @@ the service card follows them.
 
 - [fact sheet A §4.8](../reference/factsheets/a-infra-lb-ovn.md#48-operationally-notable), "Operationally notable", four
   items: low data-plane risk (NOT AVAILABLE: whether a restart steps the clock); cost scales with the number of hosts;
-  chrony.conf depends on the haproxy group; the VIP is the internal time source.
+  chrony.conf depends on the haproxy group; the VIP is the internal time source (NOT AVAILABLE: whether reachable
+  external NTP servers mitigate the change of clock source when the VIP fails over).
 - [fact sheet A §4.7](../reference/factsheets/a-infra-lb-ovn.md#47-dependencies): NOT AVAILABLE: whether, on a first
   deploy, chronyd on a non-VIP chrony-server host can bind the VIP before `ip_nonlocal_bind` is set, and whether it then
   serves before a later restart.

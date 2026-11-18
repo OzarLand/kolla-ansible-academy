@@ -7,7 +7,7 @@ exists only in a template, a script or a stylesheet. This page says how to add o
 
 The corpus is a source-code study of Kolla-Ansible `ussuri-eol`. Every statement is one of two things:
 
-- **[CODE]**: shown by the sources, with a `path:line` citation into the `ussuri-eol` sources next to it;
+- **[CODE]**: shown by the sources, with a `path:line` citation nearby;
 - **[NOT AVAILABLE]**: the sources do not establish it.
 
 Nothing else is accepted: no observation from a run, no timing, no statement about a newer release. The definition of
@@ -164,6 +164,6 @@ make docs-serve           # live preview, to read the page as the site shows it
 
 The workflow [.github/workflows/docs.yml](.github/workflows/docs.yml) runs on every pull request that changes `docs/`,
 `overrides/`, `tools/site/`, `zensical.toml`, `requirements-docs.txt`, `Makefile`, `README.md`, `CONTRIBUTING.md` or
-the workflow itself. It runs `make docs-deps`, `make docs-check` and `make docs-build`. A pull request is never
-deployed: its built site is uploaded as the artifact `site`, kept 7 days. On `main`, the same build is followed by the
-deployment to GitHub Pages.
+the workflow itself. It runs `make docs-deps`, `make docs-check STRICT=1` and `make docs-build STRICT=1`. A pull
+request is never deployed: its built site is uploaded as the artifact `site`, kept 7 days. On `main`, the same build is
+followed by the deployment to GitHub Pages.

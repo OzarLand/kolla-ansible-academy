@@ -59,7 +59,9 @@ evidence, what to check around a run and what stays open; the service card follo
 ### Known limits and open points
 
 - [Known bugs and limitations](../troubleshooting/known-bugs-and-limitations.md), first row `rabbitmq`: outward RabbitMQ
-  `pull` looks up `outward_rabbitmq_services`. Status: [CODE]; effect on `pull` [NOT AVAILABLE].
+  `pull` looks up `outward_rabbitmq_services`. Status: [CODE]: with outward RabbitMQ enabled, that variable is not
+  defined anywhere, the `vars` lookup raises an undefined-variable error and "Pull images" fails on the
+  outward-rabbitmq hosts.
 - [Known bugs and limitations](../troubleshooting/known-bugs-and-limitations.md), second row `rabbitmq`: the image
   writes `.erlang.cookie` only in the bootstrap container (new volume); a cookie change recreates the brokers (env
   compare) but they keep the old cookie, while `kolla_toolbox` gets the new one. Status: [CODE]; consequences
@@ -69,7 +71,7 @@ evidence, what to check around a run and what stays open; the service card follo
   "RabbitMQ": the sources do not establish whether nova-compute heartbeats are lost and services are reported down
   during the upgrade outage ([R10](../risk/risk-register.md#r10)); whether, during a one-by-one restart, nova-compute
   and the agents lose RPC, RPC-backed API calls time out and the agents reconnect by themselves; the consequences of a
-  changed Erlang cookie; the effect of the outward RabbitMQ `pull` lookup.
+  changed Erlang cookie.
 - [Q14](../troubleshooting/open-questions.md#q14), answered from the source [CODE]: RabbitMQ writes the Erlang cookie
   only in its bootstrap container.
 - [F6](../reference/findings.md#f6), "Global inputs are rendered into per-host files": `enable_*` flags,
