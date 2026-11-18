@@ -1,5 +1,7 @@
 ---
 title: Fact sheet E
+description: "Fact sheet for host bootstrap and operational playbooks: bootstrap-servers, prechecks, destroy, prune-images, fact gathering, CLI, tuning docs."
+tags: [bootstrap-servers, prechecks, destroy, mariadb-backup, mariadb-recovery, facts, docker, serial, limit]
 ---
 
 # Fact sheet E

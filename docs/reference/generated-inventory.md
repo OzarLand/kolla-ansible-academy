@@ -1,5 +1,7 @@
 ---
 title: Generated inventory
+description: "Generated tables: the plays of site.yml, the containers each role defines, role task structure and handlers, templates that reference inventory groups."
+tags: [inventory, handlers, tags, serial]
 ---
 
 # Generated inventory

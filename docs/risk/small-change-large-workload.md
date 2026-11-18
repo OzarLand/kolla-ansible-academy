@@ -1,10 +1,13 @@
 ---
 title: Why a small change creates a large workload
+description: Six small changes that become a large workload in Kolla-Ansible Ussuri, each with the reason and the source.
+tags: [risk, scaling, loop-notify, nova, neutron, rabbitmq, images, reconfigure]
 ---
 
 # Why a small change creates a large workload
 
-<!-- TODO editorial: intro, key answers (old section heading: "Why a small change can create a large workload") -->
+Why a small change can create a large workload: six small changes, each with why it is large and the source lines and
+sections that show it. The per-host work that every run pays, independently of restarts, closes the page.
 
 | Small change | Why it is large | Source |
 |---|---|---|
@@ -20,3 +23,14 @@ And independently of restarts, **every run pays the per-host work** [CODE]. Per 
 calls, counted from the task files in [Compute scaling
 §2](../concepts/compute-scaling-and-performance.md#2-work-per-compute-host-read-from-the-task-files). The number of task
 results per compute is [NOT AVAILABLE].
+
+## Related
+
+- [Compute scaling §5](../concepts/compute-scaling-and-performance.md#5-why-a-small-change-becomes-a-large-workload) —
+  the work multiplier and the restart multiplier
+- [Tags §2.4](tags.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code) — loop-notify
+- [Technical findings](../reference/findings.md) — [F6](../reference/findings.md#f6): global inputs are rendered into
+  per-host files
+- [Write config first, apply in controlled batches](../operations/controlled-batches.md) — `genconfig`, then
+  `deploy-containers --limit` batch by batch
+- [Risk register](risk-register.md) — the risks [R1–R25](risk-register.md#r1)

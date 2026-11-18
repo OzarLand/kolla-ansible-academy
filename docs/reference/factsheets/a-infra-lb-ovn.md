@@ -1,5 +1,7 @@
 ---
 title: Fact sheet A
+description: Fact sheet for the haproxy, haproxy-config, memcached, chrony, ovn, ovs-dpdk and service-cert-copy roles and the certificates playbook.
+tags: [haproxy, keepalived, memcached, chrony, ovn, handlers, tags, serial]
 ---
 
 # Fact sheet A

@@ -1,5 +1,7 @@
 ---
 title: Method and limits of the study
+description: How the Kolla-Ansible ussuri-eol sources were read, in six phases, and the limits of a study that rests on source code only.
+tags: [evidence, unknowns, images]
 ---
 
 # Method and limits of the study
@@ -39,8 +41,8 @@ level: **[CODE]** or **[NOT AVAILABLE]** (see [Evidence labels](../start/convent
   scaling](../concepts/compute-scaling-and-performance.md)).
 - **No container or VM behaviour is used as evidence.** Every statement about data-plane or VM impact is
   [NOT AVAILABLE].
-- **The depth of reading varies.** The core services are traced in the main documents; the other roles are covered
-  by the fact sheets only.
+- **The depth of reading varies.** The core services are traced in the pages of the study other than the fact sheets;
+  the other roles are covered by the [fact sheets](factsheets/index.md) only.
 - **The kolla image sources were read, not built or run.** From the kolla `ussuri-eol` repository: the base start path
   (`docker/base`: `Dockerfile.j2`, `start.sh`, `set_configs.py`, `copy_cacerts.sh`, `httpd_setup.sh`, `sudoers`,
   healthcheck scripts) and the start scripts of the images listed in [Kolla images](../concepts/kolla-images.md) (Nova,
@@ -49,3 +51,13 @@ level: **[CODE]** or **[NOT AVAILABLE]** (see [Evidence labels](../start/convent
   iscsid, tgtd). Of the other images only the `ironic-api` bootstrap branch and the `bifrost-deploy` `ENTRYPOINT`/`CMD`
   were read, and every Dockerfile was searched for `HEALTHCHECK` and for `ENTRYPOINT`/`CMD` overrides. What the scripts
   do against real services and data is [NOT AVAILABLE].
+
+## Related
+
+- [Conventions and evidence labels](../start/conventions.md) — the definition of [CODE] and [NOT AVAILABLE]
+- [What is not known](../troubleshooting/what-is-not-known.md) — everything marked [NOT AVAILABLE], by topic
+- [Open questions](../troubleshooting/open-questions.md) — the open questions
+  [Q1–Q14](../troubleshooting/open-questions.md#q1)
+- [Technical findings](findings.md) — the fifteen headline findings, each with its evidence
+- [Per-role fact sheets](factsheets/index.md) — the five fact sheets and how they were checked
+- [Ansible listings](listings/index.md) — the `--list-tags` and `--list-tasks` listings used in the validation phase

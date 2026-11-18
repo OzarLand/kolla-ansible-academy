@@ -1,16 +1,19 @@
 ---
 title: Known bugs and limitations
+description: The implementation limitations and bugs found in Kolla-Ansible ussuri-eol, by area, each with its evidence and its status.
+tags: [bugs, evidence, serial, docker, kolla-set-configs, tags, upgrade, pull, bootstrap-servers, haproxy, keepalived, openvswitch, neutron, rabbitmq, mariadb, keystone, glance, cinder, heat, swift, octavia]
 ---
 
 # Known bugs and limitations
 
-<!-- TODO editorial: intro (old section heading: "Implementation limitations and bugs (`ussuri-eol`)") -->
+The implementation limitations and bugs found in Kolla-Ansible `ussuri-eol`, by area, with the evidence and the status
+of each row. Where a Status cell adds [NOT AVAILABLE], it names what the sources do not establish about the issue.
 
 > [!NOTE]
 > **Key answers**
 >
 > - **Implementation limitations and bugs of `ussuri-eol`, by area:** CLI, `site.yml`, `kolla_docker`, the kolla images
->   and individual roles ([Known bugs and limitations](#known-bugs-and-limitations)).
+>   and individual roles (table below).
 
 | Area | Issue | Evidence | Status |
 |---|---|---|---|
@@ -38,3 +41,18 @@ title: Known bugs and limitations
 | masakari | instancemonitor uses `qemu+tcp` without SASL while nova-libvirt enables SASL | [fact sheet D](../reference/factsheets/d-barbican-octavia-swift-manila-compute-roles.md); `roles/masakari/templates/masakari-monitors.conf.j2:17`, `roles/nova-cell/defaults/main.yml:431`, `roles/nova-cell/templates/libvirtd.conf.j2:12` | [CODE]; effect on the instancemonitor [NOT AVAILABLE] |
 | baremetal | Docker restarted on `daemon.json` change on all hosts at once; `docker_custom_option` changes are never applied; Docker masked during re-runs on Debian/Ubuntu; `/etc/hosts` lists every baremetal host (O(N²) templating, stale with `--limit`) | [fact sheet E §1–5](../reference/factsheets/e-host-bootstrap-ops-playbooks.md#1-ansiblekolla-hostyml-the-bootstrap-servers-command) | [CODE]; runtime effects [NOT AVAILABLE] |
 | certificates | test CA only; certs never renewed; new backend hosts not added | [fact sheet A §8](../reference/factsheets/a-infra-lb-ovn.md#8-certificatesyml-playbook--certificates-role), [E](../reference/factsheets/e-host-bootstrap-ops-playbooks.md) | [CODE] |
+
+## Related
+
+- [Troubleshooting](index.md) — the symptom index, which points to these rows by what an operator sees
+- [Findings](../reference/findings.md) — the headline findings; the rows `kolla_docker`, `kolla images` and `common`
+  cite [F3](../reference/findings.md#f3), [F14](../reference/findings.md#f14) and [F2](../reference/findings.md#f2)
+- [Per-role fact sheets](../reference/factsheets/index.md) — the fact sheets that the role rows cite as evidence, and
+  their corrections
+- [Fact sheet D
+  §7](../reference/factsheets/d-barbican-octavia-swift-manila-compute-roles.md#7-consolidated-bugs-and-oddities) — the
+  consolidated bugs and oddities of the roles of fact sheet D
+- [Kolla images §3](../concepts/kolla-images.md#3-kolla_set_configs---check-what-it-compares-and-its-exit-codes) — what
+  `kolla_set_configs --check` compares and what it never compares (row `kolla images`)
+- [What is not known](what-is-not-known.md) — the effects that the Status column marks [NOT AVAILABLE], by topic
+- [Open questions](open-questions.md) — the open questions Q1 to Q14

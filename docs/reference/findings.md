@@ -1,49 +1,53 @@
 ---
 title: Technical findings
+description: The fifteen headline findings of the Kolla-Ansible ussuri-eol source study, F1 to F15, each with its evidence and why it matters.
+tags: [evidence, loop-notify, tags, limit, serial, images, kolla-set-configs, one-shot, reconfigure, nova, neutron, docker]
 ---
 
 # Technical findings
 
-This document consolidates three things:
+The study consolidates three things. This page holds the first:
 
-1. what was established and how (evidence level);
-2. implementation limitations and bugs found in `ussuri-eol`;
-3. what the sources do not establish.
+1. what was established and how (evidence level): the headline findings below;
+2. implementation limitations and bugs found in `ussuri-eol`: [Known bugs and
+   limitations](../troubleshooting/known-bugs-and-limitations.md);
+3. what the sources do not establish: [Open questions](../troubleshooting/open-questions.md) and [What is not
+   known](../troubleshooting/what-is-not-known.md).
 
 > [!NOTE]
 > **Key answers**
 >
 > - **Fifteen headline findings ([F1–F15](#f1))**, each with its evidence and why it matters, among them loop-notify
 >   amplification ([F1](#f1)), the `-t common` no-op ([F2](#f2)), the ignored stop timeout ([F3](#f3)), same-tag image
->   rebuilds ([F4](#f4)) and `reconfigure` = `deploy` ([F5](#f5)) ([Headline findings](#headline-findings)).
+>   rebuilds ([F4](#f4)) and `reconfigure` = `deploy` ([F5](#f5)).
 
-Evidence levels: **[CODE]** and **[NOT AVAILABLE]**, defined once, in the [Conventions and evidence
+Evidence levels: **[CODE]** and **[NOT AVAILABLE]**, defined once, in [Evidence
 labels](../start/conventions.md#evidence-labels). The study rests only on reading source code; no run against a host is
 used as evidence.
 
 ## Headline findings
 
-| # |
-|---|
-| [F1](#f1) |
-| [F2](#f2) |
-| [F3](#f3) |
-| [F4](#f4) |
-| [F5](#f5) |
-| [F6](#f6) |
-| [F7](#f7) |
-| [F8](#f8) |
-| [F9](#f9) |
-| [F10](#f10) |
-| [F11](#f11) |
-| [F12](#f12) |
-| [F13](#f13) |
-| [F14](#f14) |
-| [F15](#f15) |
+| # | Finding |
+|---|---|
+| [F1](#f1) | Loop-notify amplification |
+| [F2](#f2) | `-t common` is a no-op |
+| [F3](#f3) | `docker_graceful_timeout` and `docker_client_timeout` are ignored |
+| [F4](#f4) | Same-tag image rebuilds are not picked up by `deploy`/`reconfigure`/`upgrade` |
+| [F5](#f5) | `reconfigure` = `deploy` |
+| [F6](#f6) | Global inputs are rendered into per-host files |
+| [F7](#f7) | `--list-tasks` cannot show what a tag runs |
+| [F8](#f8) | `--limit` does not confine actions |
+| [F9](#f9) | With `--limit`, all hosts' facts are gathered sequentially |
+| [F10](#f10) | `kolla_serial` makes `run_once` steps repeat per batch |
+| [F11](#f11) | The `openvswitch_agent.ini` merge includes the operator's `ml2_conf.ini` overrides |
+| [F12](#f12) | The L3 agent wrapper runs `neutron-netns-cleanup --force --agent-type l3` at start when `enable_neutron_agent_ha: yes` |
+| [F13](#f13) | The Nova deploy order puts nova-compute before OVS and the Neutron agents on new computes |
+| [F14](#f14) | `kolla_set_configs --check` has blind spots |
+| [F15](#f15) | What the bootstrap containers run differs per image |
 
 <a id="f1"></a>
 
-### F1
+### F1 — Loop-notify amplification
 
 | | |
 |---|---|
@@ -53,7 +57,7 @@ used as evidence.
 
 <a id="f2"></a>
 
-### F2
+### F2 — `-t common` is a no-op
 
 | | |
 |---|---|
@@ -63,7 +67,7 @@ used as evidence.
 
 <a id="f3"></a>
 
-### F3
+### F3 — `docker_graceful_timeout` and `docker_client_timeout` are ignored
 
 | | |
 |---|---|
@@ -73,7 +77,7 @@ used as evidence.
 
 <a id="f4"></a>
 
-### F4
+### F4 — Same-tag image rebuilds are not picked up by `deploy`/`reconfigure`/`upgrade`
 
 | | |
 |---|---|
@@ -83,7 +87,7 @@ used as evidence.
 
 <a id="f5"></a>
 
-### F5
+### F5 — `reconfigure` = `deploy`
 
 | | |
 |---|---|
@@ -93,7 +97,7 @@ used as evidence.
 
 <a id="f6"></a>
 
-### F6
+### F6 — Global inputs are rendered into per-host files
 
 | | |
 |---|---|
@@ -103,7 +107,7 @@ used as evidence.
 
 <a id="f7"></a>
 
-### F7
+### F7 — `--list-tasks` cannot show what a tag runs
 
 | | |
 |---|---|
@@ -113,7 +117,7 @@ used as evidence.
 
 <a id="f8"></a>
 
-### F8
+### F8 — `--limit` does not confine actions
 
 | | |
 |---|---|
@@ -123,7 +127,7 @@ used as evidence.
 
 <a id="f9"></a>
 
-### F9
+### F9 — With `--limit`, all hosts' facts are gathered sequentially
 
 | | |
 |---|---|
@@ -133,7 +137,7 @@ used as evidence.
 
 <a id="f10"></a>
 
-### F10
+### F10 — `kolla_serial` makes `run_once` steps repeat per batch
 
 | | |
 |---|---|
@@ -143,7 +147,7 @@ used as evidence.
 
 <a id="f11"></a>
 
-### F11
+### F11 — The `openvswitch_agent.ini` merge includes the operator's `ml2_conf.ini` overrides
 
 | | |
 |---|---|
@@ -153,7 +157,7 @@ used as evidence.
 
 <a id="f12"></a>
 
-### F12
+### F12 — The L3 agent wrapper runs `neutron-netns-cleanup --force --agent-type l3` at start when `enable_neutron_agent_ha: yes`
 
 | | |
 |---|---|
@@ -163,7 +167,7 @@ used as evidence.
 
 <a id="f13"></a>
 
-### F13
+### F13 — The Nova deploy order puts nova-compute before OVS and the Neutron agents on new computes
 
 | | |
 |---|---|
@@ -173,7 +177,7 @@ used as evidence.
 
 <a id="f14"></a>
 
-### F14
+### F14 — `kolla_set_configs --check` has blind spots
 
 | | |
 |---|---|
@@ -183,7 +187,7 @@ used as evidence.
 
 <a id="f15"></a>
 
-### F15
+### F15 — What the bootstrap containers run differs per image
 
 | | |
 |---|---|
@@ -193,8 +197,12 @@ used as evidence.
 
 ## Related
 
-- [Risk register](../risk/risk-register.md) (the risks [R1–R25](../risk/risk-register.md#r1) that the open questions
-  refer to)
-- [Kolla images](../concepts/kolla-images.md) (the answer to [Q14](../troubleshooting/open-questions.md#q14))
-- [Per-role fact sheets](factsheets/index.md) (errata with their evidence)
-- [What is not known](../troubleshooting/what-is-not-known.md) (everything marked [NOT AVAILABLE], by topic)
+- [Known bugs and limitations](../troubleshooting/known-bugs-and-limitations.md) — implementation limitations and bugs
+  found in `ussuri-eol`
+- [Open questions](../troubleshooting/open-questions.md) — [Q1–Q14](../troubleshooting/open-questions.md#q1), among them
+  [Q4](../troubleshooting/open-questions.md#q4), which F12 refers to
+- [What is not known](../troubleshooting/what-is-not-known.md) — everything marked [NOT AVAILABLE], by topic
+- [Risk register](../risk/risk-register.md) — the risks [R1–R25](../risk/risk-register.md#r1)
+- [Kolla images](../concepts/kolla-images.md) — the image side of F14 and F15, and the answer to
+  [Q14](../troubleshooting/open-questions.md#q14)
+- [Per-role fact sheets](factsheets/index.md) — errata with their evidence

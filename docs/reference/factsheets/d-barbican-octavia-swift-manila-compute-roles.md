@@ -1,5 +1,7 @@
 ---
 title: Fact sheet D
+description: Fact sheet for Barbican, Octavia, Swift, Manila and every role that places containers on compute hosts, with the templates embedding host lists.
+tags: [barbican, octavia, swift, manila, iscsi, scaling]
 ---
 
 # Fact sheet D

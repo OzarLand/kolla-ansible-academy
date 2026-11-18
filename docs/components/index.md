@@ -64,7 +64,7 @@ E](../reference/factsheets/e-host-bootstrap-ops-playbooks.md); every play, conta
 
 ## How to read a component page
 
-Every component page has two parts: "Where to look", then the service card.
+Every component page has the same two main parts: "Where to look", then the service card.
 
 "Where to look" lists the sections of the study that cover the component, under these sub-headings when the study has
 something to list:

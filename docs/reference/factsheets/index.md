@@ -1,5 +1,7 @@
 ---
 title: Per-role fact sheets
+description: Five per-role fact sheets read from the ussuri-eol sources, how they were checked, and the eleven corrections that apply to them.
+tags: [evidence, haproxy, keepalived, memcached, chrony, ovn, mariadb, rabbitmq, keystone, glance, placement, cinder, horizon, heat, barbican, octavia, swift, manila, bootstrap-servers, prechecks, destroy]
 ---
 
 # Per-role fact sheets
@@ -109,11 +111,11 @@ on that host** if any of them changed" (see [Tags §2.4][docs-03-loop-notify]).
 
 ## Corrections
 
-The fact sheets were produced by parallel source-reading agents and spot-checked (MariaDB restart waves, glance
+The fact sheets were produced by parallel source-reading passes and spot-checked (MariaDB restart waves, glance
 `log_bin_trust_function_creators`, the Docker restart gate, keepalived priority, compute-side memcached lists: all
-confirmed). Eleven corrections apply. All are listed with their evidence under "Verification and errata" in [Per-role
-fact sheets](#per-role-fact-sheets). The first bullet (in sheets A, B and E) and the last four bullets (eight
-corrections) were also made in the sheets themselves:
+confirmed). Eleven corrections apply. All are listed with their evidence under [Verification and
+errata](#verification-and-errata), above. In the list below, the first bullet (in sheets A, B and E) and the last four
+bullets (eight corrections) were also made in the sheets themselves:
 
 - **Fact sheets [A](a-infra-lb-ovn.md), [B](b-mariadb-rabbitmq-keystone.md) and [E](e-host-bootstrap-ops-playbooks.md)**
   (and any sentence elsewhere) stating that `docker stop` uses `docker_graceful_timeout` = 60 s are wrong. The effective
@@ -146,6 +148,17 @@ corrections) were also made in the sheets themselves:
   - The glance bootstrap also runs `glance-manage db_load_metadefs`.
 - **[Fact sheet E](e-host-bootstrap-ops-playbooks.md)**, "For every other command, `-e kolla_serial=...` works":
   `upgrade` overrides it like `reconfigure` does (`tools/kolla-ansible:430`); use `ANSIBLE_SERIAL`.
+
+## Related
+
+- [Technical findings](../findings.md) — [F3](../findings.md#f3), the ignored stop timeout, and
+  [F15](../findings.md#f15), what the bootstrap containers run per image
+- [Kolla images](../../concepts/kolla-images.md) — the kolla image sources behind the image-side errata
+- [Known bugs and limitations](../../troubleshooting/known-bugs-and-limitations.md) — implementation limitations and
+  bugs found in `ussuri-eol`, among them the corrected RabbitMQ behaviour
+- [Tags §2.4](../../risk/tags.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code) — loop-notify,
+  the context the sheets do not repeat
+- [What is not known](../../troubleshooting/what-is-not-known.md) — everything marked [NOT AVAILABLE], by topic
 
 [sheet-b-310]: b-mariadb-rabbitmq-keystone.md#310-runtime-dependency-of-other-services-on-keystone-grep-across-ansiblerolestemplates
 [docs-03-loop-notify]: ../../risk/tags.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code

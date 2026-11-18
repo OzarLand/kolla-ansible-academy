@@ -465,6 +465,45 @@ class GithubListsTest(unittest.TestCase):
         self.assertNotIn("<ul>", html)
 
 
+class PlaceholdersTest(unittest.TestCase):
+    def test_unknown_tag_shaped_tokens_stay_visible(self) -> None:
+        html = render('Handlers are named "Restart <svc> container" on <host-1>, see </svc>.\n')
+        self.assertIn("Restart &lt;svc&gt; container", html)
+        self.assertIn("&lt;host-1&gt;", html)
+        self.assertIn("&lt;/svc&gt;", html)
+
+    def test_tables_lists_headings_and_alerts(self) -> None:
+        html = render(
+            "## Restart <svc>\n\n- item <svc>\n\n| a |\n|---|\n| <svc> x |\n\n> [!NOTE]\n> for <svc>\n"
+        )
+        self.assertEqual(html.count("&lt;svc&gt;"), 4)
+        self.assertNotIn("<svc>", html)
+        self.assertIn('id="restart-svc"', html)
+
+    def test_html_elements_keep_their_meaning(self) -> None:
+        html = render('one<br>two <kbd>Ctrl</kbd> <a id="r12"></a> <span class="x">y</span> <B>b</B>\n')
+        for tag in ("<br>", "<kbd>Ctrl</kbd>", '<a id="r12"></a>', '<span class="x">y</span>', "<B>b</B>"):
+            self.assertIn(tag, html)
+
+    def test_code_autolinks_and_comments_are_untouched(self) -> None:
+        html = render(
+            "`docker exec <c> true` and <https://example.org/x>\n\n<!-- note <svc> -->\n\n"
+            "```text\nroles/<svc>/\n```\n"
+        )
+        self.assertIn("<code>docker exec &lt;c&gt; true</code>", html)
+        self.assertIn('<a href="https://example.org/x">', html)
+        self.assertIn("<!-- note <svc> -->", html)
+        self.assertIn("roles/&lt;svc&gt;/", html)
+        self.assertNotIn("&amp;lt;", html)
+
+    def test_evidence_chips_next_to_a_placeholder(self) -> None:
+        html = render("Restart <svc> [CODE].\n")
+        self.assertIn("&lt;svc&gt; " + CODE, html)
+
+    def test_option_restores_raw_html(self) -> None:
+        self.assertIn("<svc>", render("Restart <svc> now\n", placeholders=False))
+
+
 class TablePipesTest(unittest.TestCase):
     def test_escaped_pipe_in_table_code(self) -> None:
         html = render(

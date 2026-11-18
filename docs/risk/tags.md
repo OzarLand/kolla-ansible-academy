@@ -1,5 +1,7 @@
 ---
 title: What a tag really executes
+description: "How tags select work in Kolla-Ansible Ussuri and what each important tag executes: target hosts, containers that can restart, per-tag answers."
+tags: [tags, handlers, loop-notify, serial, limit, nova, neutron, openvswitch, ovn, haproxy, keystone, chrony, iscsi, reconfigure]
 ---
 
 # What a tag really executes
@@ -37,8 +39,7 @@ architecture §3–4](../concepts/repository-architecture.md#3-anatomy-of-siteym
 > - Ansible 2.9's loop-notify semantics.
 >
 > Everything below is read from the source; nothing was run against a host. The evidence labels **[CODE]** and
-> **[NOT AVAILABLE]** are defined once, in the [Conventions and evidence
-> labels](../start/conventions.md#evidence-labels).
+> **[NOT AVAILABLE]** are defined once, in [Evidence labels](../start/conventions.md#evidence-labels).
 
 ---
 
@@ -81,7 +82,7 @@ of the include's own parent, of the role and its dependency chain, and of the pl
 `include_tasks` and `set_fact` carry `tags: common` (`roles/common/tasks/main.yml:1-10`) and whose task files carry
 no other tag:
 
-```
+```text
 --tags common  → the include_tasks runs, but no task inside the included file does (none carries `common`)
 --tags nova    → the common tasks DO run (inherited play tag), then the service tasks
 --tags chrony  → the common tasks run in the chrony play (first play the host appears in)
@@ -346,8 +347,7 @@ inventory §3](../reference/generated-inventory.md#3-role-task-structure-handler
 
 ## Related
 
-- [Operations](../operations/index.md) (impact of each scenario)
-- [Operations](../operations/index.md) (commands)
+- [Operations](../operations/index.md) (impact of each scenario, commands)
 - [Risk register](risk-register.md) (risks [R1–R25](risk-register.md#r1))
 - [Components](../components/index.md)
 - [Tag index](tag-index.md) (tag index)

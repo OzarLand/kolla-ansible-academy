@@ -1,5 +1,7 @@
 ---
 title: Risk register
+description: 25 potentially dangerous operations on a running Kolla-Ansible Ussuri platform, with impact, likelihood, severity, precautions and evidence.
+tags: [risk, nova, libvirt, neutron, openvswitch, haproxy, mariadb, rabbitmq, memcached, keystone, glance, swift, deploy, reconfigure, upgrade, pull, stop, destroy, bootstrap-servers, mariadb-recovery, loop-notify, limit, images, inventory]
 ---
 
 # Risk register
@@ -12,18 +14,17 @@ before running them. Ratings are relative to a production cloud with running VMs
 >
 > - **25 risks (R1–R25)**, each with what actually happens, its blast radius, VM and API impact, likelihood, severity,
 >   precautions and evidence ([Matrix](#matrix)).
-> - **Rated Critical:** R7 (`openvswitch_vswitchd` restart or recreate), R12 (changing the image tag and running
->   `deploy` instead of `upgrade`), R14 (`bootstrap-servers` re-run on a live host), R15 (`kolla-ansible stop`) and R16
->   (`kolla-ansible destroy`) ([Matrix](#matrix)).
-> - **Computes and VMs:** R1. Any config change touching nova-compute, followed by a `deploy`/`reconfigure` with a nova
->   tag or no tag, restarts `nova_compute`, `nova_libvirt` and `nova_ssh` on every affected compute, all at once with
->   the default serial 0; whether live migrations in flight fail and whether running VMs keep running are
->   [NOT AVAILABLE] ([Matrix](#matrix)).
-> - **Network data plane:** R5 (an `ml2_conf.ini` override restarts every OVS agent), R6 (an L3 agent restart with
->   `enable_neutron_agent_ha: yes` deletes all router namespaces on that node) and R7; whether VM traffic is interrupted
->   is [NOT AVAILABLE] ([Matrix](#matrix)).
-> - **Likelihood × severity at a glance:** the heat map ([Heat map (likelihood ×
->   severity)](#heat-map-likelihood--severity)).
+> - **Rated Critical:** [R7](#r7) (`openvswitch_vswitchd` restart or recreate), [R12](#r12) (changing the image tag and
+>   running `deploy` instead of `upgrade`), [R14](#r14) (`bootstrap-servers` re-run on a live host), [R15](#r15)
+>   (`kolla-ansible stop`) and [R16](#r16) (`kolla-ansible destroy`).
+> - **Computes and VMs:** [R1](#r1). Any config change touching nova-compute, followed by a `deploy`/`reconfigure` with
+>   a nova tag or no tag, restarts `nova_compute`, `nova_libvirt` and `nova_ssh` on every affected compute, all at once
+>   with the default serial 0; whether live migrations in flight fail and whether running VMs keep running are
+>   [NOT AVAILABLE].
+> - **Network data plane:** [R5](#r5) (an `ml2_conf.ini` override restarts every OVS agent), [R6](#r6) (an L3 agent
+>   restart with `enable_neutron_agent_ha: yes` deletes all router namespaces on that node) and [R7](#r7); whether VM
+>   traffic is interrupted is [NOT AVAILABLE].
+> - **Likelihood × severity at a glance:** the [heat map](#heat-map-likelihood--severity).
 
 - **Likelihood** = how likely the operation is to cause the impact *when the triggering condition is present*.
 - **Severity** = worst realistic outcome.
@@ -32,37 +33,37 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 ## Matrix
 
-| # | Likelihood | Severity |
-|---|---|---|
-| [R1](#r1) | High | High |
-| [R2](#r2) | High | Medium–High |
-| [R3](#r3) | Certain | High |
-| [R4](#r4) | Certain | High |
-| [R5](#r5) | Certain | High |
-| [R6](#r6) | Certain (if HA flag) | High |
-| [R7](#r7) | Certain on image change | Critical |
-| [R8](#r8) | Certain if changed | High |
-| [R9](#r9) | Certain if changed | High |
-| [R10](#r10) | Certain on upgrade | High |
-| [R11](#r11) | – | Low (bandwidth) |
-| [R12](#r12) | Certain | Critical |
-| [R13](#r13) | – | Medium (drift) |
-| [R14](#r14) | Medium | Critical |
-| [R15](#r15) | Certain | Critical |
-| [R16](#r16) | Certain | Critical |
-| [R17](#r17) | Low | Low |
-| [R18](#r18) | Certain | High |
-| [R19](#r19) | Certain if changed | Medium–High |
-| [R20](#r20) | Certain | Medium |
-| [R21](#r21) | High | High |
-| [R22](#r22) | Medium | High |
-| [R23](#r23) | Certain | Low (time), Medium (drift) |
-| [R24](#r24) | Certain | Medium |
-| [R25](#r25) | Certain | Low–Medium (surprise) |
+| # | Risk | Likelihood | Severity |
+|---|---|---|---|
+| [R1](#r1) | Config change touching nova-compute | High | High |
+| [R2](#r2) | Enabling or disabling a service with a logrotate or fluentd entry | High | Medium–High |
+| [R3](#r3) | Changing RabbitMQ membership, password or port | Certain | High |
+| [R4](#r4) | Changing memcached membership | Certain | High |
+| [R5](#r5) | `ml2_conf.ini` override meant for neutron-server | Certain | High |
+| [R6](#r6) | `neutron_l3_agent` restart with `enable_neutron_agent_ha: yes` | Certain (if HA flag) | High |
+| [R7](#r7) | `openvswitch_vswitchd` restart or recreate | Certain on image change | Critical |
+| [R8](#r8) | HAProxy config change | Certain if changed | High |
+| [R9](#r9) | MariaDB config change or image change | Certain if changed | High |
+| [R10](#r10) | RabbitMQ image change (`upgrade`) | Certain on upgrade | High |
+| [R11](#r11) | `kolla-ansible pull` | – | Low (bandwidth) |
+| [R12](#r12) | Image tag change run with `deploy` instead of `upgrade` | Certain | Critical |
+| [R13](#r13) | Rebuilt image under the same tag, then a run without `pull` | – | Medium (drift) |
+| [R14](#r14) | `bootstrap-servers` re-run on a live host | Medium | Critical |
+| [R15](#r15) | `kolla-ansible stop` | Certain | Critical |
+| [R16](#r16) | `kolla-ansible destroy` | Certain | Critical |
+| [R17](#r17) | `prune-images` | Low | Low |
+| [R18](#r18) | `mariadb_recovery` | Certain | High |
+| [R19](#r19) | Keystone `reconfigure` | Certain if changed | Medium–High |
+| [R20](#r20) | Glance reconfigure / deploy | Certain | Medium |
+| [R21](#r21) | Enabling Swift (or `glance_backend_ceph`) on a running cloud | High | High |
+| [R22](#r22) | Inventory reordering | Medium | High |
+| [R23](#r23) | Any run with `--limit` on a large inventory | Certain | Low (time), Medium (drift) |
+| [R24](#r24) | Effective container stop timeout is 10 s | Certain | Medium |
+| [R25](#r25) | `-t common` believed to reconfigure fluentd/cron | Certain | Low–Medium (surprise) |
 
 <a id="r1"></a>
 
-### R1
+### R1 — Config change touching nova-compute
 
 | | |
 |---|---|
@@ -78,7 +79,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r2"></a>
 
-### R2
+### R2 — Enabling or disabling a service with a logrotate or fluentd entry
 
 | | |
 |---|---|
@@ -94,7 +95,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r3"></a>
 
-### R3
+### R3 — Changing RabbitMQ membership, password or port
 
 | | |
 |---|---|
@@ -110,7 +111,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r4"></a>
 
-### R4
+### R4 — Changing memcached membership
 
 | | |
 |---|---|
@@ -126,7 +127,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r5"></a>
 
-### R5
+### R5 — `ml2_conf.ini` override meant for neutron-server
 
 | | |
 |---|---|
@@ -142,7 +143,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r6"></a>
 
-### R6
+### R6 — `neutron_l3_agent` restart with `enable_neutron_agent_ha: yes`
 
 | | |
 |---|---|
@@ -158,7 +159,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r7"></a>
 
-### R7
+### R7 — `openvswitch_vswitchd` restart or recreate
 
 | | |
 |---|---|
@@ -174,7 +175,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r8"></a>
 
-### R8
+### R8 — HAProxy config change
 
 | | |
 |---|---|
@@ -190,7 +191,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r9"></a>
 
-### R9
+### R9 — MariaDB config change or image change
 
 | | |
 |---|---|
@@ -206,7 +207,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r10"></a>
 
-### R10
+### R10 — RabbitMQ image change (`upgrade`)
 
 | | |
 |---|---|
@@ -222,7 +223,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r11"></a>
 
-### R11
+### R11 — `kolla-ansible pull`
 
 | | |
 |---|---|
@@ -238,7 +239,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r12"></a>
 
-### R12
+### R12 — Image tag change run with `deploy` instead of `upgrade`
 
 | | |
 |---|---|
@@ -254,7 +255,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r13"></a>
 
-### R13
+### R13 — Rebuilt image under the same tag, then a run without `pull`
 
 | | |
 |---|---|
@@ -270,7 +271,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r14"></a>
 
-### R14
+### R14 — `bootstrap-servers` re-run on a live host
 
 | | |
 |---|---|
@@ -286,7 +287,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r15"></a>
 
-### R15
+### R15 — `kolla-ansible stop`
 
 | | |
 |---|---|
@@ -302,7 +303,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r16"></a>
 
-### R16
+### R16 — `kolla-ansible destroy`
 
 | | |
 |---|---|
@@ -318,7 +319,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r17"></a>
 
-### R17
+### R17 — `prune-images`
 
 | | |
 |---|---|
@@ -334,7 +335,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r18"></a>
 
-### R18
+### R18 — `mariadb_recovery`
 
 | | |
 |---|---|
@@ -350,7 +351,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r19"></a>
 
-### R19
+### R19 — Keystone `reconfigure`
 
 | | |
 |---|---|
@@ -366,7 +367,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r20"></a>
 
-### R20
+### R20 — Glance reconfigure / deploy
 
 | | |
 |---|---|
@@ -382,7 +383,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r21"></a>
 
-### R21
+### R21 — Enabling Swift (or `glance_backend_ceph`) on a running cloud
 
 | | |
 |---|---|
@@ -398,7 +399,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r22"></a>
 
-### R22
+### R22 — Inventory reordering
 
 | | |
 |---|---|
@@ -414,7 +415,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r23"></a>
 
-### R23
+### R23 — Any run with `--limit` on a large inventory
 
 | | |
 |---|---|
@@ -430,7 +431,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r24"></a>
 
-### R24
+### R24 — Effective container stop timeout is 10 s
 
 | | |
 |---|---|
@@ -446,7 +447,7 @@ before running them. Ratings are relative to a production cloud with running VMs
 
 <a id="r25"></a>
 
-### R25
+### R25 — `-t common` believed to reconfigure fluentd/cron
 
 | | |
 |---|---|
@@ -486,7 +487,8 @@ quadrantChart
 
 ## Related
 
-- scenario walk-throughs are in [Operations](../operations/index.md)
-- the commands are in [Operations](../operations/index.md)
-- the open questions behind the [NOT AVAILABLE] cells are in [Open questions](../troubleshooting/open-questions.md)
-- risks per tag are in the [tag index](tag-index.md).
+- [Operations](../operations/index.md) — the scenario walk-throughs and the commands
+- [Pre-execution checklist](../operations/pre-execution-checklist.md) — what to check before a run
+- [Open questions](../troubleshooting/open-questions.md) — the open questions behind the [NOT AVAILABLE] cells
+- [Tag index](tag-index.md) — from a tag to its component page, which lists the risks of the tag
+- [What a tag really executes](tags.md) — loop-notify and the other tag semantics that the evidence cells cite

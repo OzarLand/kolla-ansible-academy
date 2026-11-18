@@ -1,12 +1,15 @@
 ---
 title: Find it fast
+description: Typical operator questions about Kolla-Ansible Ussuri Day-2 runs, each with the section that answers it and how the answer is labelled there.
+tags: [tags, limit, serial, loop-notify, genconfig, deploy-containers, kolla-set-configs, images, one-shot, scaling, risk, unknowns]
 ---
 
 # Find it fast
 
 Typical operator questions and the section that answers them. The last column says how the answer is labelled there. To
-look something up by tag, by service or by term, use [Kolla Ansible Day 2](../index.md): tag index, service index,
-glossary, and the list of everything marked [NOT AVAILABLE].
+look something up by tag, by service or by term, use the [tag index](../risk/tag-index.md), the
+[Components](../components/index.md) pages and the [Glossary](../reference/glossary.md). The list of everything marked
+[NOT AVAILABLE] is [What is not known](../troubleshooting/what-is-not-known.md).
 
 | Topic | Question | Go to | Evidence there |
 |---|---|---|---|
@@ -54,3 +57,13 @@ glossary, and the list of everything marked [NOT AVAILABLE].
 | Which tasks can take hours with hundreds of computes? | Per-compute task chains multiplied by ⌈C/forks⌉ waves, serial fact gathering under `--limit`, image pulls (one per container placed on the compute, [Component dependencies §5](../components/dependencies.md#5-compute-node-dependency-summary)), per-batch waits under `serial` | [Compute scaling §3–4](../concepts/compute-scaling-and-performance.md#3-expensive-tasks-and-their-scaling-factors) |
 | Why does a small change generate a large workload? | Global inputs are rendered into per-host files; loop-notify; every run re-executes the full per-host chain | [Compute scaling §5](../concepts/compute-scaling-and-performance.md#5-why-a-small-change-becomes-a-large-workload), [Why a small change creates a large workload](../risk/small-change-large-workload.md) |
 | How can I minimise the operational impact? | `genconfig` + diff + `deploy-containers --limit` batches; narrow tags with `--skip-tags haproxy`; `ANSIBLE_SERIAL`; pre-pull; fact caching and pipelining; avoid global drift | [Pre-execution checklist](../operations/pre-execution-checklist.md), [Operations](../operations/index.md), [Compute scaling §8](../concepts/compute-scaling-and-performance.md#8-bottlenecks-and-optimisation-opportunities-ranked) |
+
+## Related
+
+- [Ten things to know before a production run](ten-things-to-know.md) — ten things to know before running Kolla-Ansible
+  Ussuri on production
+- [Conventions and evidence labels](conventions.md) — the definition of [CODE] and [NOT AVAILABLE]
+- [Operations](../operations/index.md) — the operation pages, each with its commands
+- [Tag index](../risk/tag-index.md) — lookup by tag
+- [Components](../components/index.md) — lookup by service
+- [Glossary](../reference/glossary.md) — lookup by term

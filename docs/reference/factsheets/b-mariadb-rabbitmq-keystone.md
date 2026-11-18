@@ -1,5 +1,7 @@
 ---
 title: Fact sheet B
+description: "Fact sheet for MariaDB, RabbitMQ and Keystone: Galera bootstrap, recovery, backup and rolling restart, RabbitMQ, Keystone fernet keys."
+tags: [mariadb, rabbitmq, keystone, mariadb-backup, mariadb-recovery, handlers]
 ---
 
 # Fact sheet B

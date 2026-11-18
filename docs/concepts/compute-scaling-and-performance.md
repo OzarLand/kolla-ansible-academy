@@ -1,5 +1,7 @@
 ---
 title: Compute scaling and performance
+description: Which Kolla-Ansible Ussuri operations grow with the number of compute nodes, why, and how to bound them.
+tags: [scaling, nova, limit, serial, facts, loop-notify, pull, images]
 ---
 
 # Compute scaling and performance
@@ -28,9 +30,8 @@ Which Kolla-Ansible Ussuri operations grow with the number of compute nodes, why
 
 > **No timings are given here.** Work is expressed as *operation counts* read from the source and as formulas whose
 > parameters depend on your own environment. Nothing was run against a host. The evidence labels **[CODE]** and
-> **[NOT AVAILABLE]** are defined once, in the [Conventions and evidence
-> labels](../start/conventions.md#evidence-labels). Here [NOT AVAILABLE] covers, for example, task-result totals and
-> wall times.
+> **[NOT AVAILABLE]** are defined once, in [Evidence labels](../start/conventions.md#evidence-labels). Here
+> [NOT AVAILABLE] covers, for example, task-result totals and wall times.
 
 ---
 
@@ -159,7 +160,7 @@ Scope legend:
 For a play whose tasks all run on the compute group (the nova-cell, openvswitch and neutron plays are dominated by
 it):
 
-```
+```text
 T_play ≈ Σ_tasks [ ceil(H_task / F_eff) × items_task × t_inv ]      (remote work, per-task barrier)
        + Σ_tasks [ H_task × t_render_task / P ]                       (deploy-host templating, P cores)
        + Σ_delegated/run_once steps                                    (constant per batch)

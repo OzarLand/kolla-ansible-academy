@@ -1,5 +1,7 @@
 ---
 title: Repository architecture
+description: "How Kolla-Ansible Ussuri is built: entry points, from CLI command to ansible-playbook run, site.yml layout, service role anatomy, custom modules."
+tags: [deploy, reconfigure, genconfig, handlers, kolla-set-configs, serial, images, inventory, docker]
 ---
 
 # Repository architecture
@@ -30,7 +32,7 @@ actually touch the hosts. The other documents build on the vocabulary defined he
 
 > Scope: the `ussuri-eol` tag of `openstack/kolla-ansible` (HEAD `8a94fe9`). Every path below is relative to the root of
 > that checkout; paths prefixed `kolla` or `ansible 2.9.27` point into the kolla image repository or the Ansible source.
-> The evidence labels **[CODE]** and **[NOT AVAILABLE]** are defined once, in the [Conventions and evidence
+> The evidence labels **[CODE]** and **[NOT AVAILABLE]** are defined once, in [Evidence
 > labels](../start/conventions.md#evidence-labels).
 
 ---
@@ -173,7 +175,7 @@ The complete table of 84 plays (hosts, tags, serial) is generated from the sourc
 
 Every service role follows the same skeleton. `nova` is a typical example:
 
-```
+```text
 roles/<svc>/
   defaults/main.yml      <svc>_services dict (containers), images, volumes, ks users/endpoints, ports
   meta/main.yml          dependencies: [ { role: common } ]
@@ -488,6 +490,7 @@ How `kolla_docker` decides [CODE]:
 - [Tags](../risk/tags.md) (how tags select this work)
 - [Execution flow](deployment-execution-flow.md) (execution order and the action matrix)
 - [Generated inventory](../reference/generated-inventory.md) (every play, container, role and handler)
-- [Kolla Ansible Day 2](../index.md) (tag index, service index, glossary)
+- [Tag index](../risk/tag-index.md), [Components](../components/index.md) and [Glossary](../reference/glossary.md) (tag
+  index, service index, glossary)
 
 [sheet-b-15]: ../reference/factsheets/b-mariadb-rabbitmq-keystone.md#15-handlers-ansiblerolesmariadbhandlersmainyml-in-definition-order

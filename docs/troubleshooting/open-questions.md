@@ -1,19 +1,26 @@
 ---
 title: Open questions
+description: The open questions of the study, Q1 to Q14, each with why it matters and its status, either not available from the sources or answered from them.
+tags: [unknowns, evidence, nova, libvirt, neutron, openvswitch, haproxy, keepalived, mariadb, keystone, glance, swift, bootstrap-servers, check-mode, scaling, images, one-shot]
 ---
 
 # Open questions
+
+The open questions of the study, Q1 to Q14. The summary table lists them, and each question has a section that gives
+why it matters and its status.
 
 > [!NOTE]
 > **Key answers**
 >
 > - **Open questions [Q1–Q14](#q1):** all are [NOT AVAILABLE], except [Q10](#q10) and [Q14](#q14), which are answered
->   from the source [CODE] ([Open questions](#open-questions)). [Q1](#q1) asks whether running VMs survive a
+>   from the source [CODE] ([Questions](#questions)). [Q1](#q1) asks whether running VMs survive a
 >   `nova_libvirt` restart or recreate.
 
+## Summary
+
 These questions cannot be settled by reading the sources, except Q10 and Q14, which are answered from the source in
-their rows: Q10 by comparing the Ansible 2.8.20 and 2.9.27 code, Q14 by reading the kolla image sources. The others
-are [NOT AVAILABLE].
+their sections: Q10 by comparing the Ansible 2.8.20 and 2.9.27 code, Q14 by reading the kolla image sources. The
+others are [NOT AVAILABLE].
 
 | # | Question |
 |---|---|
@@ -32,9 +39,11 @@ are [NOT AVAILABLE].
 | [Q13](#q13) | `bootstrap-servers` re-run effects on a live compute |
 | [Q14](#q14) | Behaviour of the kolla images' `extend_start.sh` (what `KOLLA_BOOTSTRAP`/`KOLLA_UPGRADE` run) |
 
+## Questions
+
 <a id="q1"></a>
 
-### Q1
+### Q1 — Do running VMs survive a `nova_libvirt` restart or recreate?
 
 | | |
 |---|---|
@@ -44,7 +53,7 @@ are [NOT AVAILABLE].
 
 <a id="q2"></a>
 
-### Q2
+### Q2 — Data-plane loss during a `neutron_openvswitch_agent` restart
 
 | | |
 |---|---|
@@ -54,7 +63,7 @@ are [NOT AVAILABLE].
 
 <a id="q3"></a>
 
-### Q3
+### Q3 — Data-plane loss during an `openvswitch_vswitchd` restart or recreate
 
 | | |
 |---|---|
@@ -64,7 +73,7 @@ are [NOT AVAILABLE].
 
 <a id="q4"></a>
 
-### Q4
+### Q4 — L3 agent restart with and without `enable_neutron_agent_ha`
 
 | | |
 |---|---|
@@ -74,7 +83,7 @@ are [NOT AVAILABLE].
 
 <a id="q5"></a>
 
-### Q5
+### Q5 — HAProxy restart: VIP behaviour
 
 | | |
 |---|---|
@@ -84,7 +93,7 @@ are [NOT AVAILABLE].
 
 <a id="q6"></a>
 
-### Q6
+### Q6 — MariaDB rolling restart, failure in wave 1: do later waves proceed?
 
 | | |
 |---|---|
@@ -94,7 +103,7 @@ are [NOT AVAILABLE].
 
 <a id="q7"></a>
 
-### Q7
+### Q7 — Real timing at scale
 
 | | |
 |---|---|
@@ -104,7 +113,7 @@ are [NOT AVAILABLE].
 
 <a id="q8"></a>
 
-### Q8
+### Q8 — Image sizes and registry throughput
 
 | | |
 |---|---|
@@ -114,7 +123,7 @@ are [NOT AVAILABLE].
 
 <a id="q9"></a>
 
-### Q9
+### Q9 — Check mode (`--check --diff`) usability
 
 | | |
 |---|---|
@@ -124,7 +133,7 @@ are [NOT AVAILABLE].
 
 <a id="q10"></a>
 
-### Q10
+### Q10 — Ansible 2.8 vs 2.9 behaviour for F1/F2
 
 | | |
 |---|---|
@@ -134,7 +143,7 @@ are [NOT AVAILABLE].
 
 <a id="q11"></a>
 
-### Q11
+### Q11 — Fernet key distribution failure modes
 
 | | |
 |---|---|
@@ -144,7 +153,7 @@ are [NOT AVAILABLE].
 
 <a id="q12"></a>
 
-### Q12
+### Q12 — Glance backend switch on enabling Swift
 
 | | |
 |---|---|
@@ -154,7 +163,7 @@ are [NOT AVAILABLE].
 
 <a id="q13"></a>
 
-### Q13
+### Q13 — `bootstrap-servers` re-run effects on a live compute
 
 | | |
 |---|---|
@@ -164,10 +173,26 @@ are [NOT AVAILABLE].
 
 <a id="q14"></a>
 
-### Q14
+### Q14 — Behaviour of the kolla images' `extend_start.sh`
 
 | | |
 |---|---|
 | **Question** | Behaviour of the kolla images' `extend_start.sh` (what `KOLLA_BOOTSTRAP`/`KOLLA_UPGRADE` run) |
 | **Why it matters** | [F5](../reference/findings.md#f5), [F15](../reference/findings.md#f15) |
 | **Status** | **Answered from the source** [CODE], see [Kolla images §4](../concepts/kolla-images.md#4-one-shot-containers-what-the-environment-variables-run). Nova's bootstrap containers run with `KOLLA_UPGRADE`: `api_db sync` + `db sync` (nova-api), `db sync --local_cell` (nova-conductor), so Nova's online data migrations never run outside `upgrade`; the images' `KOLLA_BOOTSTRAP` branches are unreachable. Placement's `KOLLA_BOOTSTRAP` runs `db sync` + `online_data_migrations` on every deploy/reconfigure. Glance adds `db_load_metadefs`. Heat creates `heat_user_domain`/`heat_domain_admin` only if the domain is absent, so a changed `heat_domain_admin_password` is never pushed to Keystone. neutron-server's `KOLLA_BOOTSTRAP` migrates neutron, -dynamic-routing, -fwaas and -vpnaas; the rolling upgrade list omits -dynamic-routing. RabbitMQ writes the Erlang cookie only in its bootstrap container. Agent, OVS and OVN images have no one-shot branch |
+
+## Related
+
+- [What is not known](what-is-not-known.md) — everything marked [NOT AVAILABLE], by topic, with the sections that mark
+  each point
+- [Risk register](../risk/risk-register.md) — the risks that the "Why it matters" rows cite
+- [Findings](../reference/findings.md) — the findings that Q1, Q10 and Q14 cite: [F1](../reference/findings.md#f1),
+  [F2](../reference/findings.md#f2), [F5](../reference/findings.md#f5) and [F15](../reference/findings.md#f15)
+- [Kolla images §4](../concepts/kolla-images.md#4-one-shot-containers-what-the-environment-variables-run) — the answer
+  to [Q14](#q14): what the one-shot containers run in each image
+- [Compute scaling](../concepts/compute-scaling-and-performance.md) — the model that [Q7](#q7) and [Q8](#q8) concern
+- [Limits of this study](../reference/method-and-limits.md#limits-of-this-study) — source code only: why these
+  questions cannot be settled here
+- [Fact sheet E
+  §14](../reference/factsheets/e-host-bootstrap-ops-playbooks.md#14-register-of-open-questions-not-available-or-answered-from-code)
+  — the register of open questions of fact sheet E

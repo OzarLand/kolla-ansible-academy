@@ -1,14 +1,16 @@
 ---
 title: "Kolla images: start path and one-shot containers"
+description: What the kolla images do when a container starts, what kolla_set_configs --check compares, and what the one-shot containers run.
+tags: [images, kolla-set-configs, one-shot, libvirt, neutron, horizon, placement, heat]
 ---
 
 # Kolla images: start path and one-shot containers
 
-This annex answers open question [Q14](../troubleshooting/open-questions.md#q14) of
-[Findings](../reference/findings.md): what the kolla images do when a container starts, and what the one-shot containers
-that Kolla-Ansible starts with `KOLLA_BOOTSTRAP`, `KOLLA_UPGRADE`, `KOLLA_OSM` and similar variables actually run. It
-was read from the kolla image repository (`openstack/kolla`, tag `ussuri-eol`, commit `9107c5f`) and matched against
-Kolla-Ansible `ussuri-eol` (`8a94fe9`). The images were read, not built or run.
+This page answers open question [Q14](../troubleshooting/open-questions.md#q14) of the [Open
+questions](../troubleshooting/open-questions.md): what the kolla images do when a container starts, and what the
+one-shot containers that Kolla-Ansible starts with `KOLLA_BOOTSTRAP`, `KOLLA_UPGRADE`, `KOLLA_OSM` and similar variables
+actually run. It was read from the kolla image repository (`openstack/kolla`, tag `ussuri-eol`, commit `9107c5f`) and
+matched against Kolla-Ansible `ussuri-eol` (`8a94fe9`). The images were read, not built or run.
 
 > [!NOTE]
 > **Key answers**
@@ -32,7 +34,7 @@ Kolla-Ansible `ussuri-eol` (`8a94fe9`). The images were read, not built or run.
 Citation convention: kolla image paths carry a `kolla` prefix (kolla `docker/base/start.sh:8`). Kolla-Ansible paths have
 no prefix and are relative to its `ansible/` directory (`roles/nova/tasks/bootstrap_service.yml:13`,
 `library/kolla_docker.py:543-578`, `nova.yml:45-61`), except `tools/...`. Ansible source paths carry an `ansible 2.9.27`
-prefix. Evidence labels are those of the [Conventions and evidence labels](../start/conventions.md#evidence-labels):
+prefix. Evidence labels are those of [Conventions and evidence labels](../start/conventions.md#evidence-labels):
 [CODE] (a kolla or Ansible path counts as [CODE]) and [NOT AVAILABLE] (the sources do not establish it).
 
 ---
@@ -626,4 +628,4 @@ they use the same manifest.
   uses `--check`)
 - [Predict and inspect a run](../operations/predict-a-run.md) (running `--check` by hand)
 - [Nova deep dive §5](../components/nova-deep-dive.md#5-nova-libvirt-why-its-restart-is-special) (nova-libvirt restarts)
-- [Kolla Ansible Day 2](../index.md) (glossary, service index)
+- [Glossary](../reference/glossary.md) and [Components](../components/index.md) (glossary, service index)

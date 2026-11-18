@@ -1,10 +1,13 @@
 ---
 title: Ten things to know before a production run
+description: Ten things to know before running Kolla-Ansible Ussuri on production, each with the section that gives the evidence.
+tags: [reconfigure, deploy, loop-notify, serial, tags, limit, images, kolla-set-configs, genconfig, handlers, risk]
 ---
 
 # Ten things to know before a production run
 
-<!-- TODO editorial: intro (old section heading: "Ten things to know before running Kolla-Ansible Ussuri on production") -->
+Ten things to know before running Kolla-Ansible Ussuri on production. Most items link to the section that gives the
+evidence.
 
 1. **`reconfigure` is `deploy`** for 70 of the 72 roles that have a `reconfigure.yml`. It re-runs Keystone registration,
    DB creation and the DB-sync bootstrap containers for most services; Neutron's DB sync is the default exception. The
@@ -47,5 +50,13 @@ title: Ten things to know before a production run
       entry listed before it already differs (then it exits 1 and the container restarts). Exit 2 is real drift, but the
       check task fails instead of restarting the container ([Kolla images
       §3](../concepts/kolla-images.md#3-kolla_set_configs---check-what-it-compares-and-its-exit-codes)).
+
+## Related
+
+- [Find it fast](find-it-fast.md) — typical operator questions and the section that answers them
+- [Pre-execution checklist](../operations/pre-execution-checklist.md) — what to check before a run
+- [Risk register](../risk/risk-register.md) — the risks [R1–R25](../risk/risk-register.md#r1), with their precautions
+- [Technical findings](../reference/findings.md) — the fifteen headline findings, each with its evidence
+- [Operations](../operations/index.md) — the operation pages, each with its commands
 
 [readme-03-loop-notify]: ../risk/tags.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code

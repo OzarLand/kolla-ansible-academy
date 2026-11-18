@@ -1,5 +1,7 @@
 ---
 title: Deployment execution flow
+description: "How Kolla-Ansible Ussuri decides what runs when: play order, steps inside a role, handler flush points, batching, and how the actions differ."
+tags: [deploy, reconfigure, upgrade, deploy-containers, genconfig, pull, stop, handlers, serial, one-shot, nova]
 ---
 
 # Deployment execution flow

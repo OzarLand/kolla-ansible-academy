@@ -4,7 +4,7 @@ r"""Markdown helpers of the Kolla Ansible Day 2 portal.
 (``portal_mdx``) and uses :func:`portal_mdx.slug.gh_slugify` for heading ids.
 The build runs with ``PYTHONPATH=tools/site`` so the package is importable.
 
-The extension bundles six small, independent features; each can be turned
+The extension bundles seven small, independent features; each can be turned
 off with an option of the same name:
 
 ``lists``
@@ -18,6 +18,10 @@ off with an option of the same name:
     ``/`` and ``,`` (:mod:`portal_mdx.breaks`).
 ``evidence``
     ``[CODE]`` and ``[NOT AVAILABLE]`` become chips (:mod:`portal_mdx.evidence`).
+``placeholders``
+    a tag-shaped placeholder such as ``<svc>`` in running text stays visible
+    instead of being swallowed as an unknown HTML element
+    (:mod:`portal_mdx.placeholders`).
 ``anchors``
     repeated headings get GitHub's ``-1``, ``-2`` suffixes
     (:mod:`portal_mdx.anchors`).
@@ -37,6 +41,7 @@ from .breaks import TableBreaksExtension
 from .evidence import EvidenceExtension
 from .lists import GithubListsExtension
 from .pipes import TablePipesExtension
+from .placeholders import PlaceholdersExtension
 from .severity import SeverityExtension
 from .slug import GithubSlugger, gh_slug, gh_slugify
 
@@ -56,6 +61,7 @@ class PortalExtension(Extension):
             "pipes": [True, "Show an escaped pipe in table code spans as a pipe"],
             "breaks": [True, "Optional line breaks after / and , in table code spans"],
             "evidence": [True, "Render [CODE] and [NOT AVAILABLE] as chips"],
+            "placeholders": [True, "Show <name> placeholders that are not HTML elements as text"],
             "anchors": [True, "GitHub suffixes (-1, -2) for repeated headings"],
             "severity": [True, "Add a class to severity cells of risk tables"],
         }
@@ -71,6 +77,8 @@ class PortalExtension(Extension):
             TableBreaksExtension().extendMarkdown(md)
         if self.getConfig("evidence"):
             EvidenceExtension().extendMarkdown(md)
+        if self.getConfig("placeholders"):
+            PlaceholdersExtension().extendMarkdown(md)
         if self.getConfig("anchors"):
             AnchorsExtension().extendMarkdown(md)
         if self.getConfig("severity"):

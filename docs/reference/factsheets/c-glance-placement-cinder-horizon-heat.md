@@ -1,5 +1,7 @@
 ---
 title: Fact sheet C
+description: "Fact sheet for Glance, Placement, Cinder, Horizon and Heat: per-role flow, bootstrap on reconfigure, dependencies and restart impact."
+tags: [glance, placement, cinder, horizon, heat, reconfigure, one-shot]
 ---
 
 # Fact sheet C
