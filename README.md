@@ -7,9 +7,11 @@ study](docs/reference/method-and-limits.md)).
 
 ## Portal
 
-<https://ozarland.github.io/kolla-ansible-day2/> — published by the Docs workflow
-([.github/workflows/docs.yml](.github/workflows/docs.yml)) once GitHub Pages is enabled for the repository ([one-time
-setup](tools/site/README.md#one-time-setup-enable-github-pages)).
+**<https://ozarland.github.io/kolla-ansible-day2/>**
+
+The portal is the recommended way to read the study: it has a search on every page, a navigation by operator need and
+the impact classes of each operation. The Docs workflow ([.github/workflows/docs.yml](.github/workflows/docs.yml))
+rebuilds and publishes it on every push to `main` that changes the documentation.
 
 The portal is generated from the Markdown under `docs/`, which is the single source. Every page can also be read here
 on GitHub, starting from [docs/index.md](docs/index.md).
