@@ -176,6 +176,9 @@ def collect(root: Path, docs_dir: str) -> dict:
     docs = root / docs_dir
     head = git(root, "log", "-1", "--format=%cI")
     head = head.strip() if head else None
+    # Newer Git writes a UTC offset as "Z"; keep one spelling in the output.
+    if head and head.endswith("Z"):
+        head = head[:-1] + "+00:00"
     if head is None:
         print("prebuild: no Git history available; pages get no date", file=sys.stderr)
     dates = last_commit_dates(root, docs_dir) if head else {}
