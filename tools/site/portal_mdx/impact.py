@@ -3,7 +3,7 @@
 The operation pages declare their impact in the front matter (``impact:``)
 and the page template shows it as chips. The same class names are written in
 the body of a few pages as code spans (the catalogue of
-``docs/operations/index.md``, the definitions of ``docs/start/conventions.md``).
+``operations/index.md`` of a release, the definitions of its ``start/conventions.md``).
 So that the stylesheet can give those code spans the colour of the matching
 chip, without any markup in the Markdown source, this postprocessor adds a
 class to every code span whose whole text is one of the eight class names::
@@ -28,7 +28,7 @@ from markdown.postprocessors import Postprocessor
 
 __all__ = ["ImpactExtension", "makeExtension", "IMPACT_CLASSES"]
 
-# The vocabulary of the `impact` front matter key (docs/start/conventions.md).
+# The vocabulary of the `impact` front matter key (start/conventions.md of a release).
 IMPACT_CLASSES = frozenset(
     {
         "read-only",

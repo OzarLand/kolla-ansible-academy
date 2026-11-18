@@ -1,0 +1,37 @@
+{#-
+  The only page of a planned release (/<id>/index.html), built from a stub
+  that tools/site/releases.py generates for each release of versions.toml
+  whose status is "planned". All the text of the page is here: the stub only
+  names the release (`portal_release` in its front matter).
+-#}
+{% extends "main.html" %}
+{% set portal = config.extra.portal %}
+
+{% block extrahead %}
+  {{ super() }}
+  <meta name="robots" content="noindex">
+{% endblock %}
+
+{% block content %}
+  {% for release in portal.releases if release.id == page.meta.portal_release %}
+    <p class="portal-planned__eyebrow">Coming soon</p>
+    <h1>{{ release.title }}</h1>
+    <p>
+      The study of Kolla-Ansible {{ release.kolla_ansible }} (OpenStack {{ release.openstack }}) is not available yet.
+      This release has no page other than this one.
+    </p>
+  {% endfor %}
+  <h2 id="available">Available</h2>
+  <ul class="portal-releases">
+    {% for release in portal.releases if release.status != "planned" %}
+      <li>
+        <a href="{{ base_url }}/{{ portal.up }}{{ release.id }}/">{{ release.title }}</a>
+        {% if release.tag %}<span class="portal-releases__note">tag <code>{{ release.tag }}</code></span>{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+  <p>
+    A study is valid for its own release only: what the available release shows does not describe
+    {% for release in portal.releases if release.id == page.meta.portal_release %}{{ release.title }}{% endfor %}.
+  </p>
+{% endblock %}

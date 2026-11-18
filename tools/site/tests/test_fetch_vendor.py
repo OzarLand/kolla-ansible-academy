@@ -54,8 +54,8 @@ class FetchVendorTest(unittest.TestCase):
         self.addCleanup(self._tmp.cleanup)
         self.tmp = Path(self._tmp.name)
         self.root = self.tmp / "repo"
-        (self.root / "docs").mkdir(parents=True)
-        self.target = self.root / "docs/assets/vendor/mermaid/mermaid.min.js"
+        self.root.mkdir(parents=True)
+        self.target = self.root / "overrides/assets/vendor/mermaid/mermaid.min.js"
         self.tarball = self.tmp / "mermaid.tgz"
         make_tarball(
             self.tarball,
@@ -72,7 +72,7 @@ class FetchVendorTest(unittest.TestCase):
             self.addCleanup(patcher.stop)
 
     def ensure(self, **kwargs: object) -> bool:
-        return fetch_vendor.ensure(self.root, "docs", log=self.messages.append, **kwargs)
+        return fetch_vendor.ensure(self.root, log=self.messages.append, **kwargs)
 
     # -- pinned values ---------------------------------------------------------
 
@@ -92,9 +92,9 @@ class FetchVendorTest(unittest.TestCase):
     def test_vendor_readme_states_the_pinned_release(self) -> None:
         module = importlib.util.module_from_spec(SPEC)
         SPEC.loader.exec_module(module)
-        readme = SITE.parents[1] / "docs/assets/vendor/mermaid/README.md"
+        readme = SITE.parents[1] / "overrides/assets/vendor/mermaid/README.md"
         if not readme.is_file():
-            self.skipTest("docs/assets/vendor/mermaid/README.md is not in this tree")
+            self.skipTest("overrides/assets/vendor/mermaid/README.md is not in this tree")
         text = readme.read_text(encoding="utf-8")
         self.assertIn(module.VERSION, text)
         self.assertIn(module.TARBALL_INTEGRITY, text)
@@ -200,7 +200,7 @@ class FetchVendorTest(unittest.TestCase):
 
         status, out, _ = self.run_main("--tarball", str(self.tarball))
         self.assertEqual(status, 0)
-        self.assertIn("docs/assets/vendor/mermaid/mermaid.min.js", out)
+        self.assertIn("overrides/assets/vendor/mermaid/mermaid.min.js", out)
 
         status, out, _ = self.run_main("--tarball", str(self.tarball))
         self.assertEqual(status, 0)

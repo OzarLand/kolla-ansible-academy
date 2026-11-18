@@ -52,7 +52,7 @@ def write(root: Path, rel: str, text: str) -> None:
 
 def run(root: Path) -> dict:
     # --skip-vendor: these tests are about updates.json and must not download.
-    assert prebuild.main(["--root", str(root), "--skip-vendor"]) == 0
+    assert prebuild.main(["--root", str(root), "--docs-dir", "docs", "--skip-vendor"]) == 0
     return json.loads((root / "docs/assets/data/updates.json").read_text(encoding="utf-8"))
 
 
@@ -70,7 +70,7 @@ class PrebuildTest(unittest.TestCase):
             "---\ntitle: Reconfigure Nova\ntags: [nova]\n---\n\n# Reconfigure Nova\n",
         )
         write(self.repo, "docs/operations/index.md", "# Operations\n")
-        write(self.repo, "docs/assets/vendor/mermaid/README.md", "# Vendored\n")
+        write(self.repo, "docs/assets/notes/README.md", "# Not a page\n")
         write(self.repo, "docs/reference/listings/list.txt", "not a page\n")
         git(self.repo, "add", "-A")
         git(self.repo, "commit", "-q", "-m", "zero", date="2024-03-01T10:00:00+00:00")
@@ -156,6 +156,53 @@ class PrebuildTest(unittest.TestCase):
             "pages": [{"path": "index.md", "url": "", "title": "Home", "updated": None}],
         })
 
+    def test_a_move_without_a_change_is_not_an_update(self) -> None:
+        # The pages move to docs/ussuri/, as when the portal got releases; one
+        # of them is edited in the same commit, another one later.
+        git(self.repo, "mv", "docs", "ussuri")
+        (self.repo / "docs").mkdir()
+        git(self.repo, "mv", "ussuri", "docs/ussuri")
+        write(self.repo, "docs/ussuri/operations/index.md", "# Operations\n\nHub, edited while moving.\n")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-q", "-m", "move", date="2024-07-01T08:00:00+00:00")
+        write(self.repo, "docs/ussuri/index.md", "---\ntitle: Home\n---\n\n# Home\n\nEdited.\n")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-q", "-m", "edit", date="2024-08-05T08:00:00+00:00")
+        assert prebuild.main(["--root", str(self.repo), "--docs-dir", "docs/ussuri", "--skip-vendor"]) == 0
+        data = json.loads((self.repo / "docs/ussuri/assets/data/updates.json").read_text(encoding="utf-8"))
+        self.assertEqual(
+            {page["path"]: page["updated"] for page in data["pages"]},
+            {
+                "index.md": "2024-08-05",  # edited after the move
+                "operations/index.md": "2024-07-01",  # edited by the move
+                "operations/reconfigure-nova.md": "2024-05-17",  # only moved
+            },
+        )
+
+    def test_releases_of_the_registry(self) -> None:
+        git(self.repo, "mv", "docs", "ussuri")
+        (self.repo / "docs").mkdir()
+        git(self.repo, "mv", "ussuri", "docs/ussuri")
+        write(
+            self.repo,
+            "versions.toml",
+            'default = "ussuri"\n'
+            '[[release]]\nid = "ussuri"\nstatus = "available"\nopenstack = "Ussuri"\n'
+            'kolla_ansible = "10.x"\ntag = "ussuri-eol"\n'
+            '[[release]]\nid = "2023.1"\nstatus = "planned"\nopenstack = "2023.1 Antelope"\n'
+            'kolla_ansible = "16.x"\n',
+        )
+        err = io.StringIO()
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+            self.assertEqual(prebuild.main(["--root", str(self.repo), "--skip-vendor"]), 0)
+            # A planned release has no pages to prepare; an unknown one is refused.
+            self.assertEqual(prebuild.main(["--root", str(self.repo), "--skip-vendor", "--release", "2023.1"]), 1)
+            self.assertEqual(prebuild.main(["--root", str(self.repo), "--skip-vendor", "--release", "nope"]), 1)
+        self.assertTrue((self.repo / "docs/ussuri/assets/data/updates.json").is_file())
+        self.assertFalse((self.repo / "docs/2023.1").exists())
+        self.assertIn("planned", err.getvalue())
+        self.assertIn("not a release", err.getvalue())
+
     def test_front_matter_title_forms(self) -> None:
         title = prebuild.front_matter_title
         self.assertEqual(title("---\ntitle: Plain title\n---\n"), "Plain title")
@@ -181,7 +228,7 @@ class VendorStepTest(unittest.TestCase):
     def main(self, *args: str) -> tuple[int, str]:
         err = io.StringIO()
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
-            status = prebuild.main(["--root", str(self.root), *args])
+            status = prebuild.main(["--root", str(self.root), "--docs-dir", "docs", *args])
         return status, err.getvalue()
 
     def test_missing_bundle_is_fetched(self) -> None:
@@ -195,7 +242,7 @@ class VendorStepTest(unittest.TestCase):
         download.assert_called_once()
         install.assert_called_once()
         self.assertEqual(
-            install.call_args.args[1], self.root / "docs/assets/vendor/mermaid/mermaid.min.js"
+            install.call_args.args[1], self.root / "overrides/assets/vendor/mermaid/mermaid.min.js"
         )
         self.assertTrue((self.root / "docs/assets/data/updates.json").is_file())
 

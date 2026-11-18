@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
-"""Checks on the built site (run after `zensical build`).
+"""Checks on the built portal (run after tools/site/build.py).
 
 `zensical build --strict` validates the links it resolves itself. This script
-looks at what was actually written to the site directory, whatever produced
-it (Markdown, templates of overrides/, the theme):
+looks at what was actually written to the output directory, whatever produced
+it (Markdown, templates of overrides/, the theme, tools/site/releases.py).
+The output directory holds the site of each available release under <id>/,
+and the root of the portal (landing page, not-found page, versions.json, one
+page per planned release).
+
+On every page of the portal:
 
     link-file          every internal href/src of every HTML page, and every
-                       url() of every stylesheet, points to a file of the site
+                       url() of every stylesheet, points to a file of the
+                       portal; this covers the links from one release to
+                       another, such as those of the release selector
     link-anchor        every internal link with a #fragment points to an
                        element id of the target page
     external-resource  no page or stylesheet loads a script, a stylesheet, a
@@ -16,26 +23,41 @@ it (Markdown, templates of overrides/, the theme):
                        at runtime: a page with a Mermaid diagram loads the
                        vendored Mermaid library, and no element asks for the
                        GitHub repository statistics
-    page-missing       every Markdown page under docs/ has its built page
     page-empty         no page has an empty content area (a page with a title
                        and nothing else is a warning until --strict)
-    search-index       the search index exists, is valid JSON, has at least
-                       one entry per page, and every entry points to an
-                       existing page and anchor
-    sitemap            every URL of sitemap.xml is a page of the site
-    updates            every page of assets/data/updates.json is built
+    canonical          the canonical address of a page is the page itself
     duplicate-id       an id used twice in a page (warning)
+
+On the site of each available release:
+
+    page-missing       every Markdown page of docs/<id>/ has its built page
+    search-index       the search index of the release exists, is valid JSON,
+                       has at least one entry per page, and every entry points
+                       to an existing page and anchor of the same release
+    sitemap            every URL of <id>/sitemap.xml is a page of the release
+    updates            every page of <id>/assets/data/updates.json is built
+
+On the root of the portal:
+
+    portal-root        versions.json is valid and says what versions.toml
+                       says; the landing page opens the default release, which
+                       is built; the not-found page knows the same releases
+                       and its list of addresses to redirect is exactly the
+                       pages of the release that was published without a
+                       prefix; a planned release has its "coming soon" page
+                       and nothing else; no directory belongs to no release
 
 It prints the number of pages, links, anchors and the external hosts linked.
 Exit status: 0 when there is no error, 1 otherwise. With --strict every
 warning is an error. Standard library only (Python 3.11 or newer).
 
-Usage:  python3 tools/site/check_site.py site [--strict]
+Usage:  python3 tools/site/check_site.py site [--strict] [--release ID]
 """
 
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import re
@@ -49,19 +71,22 @@ from urllib.parse import unquote, urljoin, urlsplit
 # The page listing and the report format are shared with check_docs.py, which
 # lives next to this file.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from check_docs import ROOT, Report, SiteConfig, list_pages, load_config, print_report  # noqa: E402
+import releases  # noqa: E402
+from check_docs import ROOT, Report, list_pages, print_report, release_config  # noqa: E402
 
 RULES = (
     "link-file",
     "link-anchor",
     "external-resource",
     "runtime-request",
-    "page-missing",
     "page-empty",
+    "canonical",
+    "duplicate-id",
+    "page-missing",
     "search-index",
     "sitemap",
     "updates",
-    "duplicate-id",
+    "portal-root",
 )
 
 #: Used when the site URL is unknown, so that a link climbing above the site
@@ -294,7 +319,10 @@ class Site:
         self.host = parts.netloc.lower()
         self.base_path = parts.path
 
-        self.stats = {"links": 0, "anchors": 0, "resources": 0, "external links": 0}
+        #: Top-level directories that may be missing without an error: the
+        #: sites of the releases a run with --release did not build.
+        self.not_built: set[str] = set()
+        self.stats = {"links": 0, "anchors": 0, "resources": 0, "external links": 0, "not built": 0}
         self.external_hosts: dict[str, int] = {}
         self.script_hosts: dict[str, int] = {}
 
@@ -339,6 +367,9 @@ class Site:
         elif rel not in self.files and rel in self.dirs:
             rel += "/index.html"
         if rel not in self.files:
+            if rel.split("/")[0] in self.not_built:
+                self.stats["not built"] += 1
+                return "skip", "", ""
             return "missing", rel, ""
         return "file", rel, fragment
 
@@ -456,17 +487,26 @@ class Site:
             container, text, body_text = page.content_text()
             if text == 0:
                 self.report.error(rel, 1, "page-empty", f"<{container}> has no text")
-            elif body_text == 0 and rel != "404.html":
+            elif body_text == 0 and not rel.endswith("404.html"):
                 self.report.warning(rel, 1, "page-empty", f"<{container}> has a title and no other text")
             seen: set[str] = set()
             for value in page.ids:
                 if value in seen:
                     self.report.warning(rel, 1, "duplicate-id", f"id `{value}` is used more than once")
                 seen.add(value)
+            if page.canonical and self.site_url_known and not rel.endswith("404.html"):
+                kind, value, _ = self.locate(rel, page.canonical, page.base)
+                if (kind, value) != ("file", rel):
+                    self.report.error(
+                        rel, 1, "canonical", f"canonical address `{page.canonical}` is not the address of this page"
+                    )
 
-    def page_file(self, source: str, directory_urls: bool) -> str | None:
-        """Built file of a docs-relative Markdown path (None: not built)."""
-        stem = source[: -len(".md")]
+    def page_file(self, source: str, directory_urls: bool, prefix: str = "") -> str | None:
+        """Built file of a docs-relative Markdown path (None: not built).
+
+        `prefix` is the directory of the release in the portal (`ussuri/`).
+        """
+        stem = prefix + source[: -len(".md")]
         folder, _, name = stem.rpartition("/")
         prefix = folder + "/" if folder else ""
         if name in ("index", "README"):
@@ -477,11 +517,13 @@ class Site:
             candidates = [first, second]
         return next((c for c in candidates if c in self.files), None)
 
-    def check_sources(self, sources: list[str], docs_dir: str, directory_urls: bool) -> list[str]:
+    def check_sources(
+        self, sources: list[str], docs_dir: str, directory_urls: bool, prefix: str = ""
+    ) -> list[str]:
         """Every Markdown page has a built page. Returns the built files."""
         built = []
         for source in sources:
-            target = self.page_file(source, directory_urls)
+            target = self.page_file(source, directory_urls, prefix)
             if target is None:
                 self.report.error(
                     f"{docs_dir}/{source}", 1, "page-missing", "Markdown page has no built page in the site"
@@ -490,13 +532,14 @@ class Site:
                 built.append(target)
         return built
 
-    def check_search_index(self, expected: list[str]) -> int:
-        """Search index: present, valid, one entry per page, no dead entry."""
+    def check_search_index(self, expected: list[str], prefix: str = "") -> int:
+        """Search index of one site: present, valid, one entry per page, no dead entry."""
         error = self.report.error
-        name = next((n for n in SEARCH_INDEX_NAMES if n in self.files), None)
-        if name is None:
-            error(SEARCH_INDEX_NAMES[0], 1, "search-index", "the search index file is missing")
+        short = next((n for n in SEARCH_INDEX_NAMES if prefix + n in self.files), None)
+        if short is None:
+            error(prefix + SEARCH_INDEX_NAMES[0], 1, "search-index", "the search index file is missing")
             return 0
+        name = prefix + short
         try:
             data = json.loads((self.dir / name).read_text(encoding="utf-8"))
         except (OSError, ValueError) as exc:
@@ -513,8 +556,8 @@ class Site:
             if not isinstance(location, str):
                 error(name, 1, "search-index", f"entry {number} has no `location`")
                 continue
-            kind, value, fragment = self.locate("index.html", location or "./")
-            if kind != "file":
+            kind, value, fragment = self.locate(prefix + "index.html", location or "./")
+            if kind != "file" or not value.startswith(prefix):
                 error(name, 1, "search-index", f"entry {number} points to `{location}`, which is not in the site")
                 continue
             indexed[value] = indexed.get(value, 0) + 1
@@ -532,7 +575,7 @@ class Site:
         # The theme bundle loads `<base>/search.json` and starts the worker
         # named by `search`; both come from the configuration of each page.
         for rel, page in self.pages.items():
-            if not page.theme_config.strip():
+            if not rel.startswith(prefix) or not page.theme_config.strip():
                 continue
             try:
                 settings = json.loads(page.theme_config)
@@ -542,7 +585,7 @@ class Site:
             if not isinstance(settings, dict):
                 continue
             base, worker = settings.get("base"), settings.get("search")
-            if isinstance(base, str) and name == "search.json":
+            if isinstance(base, str) and short == "search.json":
                 kind, value, _ = self.locate(rel, base.rstrip("/") + "/search.json", page.base)
                 if (kind, value) != ("file", name):
                     error(
@@ -560,13 +603,15 @@ class Site:
                 )
         return len(items)
 
-    def check_sitemap(self) -> int:
-        if "sitemap.xml" not in self.files or not self.site_url_known:
+    def check_sitemap(self, prefix: str = "") -> int:
+        """Every URL of a sitemap is a file of the portal, under `prefix`."""
+        name = prefix + "sitemap.xml"
+        if name not in self.files or not self.site_url_known:
             return 0
         try:
-            root = ElementTree.parse(self.dir / "sitemap.xml").getroot()
+            root = ElementTree.parse(self.dir / name).getroot()
         except ElementTree.ParseError as exc:
-            self.report.error("sitemap.xml", 1, "sitemap", f"not valid XML: {exc}")
+            self.report.error(name, 1, "sitemap", f"not valid XML: {exc}")
             return 0
         count = 0
         for element in root.iter():
@@ -574,15 +619,13 @@ class Site:
                 continue
             count += 1
             kind, value, _ = self.locate("index.html", element.text.strip())
-            if kind != "file":
-                self.report.error(
-                    "sitemap.xml", 1, "sitemap", f"`{element.text.strip()}` is not a page of the site"
-                )
+            if kind != "file" or not value.startswith(prefix):
+                self.report.error(name, 1, "sitemap", f"`{element.text.strip()}` is not a page of the site")
         return count
 
-    def check_updates(self) -> None:
+    def check_updates(self, prefix: str = "") -> None:
         """assets/data/updates.json (written by prebuild.py) only lists built pages."""
-        name = "assets/data/updates.json"
+        name = prefix + "assets/data/updates.json"
         if name not in self.files:
             return
         try:
@@ -593,18 +636,127 @@ class Site:
             return
         for entry in pages:
             url = entry.get("url") if isinstance(entry, dict) else None
-            if not isinstance(url, str) or self.locate("index.html", url or "./")[0] != "file":
+            if not isinstance(url, str) or self.locate(prefix + "index.html", url or "./")[0] != "file":
                 self.report.error(name, 1, "updates", f"entry `{url}` is not a page of the site")
 
 
+    # -- root of the portal ---------------------------------------------------------
+
+    def check_root(self, registry: releases.Registry, root: Path) -> None:
+        """versions.json, landing page, not-found page, planned releases."""
+        name = "portal-root"
+
+        def error(path: str, message: str) -> None:
+            self.report.error(path, 1, name, message)
+
+        # versions.json says what the registry says.
+        expected = releases.versions_json(registry)
+        if "versions.json" not in self.files:
+            error("versions.json", "the file is missing")
+        else:
+            try:
+                data = json.loads((self.dir / "versions.json").read_text(encoding="utf-8"))
+            except (OSError, ValueError) as exc:
+                error("versions.json", f"not valid JSON: {exc}")
+            else:
+                if data != expected:
+                    listed = [entry.get("version") for entry in data if isinstance(entry, dict)] if isinstance(data, list) else []
+                    error(
+                        "versions.json",
+                        f"does not match {releases.REGISTRY_FILE} (lists {listed}, the registry has "
+                        f"{list(registry.ids)}): build the portal again",
+                    )
+
+        # Landing page: opens the default release, which must be there.
+        if "index.html" not in self.files:
+            error("index.html", "the landing page is missing")
+        else:
+            text = (self.dir / "index.html").read_text(encoding="utf-8", errors="replace")
+            match = re.search(r'data-portal-default="([^"]*)"', text)
+            if not match:
+                error("index.html", "the landing page does not name the default release (data-portal-default)")
+            elif match.group(1) != registry.default:
+                error(
+                    "index.html",
+                    f"the landing page opens `{match.group(1)}`, the default release is `{registry.default}`",
+                )
+            if f"{registry.default}/index.html" not in self.files and registry.default not in self.not_built:
+                error("index.html", f"the default release is not built: {registry.default}/index.html is missing")
+
+        # Not-found page: same releases, and the addresses published without a prefix.
+        if "404.html" not in self.files:
+            error("404.html", "the not-found page of the portal is missing")
+        else:
+            text = (self.dir / "404.html").read_text(encoding="utf-8", errors="replace")
+            match = re.search(r'<script id="portal-not-found" type="application/json">(.*?)</script>', text, re.DOTALL)
+            data = None
+            if match:
+                try:
+                    data = json.loads(match.group(1))
+                except ValueError:
+                    data = None
+            if not isinstance(data, dict):
+                error("404.html", "the data of the redirections (script #portal-not-found) is missing or not valid JSON")
+            else:
+                known = [(r.get("id"), r.get("status")) for r in data.get("releases", []) if isinstance(r, dict)]
+                if known != [(r.id, r.status) for r in registry.releases]:
+                    error("404.html", f"the releases it knows do not match {releases.REGISTRY_FILE}")
+                unprefixed = data.get("unprefixed") if isinstance(data.get("unprefixed"), dict) else {}
+                target = unprefixed.get("release")
+                if target != registry.unprefixed:
+                    error(
+                        "404.html",
+                        f"addresses without a release are sent to `{target}`, "
+                        f"{releases.REGISTRY_FILE} says `{registry.unprefixed}`",
+                    )
+                elif target not in self.not_built:
+                    pages = unprefixed.get("pages") if isinstance(unprefixed.get("pages"), list) else []
+                    for url in pages:
+                        if self.locate(f"{target}/index.html", url or "./")[0] != "file":
+                            error("404.html", f"redirection target `{target}/{url}` is not a page of the portal")
+                    listed = set(pages)
+                    release = registry.get(target)
+                    for url in releases.page_urls(root, release):
+                        if url not in listed:
+                            error("404.html", f"`{url}` is a page of `{target}` but an address without a release is not redirected to it")
+
+        # Planned releases: the "coming soon" page and nothing else.
+        for release in registry.planned:
+            page = f"{release.id}/index.html"
+            if page not in self.files:
+                error(page, f"the page of the planned release `{release.id}` is missing")
+                continue
+            others = sorted(f for f in self.files if f.startswith(release.id + "/") and f != page)
+            if others:
+                error(page, f"a planned release has one page only, found also: {', '.join(others[:5])}")
+            text = (self.dir / page).read_text(encoding="utf-8", errors="replace")
+            if "not available yet" not in text or release.title not in html_unescape(text):
+                error(page, "the page does not name the release or does not say that it is not available yet")
+
+        # Available releases, and nothing that belongs to no release.
+        for release in registry.available:
+            if f"{release.id}/index.html" not in self.files and release.id not in self.not_built:
+                error(f"{release.id}/index.html", f"the release `{release.id}` is available but its site is not built")
+        top = {d for d in self.dirs if "/" not in d}
+        for extra in sorted(top - set(registry.ids) - {"assets"}):
+            error(extra + "/", f"directory of no release of {releases.REGISTRY_FILE}")
+        self.check_sitemap()
+
+
+def html_unescape(text: str) -> str:
+    return html.unescape(text)
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Checks on the built site.")
-    parser.add_argument("site_dir", type=Path, help="directory written by `zensical build`")
+    parser = argparse.ArgumentParser(description="Checks on the built portal.")
+    parser.add_argument("site_dir", type=Path, help="output directory of the build (site)")
     parser.add_argument("--root", type=Path, default=ROOT, help="repository root (default: the checkout)")
-    parser.add_argument("--config", default="zensical.toml", help="site configuration, relative to the root")
-    parser.add_argument("--docs-dir", default=None, help="docs directory (default: docs_dir of the configuration)")
-    parser.add_argument("--site-url", default=None, help="public URL of the site (default: site_url of the configuration)")
-    parser.add_argument("--no-sources", action="store_true", help="do not compare the site with the Markdown pages")
+    parser.add_argument(
+        "--release",
+        metavar="ID",
+        help="only this release was built: check it and the root, accept that the other releases are missing",
+    )
+    parser.add_argument("--site-url", default=None, help="public URL of the portal root (default: site_url of zensical.base.toml)")
     parser.add_argument("--strict", action="store_true", help="report warnings as errors")
     args = parser.parse_args(argv)
 
@@ -613,16 +765,27 @@ def main(argv: list[str] | None = None) -> int:
         print(f"check_site: {site_dir} is not a directory (run the build first)", file=sys.stderr)
         return 1
     root = args.root.resolve()
-    config: SiteConfig = load_config(root / args.config)
-    if config.error:
-        print(f"check_site: {config.path} cannot be read: {config.error}", file=sys.stderr)
+    try:
+        registry = releases.load_registry(root)
+        selected = releases.select(registry, args.release)
+        base = releases.load_project(root / releases.BASE_CONFIG)
+        root_url = args.site_url or releases.portal_root_url(base)
+    except releases.RegistryError as exc:
+        for problem in exc.problems:
+            print(f"check_site: {problem}", file=sys.stderr)
         return 1
 
     report = Report(strict=args.strict)
-    site = Site(site_dir, args.site_url or config.site_url, report)
+    site = Site(site_dir, root_url, report)
     if not site.pages:
         print(f"check_site: no HTML page in {site_dir}", file=sys.stderr)
         return 1
+    if args.release:
+        site.not_built = {
+            release.id
+            for release in registry.available
+            if release not in selected and f"{release.id}/index.html" not in site.files
+        }
 
     site.check_references()
     site.check_stylesheets()
@@ -630,34 +793,46 @@ def main(argv: list[str] | None = None) -> int:
     site.check_runtime_requests()
     site.check_content()
 
-    docs_dir = (args.docs_dir or config.docs_dir).strip("/")
-    sources: list[str] = []
-    compared = "not compared with the Markdown sources"
-    if args.no_sources:
-        expected = sorted(rel for rel in site.pages if rel != "404.html")
-    elif not (root / docs_dir).is_dir():
-        print(f"check_site: {root / docs_dir} is not a directory (use --no-sources to skip)", file=sys.stderr)
-        return 1
-    else:
-        sources = list_pages(root, config, docs_dir)
-        expected = site.check_sources(sources, docs_dir, config.use_directory_urls)
-        compared = f"{len(expected)} of {len(sources)} Markdown page(s) of {docs_dir}/ are built"
-    entries = site.check_search_index(expected)
-    sitemap = site.check_sitemap()
-    site.check_updates()
+    lines = []
+    for release in selected:
+        prefix = release.id + "/"
+        config = release_config(root, registry, release)
+        if config.error:
+            report.error(release.settings_file, 1, "portal-root", f"configuration cannot be read: {config.error}")
+            continue
+        if not (root / release.docs_dir).is_dir():
+            report.error(release.docs_dir, 1, "page-missing", "the docs directory of the release does not exist")
+            continue
+        sources = list_pages(root, config, release.docs_dir)
+        expected = site.check_sources(sources, release.docs_dir, config.use_directory_urls, prefix)
+        entries = site.check_search_index(expected, prefix)
+        sitemap = site.check_sitemap(prefix)
+        site.check_updates(prefix)
+        lines.append(
+            f"Release {release.id}: {len(expected)} of {len(sources)} Markdown page(s) of {release.docs_dir}/ are built; "
+            f"search index: {entries} entries; sitemap: {sitemap} URL(s) checked."
+        )
+    site.check_root(registry, root)
 
     stats = site.stats
     ids = sum(len(values) for values in site.ids.values())
     hosts = ", ".join(f"{host} ({count})" for host, count in sorted(site.external_hosts.items())) or "none"
     script_hosts = ", ".join(sorted(site.script_hosts)) or "none"
-    url_note = site.site_url if site.site_url_known else "unknown (pass --site-url to check absolute URLs)"
+    planned = ", ".join(release.id for release in registry.planned) or "none"
+    skipped = (
+        f"\nNot built in this run, links to them not checked ({stats['not built']}): {', '.join(sorted(site.not_built))}."
+        if site.not_built
+        else ""
+    )
     summary = (
-        f"Site: {site_dir}\n"
-        f"Site URL: {url_note}\n"
-        f"Pages: {len(site.pages)} HTML page(s); {compared}.\n"
+        f"Portal: {site_dir}\n"
+        f"Portal URL: {site.site_url}\n"
+        + "\n".join(lines)
+        + f"\nRoot: landing page, not-found page, versions.json ({len(registry.releases)} releases); "
+        f"planned releases with their page: {planned}.{skipped}\n"
+        f"Pages: {len(site.pages)} HTML page(s) in the portal.\n"
         f"Links: {stats['links']} internal link(s), {stats['anchors']} with an anchor, checked against {ids} element id(s); "
         f"{stats['resources']} internal resource reference(s) (scripts, stylesheets, images, fonts).\n"
-        f"Search index: {entries} entries; sitemap: {sitemap} URL(s) checked.\n"
         f"External links (plain <a href>): {stats['external links']} to {len(site.external_hosts)} host(s): {hosts}.\n"
         f"Hosts named in JavaScript files (not a check; a bundle names URLs it never requests): {script_hosts}."
     )

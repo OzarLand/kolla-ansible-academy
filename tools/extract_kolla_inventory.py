@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Extract play / tag / service / handler tables from a Kolla-Ansible checkout.
 
-Usage: extract_kolla_inventory.py <kolla-ansible checkout> [output.md]
+Usage: extract_kolla_inventory.py [--release <id>] <kolla-ansible checkout> [output.md]
 
-Default output: docs/reference/generated-inventory.md. If the output file starts
+Default output: docs/<id>/reference/generated-inventory.md, where <id> is the
+release given with --release, or the default release of versions.toml. The
+checkout must be at the tag of that release. If the output file starts
 with a front matter block (--- ... ---), that block is kept and only the body is
 rewritten.
 
@@ -17,9 +19,38 @@ import sys
 
 import yaml
 
-SRC = sys.argv[1]
-OUT = sys.argv[2] if len(sys.argv) > 2 else os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'docs', 'reference', 'generated-inventory.md')
+def release_argument(argv):
+    """Take `--release <id>` (or `--release=<id>`) out of the arguments.
+
+    Returns (docs directory of the release, remaining arguments). Without the
+    option the release is the default one of versions.toml.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, os.path.join(here, 'site'))
+    import releases
+    rest, release = [], None
+    args = iter(argv)
+    for arg in args:
+        if arg == '--release':
+            release = next(args, None)
+            if release is None:
+                sys.exit('--release needs the id of a release')
+        elif arg.startswith('--release='):
+            release = arg.split('=', 1)[1]
+        else:
+            rest.append(arg)
+    root = os.path.dirname(here)
+    try:
+        registry = releases.load_registry(releases.Path(root))
+        release = releases.select(registry, release or registry.default)[0]
+    except releases.RegistryError as error:
+        sys.exit('versions.toml: ' + '; '.join(error.problems))
+    return os.path.join(root, *release.docs_dir.split('/')), rest
+
+
+DOCS, ARGS = release_argument(sys.argv[1:])
+SRC = ARGS[0]
+OUT = ARGS[1] if len(ARGS) > 1 else os.path.join(DOCS, 'reference', 'generated-inventory.md')
 A = os.path.join(SRC, 'ansible')
 
 

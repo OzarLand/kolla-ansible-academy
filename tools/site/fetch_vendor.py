@@ -2,8 +2,10 @@
 """Fetch the Mermaid browser bundle the site serves from its own origin.
 
 The portal makes no request to a third-party host: pages with a diagram load
-``docs/assets/vendor/mermaid/mermaid.min.js`` (see overrides/main.html). That
-file is 5.5 MB and is not committed. This script puts it in place:
+``assets/vendor/mermaid/mermaid.min.js`` of the site they belong to (see
+overrides/main.html). That file is 5.5 MB and is not committed. It is shared
+by all releases: it sits once in ``overrides/assets/``, the static files of
+the theme directory, which Zensical copies into every built site. This script puts it in place:
 
 1. download the pinned tarball from the npm registry (``TARBALL_URL``);
 2. check it against the SHA-512 integrity value the registry publishes for
@@ -11,7 +13,7 @@ file is 5.5 MB and is not committed. This script puts it in place:
    https://registry.npmjs.org/mermaid/<version>);
 3. extract ``package/dist/mermaid.min.js`` and check its SHA-256
    (``FILE_SHA256``);
-4. write it to ``docs/assets/vendor/mermaid/mermaid.min.js``.
+4. write it to ``overrides/assets/vendor/mermaid/mermaid.min.js``.
 
 It is idempotent: when the file is already there with the expected SHA-256,
 nothing is downloaded and nothing is written. Anything else is an error with
@@ -28,7 +30,7 @@ Usage (from anywhere):
     python3 tools/site/fetch_vendor.py --check    # verify only, no network
     python3 tools/site/fetch_vendor.py --tarball mermaid-12.3.0.tgz   # offline
 
-To change the version, see docs/assets/vendor/mermaid/README.md.
+To change the version, see overrides/assets/vendor/mermaid/README.md.
 Standard library only.
 """
 
@@ -63,7 +65,8 @@ MEMBER = "package/dist/mermaid.min.js"
 FILE_SHA256 = "336df803d87a38b70a01e736e666c8f7601d2ce42f5e47c8fafe5d721074b9a3"
 # -----------------------------------------------------------------------------
 
-# Where the file goes, relative to the docs directory.
+# Where the file goes, relative to the theme directory (`custom_dir`).
+THEME_DIR = "overrides"
 TARGET = "assets/vendor/mermaid/mermaid.min.js"
 
 # Upper bounds: a response or a member larger than this is not the pinned
@@ -79,8 +82,8 @@ class VendorError(Exception):
     """The vendored file could not be put in place."""
 
 
-def target_path(root: Path = ROOT, docs_dir: str = "docs") -> Path:
-    return root / docs_dir / TARGET
+def target_path(root: Path = ROOT, theme_dir: str = THEME_DIR) -> Path:
+    return root / theme_dir / TARGET
 
 
 def sha256_of(path: Path) -> str:
@@ -188,7 +191,7 @@ def install(content: bytes, target: Path) -> None:
 
 def ensure(
     root: Path = ROOT,
-    docs_dir: str = "docs",
+    theme_dir: str = THEME_DIR,
     *,
     tarball: Path | None = None,
     force: bool = False,
@@ -199,7 +202,7 @@ def ensure(
     `tarball`: a local copy of the pinned tarball to use instead of the
     download (it goes through the same integrity check).
     """
-    target = target_path(root, docs_dir)
+    target = target_path(root, theme_dir)
     if not force and is_current(target):
         return False
     with tempfile.TemporaryDirectory(prefix="fetch-vendor-") as scratch:
@@ -218,15 +221,15 @@ def ensure(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--root", type=Path, default=ROOT, help="repository root")
-    parser.add_argument("--docs-dir", default="docs", help="docs directory, relative to the root")
+    parser.add_argument("--theme-dir", default=THEME_DIR, help="theme directory (custom_dir), relative to the root")
     parser.add_argument("--check", action="store_true", help="verify the file in place, download nothing")
     parser.add_argument("--force", action="store_true", help="fetch and rewrite even when the file is in place")
     parser.add_argument("--tarball", type=Path, help=f"local copy of {PACKAGE}-{VERSION}.tgz to use instead of the download")
     args = parser.parse_args(argv)
 
     root = args.root.resolve()
-    docs_dir = args.docs_dir.strip("/")
-    target = target_path(root, docs_dir)
+    theme_dir = args.theme_dir.strip("/")
+    target = target_path(root, theme_dir)
     try:
         if args.check:
             if not target.is_file():
@@ -238,7 +241,7 @@ def main(argv: list[str] | None = None) -> int:
                 )
             print(f"fetch_vendor: {target.relative_to(root)} is {PACKAGE} {VERSION}")
             return 0
-        if not ensure(root, docs_dir, tarball=args.tarball, force=args.force):
+        if not ensure(root, theme_dir, tarball=args.tarball, force=args.force):
             print(f"fetch_vendor: {target.relative_to(root)} is already {PACKAGE} {VERSION}")
         return 0
     except VendorError as error:

@@ -1,6 +1,6 @@
 r"""Markdown helpers of the Kolla Ansible Day 2 portal.
 
-``zensical.toml`` loads this package as one Python-Markdown extension
+``zensical.base.toml`` loads this package as one Python-Markdown extension
 (``portal_mdx``) and uses :func:`portal_mdx.slug.gh_slugify` for heading ids.
 The build runs with ``PYTHONPATH=tools/site`` so the package is importable.
 

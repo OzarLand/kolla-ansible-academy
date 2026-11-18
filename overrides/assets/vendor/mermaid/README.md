@@ -8,6 +8,10 @@ Licence: MIT, see `LICENSE` (copied from the same package).
 tarball from the npm registry, verifies it and writes the file here. `tools/site/prebuild.py` runs that step before
 every build, so `make docs-build` is enough; nothing is downloaded when the file is already in place.
 
+The directory is under `overrides/`, the theme directory of the site (`custom_dir`): Zensical copies its static
+files into every built site, so the bundle exists once in the repository and each release serves its own copy at
+`assets/vendor/mermaid/mermaid.min.js`.
+
 | | |
 |---|---|
 | **Version** | 12.3.0 |
@@ -48,7 +52,7 @@ The theme asks for the Mermaid **12** release line: stay on 12.x unless the them
    script again.
 4. Update the version, tarball URL, integrity, SHA-256 and size in the table above, and `LICENSE` if the package
    changed it.
-5. Build the site and check a page of each diagram type used in `docs/` (flowchart, sequence diagram, Gantt chart,
-   quadrant chart) in the light and the dark scheme.
+5. Build the portal and check a page of each diagram type used under `docs/` (flowchart, sequence diagram, Gantt
+   chart, quadrant chart) in the light and the dark scheme.
 
-This file is excluded from the site (`exclude_docs` in `zensical.toml`).
+This file is copied into each built site with the bundle and the licence, as a plain file that no page links to.

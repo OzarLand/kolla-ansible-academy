@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """Source checks for the Markdown of the portal (no build needed).
 
-The Markdown under docs/ is the single source of truth and must work both on
-github.com and on the generated site. This script reads the files as they are
-in the working tree and reports every place where one of the authoring rules
-is broken:
+The Markdown under docs/<release>/ is the single source of truth and must
+work both on github.com and on the generated site. This script reads
+versions.toml, then the files of every available release as they are in the
+working tree, and reports every place where one of the authoring rules is
+broken:
+
+    registry        versions.toml can be read, and matches the docs tree: an
+                    available release has docs/<id>/ and docs/<id>.toml, a
+                    planned release has neither, nothing else is under docs/
 
     front-matter    every page starts with a YAML front matter block
     title           ... that has a non-empty `title`
@@ -15,8 +20,10 @@ is broken:
     link-file       every relative link points to an existing file
     link-anchor     every `#fragment` is a heading anchor (GitHub slug) or an
                     explicit `<a id="...">` of the target file
-    link-style      internal links are relative, stay inside docs/ and never
-                    point to a directory
+    link-style      internal links are relative, stay inside the release
+                    (docs/<id>/) and never point to a directory
+    link-release    a link to another release is the absolute address of its
+                    published page, and that page exists
     link-reference  `[text][label]` uses a defined label
     link-repo-file  absolute links to a file of this repository (branch main)
                     point to a file that exists
@@ -26,14 +33,14 @@ is broken:
     callout         callouts are GitHub alerts of the five known types
     todo-editorial  no leftover `<!-- TODO editorial` marker (warning until
                     --strict)
-    nav             every page is in the nav of zensical.toml and every nav
-                    entry exists
+    nav             every page is in the nav of its release (docs/<id>.toml)
+                    and every nav entry exists
 
 Exit status: 0 when there is no error, 1 otherwise. With --strict every
 warning is an error. Standard library only (Python 3.11 or newer, for
 tomllib).
 
-Usage:  python3 tools/site/check_docs.py [--strict] [--root DIR]
+Usage:  python3 tools/site/check_docs.py [--strict] [--release ID] [--root DIR]
         python3 tools/site/check_docs.py --list-rules
 """
 
@@ -55,6 +62,10 @@ if sys.version_info < (3, 11):  # pragma: no cover - depends on the interpreter
     sys.exit("check_docs: Python 3.11 or newer is required (tomllib)")
 
 import tomllib
+
+# The registry of releases lives next to this file.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import releases  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -78,7 +89,7 @@ IMPACT_VOCABULARY = (
 )
 
 #: Paths of the layout that existed before the portal. Nothing may refer to
-#: them any more: the files moved under docs/<section>/.
+#: them any more: the files moved under docs/<release>/<section>/.
 REMOVED_PATHS = (
     (re.compile(r"(?<![\w.-])annex/"), "annex/"),
     (re.compile(r"(?<![\w-])docs/0[1-9]-"), "docs/0N-..."),
@@ -90,9 +101,10 @@ REMOVED_PATHS = (
 EXTRA_FILES = ("README.md", "CONTRIBUTING.md", "tools/site/README.md")
 
 #: Directories never listed when looking for link targets.
-PRUNED_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__", ".cache"}
+PRUNED_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__", ".cache", ".build"}
 
 RULES = {
+    "registry": "versions.toml can be read and matches the docs tree",
     "encoding": "file is UTF-8",
     "front-matter": "page starts with a YAML front matter block that can be read",
     "title": "front matter has a non-empty `title`",
@@ -101,15 +113,16 @@ RULES = {
     "tags": "`tags` is a list of lowercase names",
     "link-file": "relative link target exists (exact case)",
     "link-anchor": "link fragment is a heading anchor or an explicit id of the target",
-    "link-style": "internal links are relative, inside docs/, and point to a file",
+    "link-style": "internal links are relative, inside the release (docs/<id>/), and point to a file",
+    "link-release": "link to another release is the absolute address of an existing published page",
     "link-reference": "reference-style link uses a defined label",
     "link-repo-file": "absolute link to a file of this repository points to an existing file",
     "code-language": "fenced code block has a language and is closed",
     "removed-path": "no reference to a path of the old layout",
     "callout": "callout is a GitHub alert: " + ", ".join(f"[!{t}]" for t in ALERT_TYPES),
     "todo-editorial": "no leftover `<!-- TODO editorial` marker",
-    "nav": "page is listed in the nav of the site configuration, and nav entries exist",
-    "config": "site configuration can be read",
+    "nav": "page is listed in the nav of its release (docs/<id>.toml), and nav entries exist",
+    "config": "configuration of the release can be read",
 }
 
 #: Rules reported as warnings unless --strict is given.
@@ -143,7 +156,7 @@ class Report:
         return sum(1 for f in self.findings if f.level == level)
 
 
-# --- site configuration (zensical.toml) -----------------------------------
+# --- site configuration (zensical.base.toml merged with docs/<id>.toml) ----
 
 
 class PatternSet:
@@ -216,11 +229,18 @@ class SiteConfig:
     nav: list | None = None
     exclude: PatternSet = field(default_factory=PatternSet)
     not_in_nav: PatternSet = field(default_factory=PatternSet)
+    #: Path shown in the findings (the file that holds the nav).
+    name: str = ""
+    #: Address of the portal root, and the registry of releases (None when
+    #: the configuration is not the one of a release).
+    portal_url: str = ""
+    registry: releases.Registry | None = None
+    release: str = ""
 
 
 def load_config(path: Path) -> SiteConfig:
-    """Read the `[project]` table of zensical.toml (missing file: defaults)."""
-    config = SiteConfig(path=path)
+    """Read the `[project]` table of a TOML file (missing file: defaults)."""
+    config = SiteConfig(path=path, name=path.name)
     if not path.is_file():
         return config
     config.found = True
@@ -234,6 +254,29 @@ def load_config(path: Path) -> SiteConfig:
     if not isinstance(project, dict):
         config.error = "`project` is not a table"
         return config
+    return apply_project(config, project)
+
+
+def release_config(root: Path, registry: releases.Registry, release: releases.Release) -> SiteConfig:
+    """Configuration of one available release, as the build merges it.
+
+    `path` is docs/<id>.toml, the file that holds the nav of the release.
+    """
+    path = root / release.settings_file
+    config = SiteConfig(path=path, name=release.settings_file, found=path.is_file())
+    config.docs_dir = release.docs_dir
+    config.registry = registry
+    config.release = release.id
+    try:
+        project = releases.release_project(root, registry, release.id)
+    except releases.RegistryError as exc:
+        config.error = "; ".join(exc.problems)
+        return config
+    config.portal_url = project["extra"]["portal"]["root_url"]
+    return apply_project(config, project)
+
+
+def apply_project(config: SiteConfig, project: dict) -> SiteConfig:
     for key in ("docs_dir", "site_dir", "site_url", "repo_url"):
         value = project.get(key)
         if isinstance(value, str) and value:
@@ -877,7 +920,7 @@ class Checker:
             # The built site is not a link target (only the top-level one:
             # tools/site is a source directory).
             dirnames[:] = [
-                d for d in dirnames if d not in PRUNED_DIRS and base + d != config.site_dir
+                d for d in dirnames if d not in PRUNED_DIRS and base + d != releases.SITE_DIR
             ]
             self.dirs.update(base + d for d in dirnames)
             self.files.update(base + f for f in filenames)
@@ -1091,6 +1134,16 @@ class Checker:
             if resolved not in self.files:
                 error(doc.rel, link.line, "link-file", f"`{path}` does not exist" + self._file_hint(resolved))
                 return
+            other = self._release_of(resolved) if in_docs else None
+            if other is not None and other.id != self.config.release:
+                error(
+                    doc.rel,
+                    link.line,
+                    "link-release",
+                    f"`{path}` is a file of another release ({other.docs_dir}/), which is another site; "
+                    f"link to its published page: {self._published_url(other, resolved)}",
+                )
+                return
             if in_docs and not resolved.startswith(docs_prefix):
                 error(
                     doc.rel,
@@ -1137,6 +1190,10 @@ class Checker:
                 f"`{target}` points to the site itself; use a relative link to the .md file",
             )
             return
+        portal_url = self.config.portal_url
+        if in_docs and portal_url and self.config.registry and target.startswith(portal_url):
+            self._other_release(doc, link, target[len(portal_url) :])
+            return
         if not repo_url or not target.startswith(repo_url + "/"):
             return
         match = re.match(r"^(?:blob|tree|raw)/([^/]+)/([^#?]*)", target[len(repo_url) + 1 :])
@@ -1156,6 +1213,78 @@ class Checker:
                 link.line,
                 "link-repo-file",
                 f"`{target}`: `{path}` does not exist in the repository",
+            )
+
+    def _release_of(self, resolved: str) -> releases.Release | None:
+        """Release whose docs directory holds the repository path `resolved`."""
+        registry = self.config.registry
+        parts = resolved.split("/")
+        if registry is None or len(parts) < 3 or parts[0] != releases.DOCS_ROOT:
+            return None
+        return registry.get(parts[1])
+
+    def _published_url(self, release: releases.Release, resolved: str) -> str:
+        rel = Path(resolved[len(release.docs_dir) + 1 :])
+        if rel.suffix != ".md":
+            return f"{self.config.portal_url}{release.id}/{rel.as_posix()}"
+        return f"{self.config.portal_url}{release.id}/{releases.page_url(rel)}"
+
+    def _other_release(self, doc: Document, link: Link, rest: str) -> None:
+        """Absolute address under the portal root, outside the site of this release.
+
+        This is the only accepted form of a link from one release to another:
+        each release is a separate site, so a relative link cannot reach it.
+        The address must be the root of the portal, the home page of a planned
+        release, or a page of an available release that exists in its sources.
+        """
+        error = self.report.error
+        path, _, fragment = rest.partition("#")
+        path = unquote(path.partition("?")[0])
+        fragment = unquote(fragment)
+        if not path:
+            return  # the root of the portal
+        release_id, _, inner = path.partition("/")
+        release = self.config.registry.get(release_id)
+        if release is None:
+            error(
+                doc.rel,
+                link.line,
+                "link-release",
+                f"`{link.target}`: `{release_id}` is not a release of {releases.REGISTRY_FILE}",
+            )
+            return
+        if not release.available:
+            if inner:
+                error(
+                    doc.rel,
+                    link.line,
+                    "link-release",
+                    f"`{link.target}`: the release `{release_id}` is planned and has no page other than its home",
+                )
+            return
+        inner = inner[: -len("index.html")] if inner.endswith("index.html") else inner
+        stem = inner.rstrip("/")
+        candidates = [f"{stem}/index.md", f"{stem}.md"] if stem else ["index.md"]
+        source = next(
+            (f"{release.docs_dir}/{c}" for c in candidates if f"{release.docs_dir}/{c}" in self.files), None
+        )
+        if source is None:
+            if f"{release.docs_dir}/{stem}" in self.files:
+                return  # a file that is not a page (a listing, an image)
+            error(
+                doc.rel,
+                link.line,
+                "link-release",
+                f"`{link.target}`: the release `{release_id}` has no page `{inner}` "
+                f"(no {' or '.join(candidates)} under {release.docs_dir}/)",
+            )
+            return
+        if fragment and fragment not in self.document(source).anchors:
+            error(
+                doc.rel,
+                link.line,
+                "link-anchor",
+                f"`{link.target}`: `#{fragment}` is not an anchor of {source}",
             )
 
     def _file_hint(self, resolved: str) -> str:
@@ -1179,7 +1308,7 @@ class Checker:
 
     def check_nav(self, pages: list[str]) -> None:
         config = self.config
-        name = config.path.name
+        name = config.name or config.path.name
         error = self.report.error
         if not config.found:
             error(name, 1, "config", f"{name} does not exist: the nav cannot be checked")
@@ -1274,8 +1403,9 @@ def main(argv: list[str] | None = None) -> int:
         description="Source checks for the Markdown of the portal (no build needed).",
     )
     parser.add_argument("--root", type=Path, default=ROOT, help="repository root (default: the checkout)")
-    parser.add_argument("--config", default="zensical.toml", help="site configuration, relative to the root")
-    parser.add_argument("--docs-dir", default=None, help="docs directory (default: docs_dir of the configuration)")
+    parser.add_argument(
+        "--release", metavar="ID", help="check this release only (default: every available release)"
+    )
     parser.add_argument("--strict", action="store_true", help="report warnings as errors")
     parser.add_argument(
         "--extra",
@@ -1296,34 +1426,60 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     root = args.root.resolve()
-    config = load_config(root / args.config)
-    docs_dir = (args.docs_dir or config.docs_dir).strip("/")
-    if not (root / docs_dir).is_dir():
-        print(f"check_docs: {root / docs_dir} is not a directory", file=sys.stderr)
-        return 1
-
     report = Report(strict=args.strict)
-    checker = Checker(root, config, docs_dir, report)
-    pages = list_pages(root, config, docs_dir)
-    for page in pages:
-        checker.check_page(f"{docs_dir}/{page}")
+    try:
+        registry = releases.load_registry(root)
+        selected = releases.select(registry, args.release)
+    except releases.RegistryError as exc:
+        for problem in exc.problems:
+            report.error(releases.REGISTRY_FILE, 1, "registry", problem)
+        return print_report(report, "The registry of releases cannot be used: nothing else was checked.")
+    for problem in releases.layout_problems(root, registry):
+        report.error(releases.REGISTRY_FILE, 1, "registry", problem)
+
+    stats: dict[str, int] = {}
+    languages: dict[str, int] = {}
+    checked = []
+    for release in selected:
+        docs_dir = release.docs_dir
+        if not (root / docs_dir).is_dir():
+            continue  # reported above by the `registry` rule
+        config = release_config(root, registry, release)
+        checker = Checker(root, config, docs_dir, report)
+        pages = list_pages(root, config, docs_dir)
+        for page in pages:
+            checker.check_page(f"{docs_dir}/{page}")
+        checker.check_nav(pages)
+        checker.stats["headings"] = sum(len(checker.document(f"{docs_dir}/{p}").headings) for p in pages)
+        for key, value in checker.stats.items():
+            stats[key] = stats.get(key, 0) + value
+        for name, count in checker.languages.items():
+            languages[name] = languages.get(name, 0) + count
+        checked.append(f"{release.id} ({len(pages)})")
+
+    # Files outside docs/: links only, against the shared configuration.
+    base = load_config(root / releases.BASE_CONFIG)
+    if not base.found or base.error:
+        report.error(releases.BASE_CONFIG, 1, "config", base.error or "the file does not exist")
+    checker = Checker(root, base, releases.DOCS_ROOT, report)
     extras = args.extra if args.extra is not None else [f for f in EXTRA_FILES if (root / f).is_file()]
     for extra in extras:
         if not (root / extra).is_file():
             report.error(extra, 1, "link-file", "file given with --extra does not exist")
             continue
         checker.check_extra(Path(extra).as_posix())
-    checker.check_nav(pages)
+    for key, value in checker.stats.items():
+        stats[key] = stats.get(key, 0) + value
 
-    stats = checker.stats
-    stats["headings"] = sum(len(checker.document(f"{docs_dir}/{p}").headings) for p in pages)
-    languages = ", ".join(f"{name} {count}" for name, count in sorted(checker.languages.items()))
+    planned = ", ".join(release.id for release in registry.planned) or "none"
+    language_list = ", ".join(f"{name} {count}" for name, count in sorted(languages.items()))
     summary = (
-        f"Checked {stats['pages']} page(s) under {docs_dir}/ and {stats['other files']} other Markdown file(s): "
+        f"Releases checked (pages): {', '.join(checked) or 'none'}. Planned, no content: {planned}.\n"
+        f"Checked {stats['pages']} page(s) under {releases.DOCS_ROOT}/ and {stats['other files']} other Markdown file(s): "
         f"{stats['headings']} headings, {stats['relative links']} relative links "
         f"({stats['links with a fragment']} with a fragment), {stats['external links']} absolute links, "
         f"{stats['code blocks']} code blocks, {stats['callouts']} callouts.\n"
-        f"Code block languages: {languages or 'none'}."
+        f"Code block languages: {language_list or 'none'}."
     )
     return print_report(report, summary)
 

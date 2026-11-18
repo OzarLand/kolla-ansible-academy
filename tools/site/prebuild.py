@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-"""Prepare the docs tree before the site is built.
+"""Prepare the sources before the site of a release is built.
 
-1. Vendored Mermaid: ``docs/assets/vendor/mermaid/mermaid.min.js`` is not
+1. Vendored Mermaid: ``overrides/assets/vendor/mermaid/mermaid.min.js`` is not
    committed. When it is missing (or is not the pinned release) it is fetched
    by ``tools/site/fetch_vendor.py``, which verifies it. This is the only
-   step that may need the network; ``--skip-vendor`` turns it off.
+   step that may need the network; ``--skip-vendor`` turns it off. The file is
+   shared by all releases.
 
-2. ``docs/assets/data/updates.json``: for every Markdown page under docs/ the
-   date of the last commit that touched it. The page template shows it as
-   "Last updated" and the home page lists the most recently updated pages
-   (docs/assets/javascripts/portal.js reads the file in the browser).
+2. ``docs/<id>/assets/data/updates.json``, one per available release: for
+   every Markdown page of the release, the date of the last commit that
+   changed it. The page template shows it as "Last updated" and the home page
+   of the release lists the most recently updated pages
+   (overrides/assets/javascripts/portal.js reads the file in the browser; the
+   release selector also reads the file of another release to know whether
+   that release has the page being read).
 
     {
       "generated": "<ISO 8601 date of the HEAD commit>",
@@ -26,6 +30,10 @@ Properties of updates.json:
 * reproducible: every value comes from the Git history and the files, never
   from the wall clock, so the same commit always gives the same file;
 * one pass over the history (a single ``git log``), whatever the page count;
+* a commit that only moves a file (a rename without a change of content, as
+  when the pages moved to ``docs/<id>/``) is not an update of the page: the
+  date is the one of the last commit that changed its content, under any
+  earlier name;
 * shallow clones: a page whose last change is not in the fetched history gets
   the date of the HEAD commit (use a full clone, e.g. ``fetch-depth: 0`` in
   CI, for exact dates);
@@ -33,7 +41,12 @@ Properties of updates.json:
 
 Both outputs are generated: they are git-ignored and must not be edited.
 
-Usage (from anywhere):  python3 tools/site/prebuild.py [--docs-dir docs] [--skip-vendor]
+Usage (from anywhere):
+
+    python3 tools/site/prebuild.py                    every available release of versions.toml
+    python3 tools/site/prebuild.py --release ussuri   one release (repeatable)
+    python3 tools/site/prebuild.py --docs-dir DIR     a docs directory that is not in the registry
+    ... [--skip-vendor]
 """
 
 from __future__ import annotations
@@ -46,11 +59,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+# The registry of releases lives next to this file.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import releases  # noqa: E402
+from releases import INDEX_NAMES, SKIPPED_TOP_DIRS, page_url  # noqa: E402,F401
+
 ROOT = Path(__file__).resolve().parents[2]
 COMMIT_MARK = "\x01"
-INDEX_NAMES = ("index.md", "README.md")
-# Not pages: theme assets (the vendored Mermaid ships a README.md).
-SKIPPED_TOP_DIRS = ("assets",)
 
 
 def load_fetch_vendor():
@@ -63,19 +78,19 @@ def load_fetch_vendor():
     return module
 
 
-def ensure_vendor(root: Path, docs_dir: str) -> bool:
+def ensure_vendor(root: Path) -> bool:
     """Put the vendored Mermaid bundle in place. False when that failed.
 
     Nothing is downloaded when the pinned file is already there.
     """
     fetch_vendor = load_fetch_vendor()
     try:
-        fetch_vendor.ensure(root, docs_dir)
+        fetch_vendor.ensure(root)
     except fetch_vendor.VendorError as error:
         print(f"prebuild: error: {error}", file=sys.stderr)
         print(
             "prebuild: the pages with a diagram need the vendored Mermaid bundle; "
-            "see docs/assets/vendor/mermaid/README.md (or pass --skip-vendor)",
+            "see overrides/assets/vendor/mermaid/README.md (or pass --skip-vendor)",
             file=sys.stderr,
         )
         return False
@@ -99,20 +114,25 @@ def git(root: Path, *args: str) -> str | None:
 
 
 def last_commit_dates(root: Path, docs_dir: str) -> dict[str, str]:
-    """Map each path under `docs_dir` to the date of the last commit touching it.
+    """Map each path under `docs_dir` to the date of the last commit that changed it.
 
     Single ``git log`` pass, newest commit first: the first time a path is
-    seen is its last change. Commits at the edge of a shallow clone list the
-    whole tree as added, so they say nothing about a file and are skipped.
+    seen is its last change. A rename is followed: the commit that renames a
+    file counts only when it also changes its content, and older commits
+    count under the former name. Renames are looked for inside the top-level
+    directory of `docs_dir` (``docs`` for ``docs/ussuri``). Commits at the
+    edge of a shallow clone list the whole tree as added, so they say nothing
+    about a file and are skipped.
     """
     log = git(
         root,
         "log",
         f"--format={COMMIT_MARK}%H %cI",
-        "--name-only",
+        "--name-status",
+        "--find-renames",
         "--relative",  # paths relative to `root`, even inside a larger repository
         "--",
-        docs_dir,
+        docs_dir.split("/")[0],
     )
     if log is None:
         return {}
@@ -125,13 +145,30 @@ def last_commit_dates(root: Path, docs_dir: str) -> dict[str, str]:
             boundary = set(path.read_text(encoding="utf-8").split())
 
     dates: dict[str, str] = {}
+    # Former name of a file -> its name today, for the renames seen so far.
+    today: dict[str, str] = {}
     current: str | None = None
     for line in log.splitlines():
         if line.startswith(COMMIT_MARK):
             sha, _, iso = line[1:].partition(" ")
             current = None if sha in boundary else iso[:10]
-        elif line and current is not None:
-            dates.setdefault(line, current)
+            continue
+        fields = line.split("\t")
+        if current is None or len(fields) < 2:
+            continue
+        status = fields[0]
+        if status.startswith("R") and len(fields) == 3:
+            former, name = fields[1], fields[2]
+            final = today.pop(name, name)
+            today[former] = final
+            if status != "R100":
+                dates.setdefault(final, current)
+        else:
+            name = fields[-1]
+            dates.setdefault(today.get(name, name), current)
+            if status.startswith(("A", "C")):
+                # The file starts here: an older file of the same name is another file.
+                today.pop(name, None)
     return dates
 
 
@@ -162,14 +199,6 @@ def first_heading(text: str) -> str | None:
         elif not in_fence and line.startswith("# "):
             return re.sub(r"[`*_]", "", line[2:]).strip() or None
     return None
-
-
-def page_url(rel: Path) -> str:
-    """Directory URL of a page, relative to the site root (as Zensical builds it)."""
-    if rel.name in INDEX_NAMES:
-        parent = rel.parent.as_posix()
-        return "" if parent == "." else f"{parent}/"
-    return f"{rel.with_suffix('').as_posix()}/"
 
 
 def collect(root: Path, docs_dir: str) -> dict:
@@ -212,14 +241,32 @@ def collect(root: Path, docs_dir: str) -> dict:
     return {"generated": head, "pages": pages}
 
 
+def write_updates(root: Path, docs_dir: str, output: Path | None = None) -> int:
+    """Write updates.json of one docs directory. Returns the number of pages."""
+    output = output or root / docs_dir / "assets/data/updates.json"
+    data = collect(root, docs_dir)
+    content = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    if not output.is_file() or output.read_text(encoding="utf-8") != content:
+        output.write_text(content, encoding="utf-8")
+    print(f"prebuild: {len(data['pages'])} pages -> {output.relative_to(root)}")
+    return len(data["pages"])
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--root", type=Path, default=ROOT, help="repository root")
-    parser.add_argument("--docs-dir", default="docs", help="docs directory, relative to the root")
     parser.add_argument(
-        "--output",
-        default=None,
-        help="output file, relative to the root (default: <docs-dir>/assets/data/updates.json)",
+        "--release",
+        action="append",
+        metavar="ID",
+        help="release of versions.toml to prepare (default: every available release)",
+    )
+    parser.add_argument(
+        "--docs-dir",
+        action="append",
+        metavar="DIR",
+        help="docs directory, relative to the root, to prepare instead of the releases of the registry",
     )
     parser.add_argument(
         "--skip-vendor",
@@ -229,20 +276,31 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     root = args.root.resolve()
-    docs_dir = args.docs_dir.strip("/")
-    if not (root / docs_dir).is_dir():
-        print(f"prebuild: {root / docs_dir} is not a directory", file=sys.stderr)
+    if args.docs_dir:
+        if args.release:
+            parser.error("--release and --docs-dir cannot be used together")
+        docs_dirs = [value.strip("/") for value in args.docs_dir]
+    else:
+        try:
+            registry = releases.load_registry(root)
+            selected = [
+                release
+                for name in (args.release or [None])
+                for release in releases.select(registry, name)
+            ]
+        except releases.RegistryError as error:
+            for problem in error.problems:
+                print(f"prebuild: {releases.REGISTRY_FILE}: {problem}", file=sys.stderr)
+            return 1
+        docs_dirs = [release.docs_dir for release in selected]
+    for docs_dir in docs_dirs:
+        if not (root / docs_dir).is_dir():
+            print(f"prebuild: {root / docs_dir} is not a directory", file=sys.stderr)
+            return 1
+    if not args.skip_vendor and not ensure_vendor(root):
         return 1
-    if not args.skip_vendor and not ensure_vendor(root, docs_dir):
-        return 1
-    output = root / (args.output or f"{docs_dir}/assets/data/updates.json")
-
-    data = collect(root, docs_dir)
-    content = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
-    output.parent.mkdir(parents=True, exist_ok=True)
-    if not output.is_file() or output.read_text(encoding="utf-8") != content:
-        output.write_text(content, encoding="utf-8")
-    print(f"prebuild: {len(data['pages'])} pages -> {output.relative_to(root)}")
+    for docs_dir in docs_dirs:
+        write_updates(root, docs_dir)
     return 0
 
 

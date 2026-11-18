@@ -1,0 +1,26 @@
+{#-
+  Root of the portal (/index.html), built from a stub that
+  tools/site/releases.py generates. With JavaScript the page opens the default
+  release at once, query and fragment kept; without it, the page lists the
+  releases.
+-#}
+{% extends "main.html" %}
+{% set portal = config.extra.portal %}
+
+{% block htmltitle %}
+  <title>{{ config.site_name }}</title>
+{% endblock %}
+
+{% block extrahead %}
+  {{ super() }}
+  <script data-portal-default="{{ portal.default }}">
+    location.replace(document.currentScript.getAttribute("data-portal-default") + "/" + location.search + location.hash);
+  </script>
+{% endblock %}
+
+{% block content %}
+  <h1>{{ config.site_name }}</h1>
+  <p>{{ config.site_description }}</p>
+  <p>Each release is a separate study, with its own pages, navigation and search.</p>
+  {% include "partials/release-lists.html" %}
+{% endblock %}

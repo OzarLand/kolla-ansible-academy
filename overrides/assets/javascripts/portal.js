@@ -10,6 +10,11 @@
  *  3. Wide tables and diagrams scroll sideways inside a wrapper: a wrapper
  *     that really scrolls becomes reachable with the keyboard (Tab, then the
  *     arrow keys) and gets a name for screen readers.
+ *  4. Release selector of the header (overrides/partials/releases.html). The
+ *     list is in the page and every entry is a plain link to the home page
+ *     of a release. Here: Escape and a click outside close the list, and a
+ *     link to another available release opens the page being read in that
+ *     release when its updates.json lists it, its home page otherwise.
  *
  * Nothing here carries content. When JavaScript is off or updates.json is
  * missing, the page simply shows less: both elements stay hidden or keep
@@ -173,10 +178,63 @@
     });
   }
 
+  /* ---------------------------------------------------- 4. Release selector */
+
+  function initReleases() {
+    var box = document.querySelector("[data-portal-release]");
+    if (!box) return;
+    var menu = box.querySelector("details");
+    if (menu) {
+      var summary = menu.querySelector("summary");
+      menu.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && menu.open) {
+          menu.open = false;
+          summary.focus();
+        }
+      });
+      document.addEventListener("click", function (event) {
+        if (menu.open && !menu.contains(event.target)) menu.open = false;
+      });
+      menu.addEventListener("focusout", function (event) {
+        if (menu.open && event.relatedTarget && !menu.contains(event.relatedTarget)) menu.open = false;
+      });
+    }
+
+    // Path of the page inside its release ("operations/reconfigure-nova/").
+    // Empty on a home page, absent outside the site of a release.
+    var page = box.getAttribute("data-page");
+    if (!page || !window.fetch) return;
+    box.querySelectorAll('a[data-portal-release-link="available"]').forEach(function (link) {
+      if (link.hasAttribute("aria-current")) return;
+      link.addEventListener("click", function (event) {
+        if (event.defaultPrevented || event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        var home = link.href;
+        fetch(new URL("assets/data/updates.json", home))
+          .then(function (response) {
+            return response.ok ? response.json() : null;
+          })
+          .then(function (data) {
+            var found =
+              data &&
+              Array.isArray(data.pages) &&
+              data.pages.some(function (entry) {
+                return entry.url === page;
+              });
+            window.location.assign(found ? new URL(page, home).href + window.location.hash : home);
+          })
+          .catch(function () {
+            window.location.assign(home);
+          });
+      });
+    });
+  }
+
   function init() {
     initSearchTriggers();
     initUpdates();
     initScrollRegions();
+    initReleases();
   }
 
   if (document.readyState === "loading") {

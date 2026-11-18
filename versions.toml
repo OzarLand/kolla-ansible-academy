@@ -1,0 +1,97 @@
+# Registry of the releases of the portal. Every tool reads this file
+# (tools/site/releases.py); nothing else lists the releases.
+#
+# One [[release]] block per release, in the order of the version selector.
+#
+#   id             directory under docs/, URL segment and site directory:
+#                  lowercase letters, digits, dots and hyphens ("2023.1")
+#   status         "available": docs/<id>/ and docs/<id>.toml exist, the
+#                               release is built as a site of its own;
+#                  "planned":   no docs directory and no content. The portal
+#                               lists it as "coming soon" and publishes one
+#                               generated page at /<id>/
+#   openstack      name of the OpenStack release
+#   kolla_ansible  Kolla-Ansible version or series
+#   tag            upstream tag that is studied (required when available)
+#   title          display title; default "<openstack> · Kolla-Ansible <kolla_ansible>"
+#
+# How to add a release, or to make a planned one available: CONTRIBUTING.md,
+# "Adding a release".
+
+# Release opened by the root of the portal. It must be available.
+default = "ussuri"
+
+# Release that was published without a release prefix before the portal had
+# releases: an old address such as /operations/reconfigure-nova/ is redirected
+# to the same page of this release. Do not change it when the default changes.
+unprefixed = "ussuri"
+
+[[release]]
+id = "ussuri"
+status = "available"
+openstack = "Ussuri"
+kolla_ansible = "10.x"
+tag = "ussuri-eol"
+
+# Planned releases: nothing is studied yet. To add or remove one, add or
+# remove its block.
+
+[[release]]
+id = "victoria"
+status = "planned"
+openstack = "Victoria"
+kolla_ansible = "11.x"
+
+[[release]]
+id = "wallaby"
+status = "planned"
+openstack = "Wallaby"
+kolla_ansible = "12.x"
+
+[[release]]
+id = "xena"
+status = "planned"
+openstack = "Xena"
+kolla_ansible = "13.x"
+
+[[release]]
+id = "yoga"
+status = "planned"
+openstack = "Yoga"
+kolla_ansible = "14.x"
+
+[[release]]
+id = "zed"
+status = "planned"
+openstack = "Zed"
+kolla_ansible = "15.x"
+
+[[release]]
+id = "2023.1"
+status = "planned"
+openstack = "2023.1 Antelope"
+kolla_ansible = "16.x"
+
+[[release]]
+id = "2023.2"
+status = "planned"
+openstack = "2023.2 Bobcat"
+kolla_ansible = "17.x"
+
+[[release]]
+id = "2024.1"
+status = "planned"
+openstack = "2024.1 Caracal"
+kolla_ansible = "18.x"
+
+[[release]]
+id = "2024.2"
+status = "planned"
+openstack = "2024.2 Dalmatian"
+kolla_ansible = "19.x"
+
+[[release]]
+id = "2025.1"
+status = "planned"
+openstack = "2025.1 Epoxy"
+kolla_ansible = "20.x"

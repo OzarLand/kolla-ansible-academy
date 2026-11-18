@@ -2,11 +2,13 @@
 """Per-service "cards" for the core services: role, play, tags, task flow,
 templates, handlers, key variables and which node types are touched.
 
-Usage: service_cards.py <kolla-ansible checkout> <inventory.json from
+Usage: service_cards.py [--release <id>] <kolla-ansible checkout> <inventory.json from
 `ansible-inventory -i ansible/inventory/multinode --list`> [components directory]
 
-The cards live in the component pages (default directory: docs/components). Each
-page holds its card(s) between two markers:
+The cards live in the component pages of one release (default directory:
+docs/<id>/components, where <id> is the release given with --release, or the
+default release of versions.toml). The checkout must be at the tag of that
+release. Each page holds its card(s) between two markers:
 
     <!-- BEGIN GENERATED: tools/service_cards.py <role> [<role> ...] -->
     <!-- END GENERATED -->
@@ -20,9 +22,38 @@ Node types are resolved against the Ussuri example `multinode` inventory
 import glob, json, os, re, sys
 import yaml
 
-SRC, INV = sys.argv[1:3]
-PAGES = sys.argv[3] if len(sys.argv) > 3 else os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'docs', 'components')
+def release_argument(argv):
+    """Take `--release <id>` (or `--release=<id>`) out of the arguments.
+
+    Returns (docs directory of the release, remaining arguments). Without the
+    option the release is the default one of versions.toml.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, os.path.join(here, 'site'))
+    import releases
+    rest, release = [], None
+    args = iter(argv)
+    for arg in args:
+        if arg == '--release':
+            release = next(args, None)
+            if release is None:
+                sys.exit('--release needs the id of a release')
+        elif arg.startswith('--release='):
+            release = arg.split('=', 1)[1]
+        else:
+            rest.append(arg)
+    root = os.path.dirname(here)
+    try:
+        registry = releases.load_registry(releases.Path(root))
+        release = releases.select(registry, release or registry.default)[0]
+    except releases.RegistryError as error:
+        sys.exit('versions.toml: ' + '; '.join(error.problems))
+    return os.path.join(root, *release.docs_dir.split('/')), rest
+
+
+DOCS, ARGS = release_argument(sys.argv[1:])
+SRC, INV = ARGS[0:2]
+PAGES = ARGS[2] if len(ARGS) > 2 else os.path.join(DOCS, 'components')
 A = os.path.join(SRC, 'ansible')
 inv = json.load(open(INV))
 

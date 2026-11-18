@@ -1,5 +1,7 @@
 # Portal: source checks, strict build and built-site checks on every pull
-# request and on main; deployment to GitHub Pages from main only.
+# request and on main; deployment to GitHub Pages from main only. One build
+# covers every release of versions.toml and the root of the portal: site/ is
+# the whole portal, with the site of each release under site/<id>/.
 # One-time repository setup and behaviour before it: tools/site/README.md.
 #
 # The `paths` filters below mean that the workflow does not start for a change
@@ -14,7 +16,8 @@ on:
       - "docs/**"
       - "overrides/**"
       - "tools/site/**"
-      - "zensical.toml"
+      - "versions.toml"
+      - "zensical.base.toml"
       - "requirements-docs.txt"
       - "Makefile"
       - ".github/workflows/docs.yml"
@@ -28,7 +31,8 @@ on:
       - "docs/**"
       - "overrides/**"
       - "tools/site/**"
-      - "zensical.toml"
+      - "versions.toml"
+      - "zensical.base.toml"
       - "requirements-docs.txt"
       - "Makefile"
       - ".github/workflows/docs.yml"
@@ -55,7 +59,8 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          # Full history: prebuild.py reads the last commit date of each page.
+          # Full history: prebuild.py reads the date of the last change of
+          # each page, across the move of the pages to docs/<release>/.
           fetch-depth: 0
           persist-credentials: false
 
@@ -66,12 +71,13 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-docs.txt
 
-      # Not committed (5.5 MB). fetch_vendor.py pins the release and verifies
-      # the checksum of the file, restored from this cache or downloaded.
+      # Not committed (5.5 MB), shared by all releases. fetch_vendor.py pins
+      # the release and verifies the checksum of the file, restored from this
+      # cache or downloaded.
       - name: Cache the vendored Mermaid bundle
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
-          path: docs/assets/vendor/mermaid/mermaid.min.js
+          path: overrides/assets/vendor/mermaid/mermaid.min.js
           key: vendor-mermaid-${{ hashFiles('tools/site/fetch_vendor.py') }}
 
       - name: Install the build dependencies

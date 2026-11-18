@@ -36,7 +36,7 @@ def gh_slug(value: str, separator: str = "-") -> str:
 
 
 def gh_slugify(**_kwds: object) -> Callable[[str, str], str]:
-    """Factory used from ``zensical.toml``.
+    """Factory used from ``zensical.base.toml``.
 
     Zensical resolves ``toc.slugify = { object = "portal_mdx.slug.gh_slugify",
     kwds = {} }`` by importing the object and calling it with ``kwds``; the
