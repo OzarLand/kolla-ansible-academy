@@ -4,8 +4,7 @@ on:
 permissions:
   contents: read
 jobs:
-  a-checkout-v4:
+  b-no-action:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
       - run: echo hello
