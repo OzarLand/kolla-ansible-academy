@@ -87,7 +87,7 @@ REMOVED_PATHS = (
 )
 
 #: Markdown files outside docs/ whose links are checked too (when present).
-EXTRA_FILES = ("README.md", "CONTRIBUTING.md")
+EXTRA_FILES = ("README.md", "CONTRIBUTING.md", "tools/site/README.md")
 
 #: Directories never listed when looking for link targets.
 PRUNED_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__", ".cache"}

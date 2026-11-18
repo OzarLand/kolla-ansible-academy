@@ -14,8 +14,8 @@ it (Markdown, templates of overrides/, the theme):
                        <a href> links to other sites are allowed and listed)
     runtime-request    nothing makes the theme bundle call a third-party host
                        at runtime: a page with a Mermaid diagram loads the
-                       vendored Mermaid, and no element asks for the GitHub
-                       repository statistics
+                       vendored Mermaid library, and no element asks for the
+                       GitHub repository statistics
     page-missing       every Markdown page under docs/ has its built page
     page-empty         no page has an empty content area (a page with a title
                        and nothing else is a warning until --strict)
@@ -99,6 +99,9 @@ _CSS_URL = re.compile(r"""url\(\s*(?:"([^"]*)"|'([^']*)'|([^)\s]*))\s*\)""", re.
 _CSS_IMPORT = re.compile(r"""@import\s+(?:"([^"]*)"|'([^']*)')""", re.IGNORECASE)
 _CSS_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
 _JS_HOST = re.compile(r"""https?://([A-Za-z0-9.-]+\.[A-Za-z]{2,})""")
+#: The Mermaid library itself (mermaid.min.js, mermaid.esm.min.mjs ...), not a
+#: helper whose name merely contains the word (portal-mermaid.js).
+_MERMAID_LIBRARY = re.compile(r"(?:^|/)mermaid(?:\.[\w.-]+)?\.m?js$", re.IGNORECASE)
 
 
 @dataclass
@@ -410,7 +413,9 @@ class Site:
 
         * A `.mermaid` element makes the bundle download Mermaid from
           unpkg.com unless `window.mermaid` already exists: such a page must
-          load the vendored Mermaid script.
+          load the vendored Mermaid library (a local `mermaid*.js`). A helper
+          script that only defines a stand-in does not count: the diagrams
+          would not render.
         * An element with `data-md-component="source"` makes the bundle ask
           api.github.com for the repository statistics.
         """
@@ -420,18 +425,21 @@ class Site:
                 for ref in page.references
                 if ref.what == "<script src>"
             ]
-            local_mermaid = any(kind == "file" and "mermaid" in value.lower() for kind, value, _ in scripts)
+            local_mermaid = any(
+                kind == "file" and _MERMAID_LIBRARY.search(value) for kind, value, _ in scripts
+            )
             if page.mermaid_lines and not local_mermaid:
                 self.report.error(
                     rel,
                     page.mermaid_lines[0],
                     "runtime-request",
-                    f"{len(page.mermaid_lines)} Mermaid diagram(s) but no local Mermaid script: "
-                    "the theme bundle would download Mermaid from unpkg.com",
+                    f"{len(page.mermaid_lines)} Mermaid diagram(s) but the page does not load the vendored "
+                    "Mermaid library: the diagrams do not render, or the theme bundle downloads Mermaid "
+                    "from unpkg.com",
                 )
             elif local_mermaid and not page.mermaid_lines:
                 self.report.warning(
-                    rel, 1, "runtime-request", "the Mermaid script is loaded on a page without a diagram"
+                    rel, 1, "runtime-request", "the Mermaid library is loaded on a page without a diagram"
                 )
             for line in page.source_component_lines:
                 self.report.error(

@@ -1,18 +1,31 @@
 ---
 title: Reconfigure Neutron
+description: What -t neutron reconfigure runs on controllers, network nodes and every compute, which overrides restart which agents, and what is known of the network impact.
+tags: [neutron, openvswitch, ovn, reconfigure, genconfig, loop-notify, limit, one-shot]
+impact: [restarts-on-drift, critical]
 ---
 
 # Reconfigure Neutron
 
-<!-- TODO editorial: intro, key answers -->
+What `kolla-ansible -t neutron reconfigure` does: it runs the haproxy play (neutron-server frontend) and the neutron
+play on `neutron-server`, every agent group, every compute and `manila-share`. The commands are in [§1](#1-commands),
+the targets and the per-host steps in [§2](#2-execution-and-targets), the restart set per change in
+[§3](#3-what-restarts-code), the impact on networking in [§4](#4-impact-on-networking), and the risks and the
+verification in [§5](#5-risks-and-verification). The columns "code-guaranteed" and "environment-dependent" of §4 are
+defined in [Code guarantees and environment dependence](index.md#code-guarantees-and-environment-dependence), drift in
+[Drift](index.md#drift), and §2 to §5 are written for the [assumed deployment](index.md#assumed-deployment).
 
 > [!NOTE]
 > **Key answers**
 >
-> - **`-t neutron reconfigure` ([§2–5](#2-execution-and-targets))** targets every compute. An `ml2_conf.ini` override
->   meant for the server also restarts `neutron_openvswitch_agent` on all computes and network nodes [CODE]
+> - **`-t neutron reconfigure` ([§2 to §5](#2-execution-and-targets))** targets every compute. An `ml2_conf.ini`
+>   override meant for the server also restarts `neutron_openvswitch_agent` on all computes and network nodes [CODE]
 >   ([§3](#3-what-restarts-code)). What an agent restart does to existing connectivity is [NOT AVAILABLE]
 >   ([§4](#4-impact-on-networking)).
+
+> [!WARNING]
+> [R6](../risk/risk-register.md#r6): restarting `neutron_l3_agent` deletes namespaces if `enable_neutron_agent_ha` —
+> see [§4](#4-impact-on-networking).
 
 ## 1. Commands
 
@@ -79,4 +92,19 @@ runs on every reconfigure regardless (`bootstrap_service.yml:24-46`).
   - `ip netns` count on network nodes matches the number of routers/networks;
   - ping a VM's floating IP continuously during each batch.
 
-<!-- TODO editorial: related -->
+## Related
+
+- [Risk register](../risk/risk-register.md) — the risks this page names: [R5](../risk/risk-register.md#r5)
+  (`ml2_conf.ini` override meant for neutron-server), [R6](../risk/risk-register.md#r6) (restart of
+  `neutron_l3_agent` with `enable_neutron_agent_ha: yes`) and [R7](../risk/risk-register.md#r7)
+  (`openvswitch_vswitchd` restart or recreate)
+- [Neutron](../components/neutron.md) — service card and where to look
+- [Open vSwitch](../components/openvswitch.md) — service card and where to look; Open vSwitch has a separate play and
+  tag and is not touched by `-t neutron`
+- [Pre-execution checklist](pre-execution-checklist.md) — the checks before every production run
+- [Write config first, apply in controlled batches](controlled-batches.md) — how to apply in batches (`genconfig`,
+  then `deploy-containers --limit`; `ANSIBLE_SERIAL`); its examples use the nova tags
+- [Kolla images §5.3](../concepts/kolla-images.md#53-neutron-l3-agent-the-wrapper) — neutron-l3-agent: the wrapper
+  that runs the namespace cleanup with `enable_neutron_agent_ha`
+- [What is not known](../troubleshooting/what-is-not-known.md#network-data-plane) — what the sources do not establish
+  about the network data plane

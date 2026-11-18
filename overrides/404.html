@@ -1,0 +1,24 @@
+{#- Not-found page. GitHub Pages serves /404.html for every unknown URL. -#}
+{% extends "main.html" %}
+
+{% block htmltitle %}
+  <title>Page not found - {{ config.site_name }}</title>
+{% endblock %}
+
+{% block content %}
+  <h1>Page not found</h1>
+  <p>This address does not match a page of the portal.</p>
+  <p>
+    <button type="button" class="portal-search portal-search--inline" data-portal-search hidden>
+      {% include ".icons/" ~ (config.theme.icon.search or "material/magnify") ~ ".svg" %}
+      <span class="portal-search__label">Search the portal</span>
+      <kbd class="portal-search__kbd" aria-hidden="true"></kbd>
+    </button>
+  </p>
+  <ul>
+    <li><a href="{{ '.' | url }}">Home</a></li>
+    <li><a href="{{ 'start/find-it-fast/' | url }}">Find it fast</a></li>
+    <li><a href="{{ 'operations/' | url }}">Operations</a></li>
+    <li><a href="{{ 'troubleshooting/' | url }}">Troubleshooting</a></li>
+  </ul>
+{% endblock %}

@@ -1,0 +1,228 @@
+# Site configuration of the Kolla Ansible Day 2 portal (Zensical, native format).
+#
+# Build:  python3 tools/site/prebuild.py && PYTHONPATH=tools/site zensical build --clean --strict
+# The Markdown under docs/ is the single source of truth; nothing here adds content.
+
+[project]
+site_name = "Kolla Ansible Day 2"
+site_url = "https://ozarland.github.io/kolla-ansible-day2/"
+site_description = "Source-code study of Kolla-Ansible ussuri-eol for Day-2 operations: procedures, impact, risks and reference."
+site_author = "OzarLand"
+copyright = "OzarLand"
+
+repo_url = "https://github.com/OzarLand/kolla-ansible-day2"
+repo_name = "OzarLand/kolla-ansible-day2"
+# "View source" opens the Markdown file on GitHub (content.action.view).
+edit_uri = "blob/main/docs/"
+
+docs_dir = "docs"
+site_dir = "site"
+use_directory_urls = true
+# The README files that document vendored assets are not pages. Only the
+# Markdown is excluded: the pattern must not match the assets themselves.
+exclude_docs = """
+assets/vendor/**/*.md
+"""
+
+extra_css = ["assets/stylesheets/portal.css"]
+extra_javascript = ["assets/javascripts/portal.js"]
+
+# Page titles come from each page's front matter; only sections are named here.
+nav = [
+  { "Home" = [
+    "index.md",
+    "start/find-it-fast.md",
+    "start/ten-things-to-know.md",
+    "start/conventions.md",
+  ] },
+  { "Operations" = [
+    "operations/index.md",
+    "operations/pre-execution-checklist.md",
+    "operations/predict-a-run.md",
+    "operations/reconfigure-a-service.md",
+    "operations/reconfigure-nova.md",
+    "operations/reconfigure-neutron.md",
+    "operations/apply-common-changes.md",
+    "operations/controlled-batches.md",
+    "operations/update-container-images.md",
+    "operations/add-a-compute-node.md",
+    "operations/change-control-plane-membership.md",
+    "operations/database-operations.md",
+    "operations/stop-and-destroy.md",
+    "operations/command-quick-lookup.md",
+  ] },
+  { "Troubleshooting" = [
+    "troubleshooting/index.md",
+    "troubleshooting/known-bugs-and-limitations.md",
+    "troubleshooting/open-questions.md",
+    "troubleshooting/what-is-not-known.md",
+  ] },
+  { "Components" = [
+    "components/index.md",
+    "components/dependencies.md",
+    "components/nova-deep-dive.md",
+    { "OpenStack services" = [
+      "components/keystone.md",
+      "components/glance.md",
+      "components/placement.md",
+      "components/nova.md",
+      "components/neutron.md",
+      "components/cinder.md",
+      "components/horizon.md",
+      "components/heat.md",
+      "components/barbican.md",
+      "components/octavia.md",
+      "components/swift.md",
+      "components/manila.md",
+    ] },
+    { "Infrastructure and dependencies" = [
+      "components/mariadb.md",
+      "components/rabbitmq.md",
+      "components/memcached.md",
+      "components/haproxy-keepalived.md",
+      "components/common.md",
+      "components/openvswitch.md",
+      "components/ovn.md",
+      "components/chrony.md",
+      "components/iscsi.md",
+    ] },
+  ] },
+  { "Risk and impact" = [
+    "risk/index.md",
+    "risk/risk-register.md",
+    "risk/tags.md",
+    "risk/tag-index.md",
+    "risk/small-change-large-workload.md",
+  ] },
+  { "Concepts" = [
+    "concepts/index.md",
+    "concepts/repository-architecture.md",
+    "concepts/deployment-execution-flow.md",
+    "concepts/compute-scaling-and-performance.md",
+    "concepts/kolla-images.md",
+  ] },
+  { "Reference" = [
+    "reference/index.md",
+    "reference/findings.md",
+    "reference/glossary.md",
+    "reference/generated-inventory.md",
+    { "Per-role fact sheets" = [
+      "reference/factsheets/index.md",
+      "reference/factsheets/a-infra-lb-ovn.md",
+      "reference/factsheets/b-mariadb-rabbitmq-keystone.md",
+      "reference/factsheets/c-glance-placement-cinder-horizon-heat.md",
+      "reference/factsheets/d-barbican-octavia-swift-manila-compute-roles.md",
+      "reference/factsheets/e-host-bootstrap-ops-playbooks.md",
+    ] },
+    "reference/listings/index.md",
+    "reference/method-and-limits.md",
+  ] },
+]
+
+[project.theme]
+variant = "modern"
+language = "en"
+custom_dir = "overrides"
+# No web fonts: the system font stacks are set in portal.css.
+font = false
+logo = "assets/images/logo.svg"
+favicon = "assets/images/favicon.svg"
+features = [
+  "navigation.tabs",
+  "navigation.tabs.sticky",
+  "navigation.sections",
+  "navigation.indexes",
+  "navigation.path",
+  "navigation.top",
+  "navigation.footer",
+  "toc.follow",
+  "search.highlight",
+  "content.code.copy",
+  "content.action.view",
+  # navigation.instant must stay off: the Mermaid script is added per page
+  # in <head> (overrides/main.html) and instant navigation would skip it.
+]
+
+[project.theme.icon]
+repo = "fontawesome/brands/github"
+
+# Icons of the five GitHub alert types (> [!NOTE] …); colours are in portal.css.
+[project.theme.icon.admonition]
+note = "lucide/info"
+tip = "lucide/lightbulb"
+important = "lucide/message-square-warning"
+warning = "lucide/triangle-alert"
+caution = "lucide/octagon-alert"
+
+# Light and dark schemes follow the system preference; the header toggle
+# cycles system -> light -> dark. `custom` leaves every colour to portal.css.
+[[project.theme.palette]]
+media = "(prefers-color-scheme)"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/sun-moon"
+toggle.name = "Switch to light mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to system preference"
+
+[project.extra]
+# Remove the "Made with Zensical" footer line; the copyright line stays.
+generator = false
+
+[project.plugins.tags]
+
+# Broken internal links and anchors are reported, and fail `build --strict`.
+# `unresolved_references` must stay off: it treats every bracketed word that
+# is not a link, such as the evidence labels [CODE] and [NOT AVAILABLE] or a
+# front matter list `tags: [nova]`, as an unresolved reference link.
+[project.validation]
+invalid_links = true
+invalid_link_anchors = true
+
+# Explicit list: nothing is enabled implicitly, so a page renders the same
+# constructs here and on github.com.
+#
+# `attr_list` is left out on purpose: it reads `{…}` at the end of a table
+# cell, heading or paragraph as HTML attributes and deletes it from the page
+# (a cell ending in `rc ∉ {0,1}` lost that text). The syntax does not exist
+# on GitHub, so no page needs it.
+[project.markdown_extensions]
+admonition = {}
+md_in_html = {}
+tables = {}
+def_list = {}
+footnotes = {}
+# With portal_mdx (below), lists behave as on GitHub: bullet and numbered
+# lists do not merge, and a numbered list keeps its first number.
+sane_lists = {}
+toc.permalink = true
+toc.slugify = { object = "portal_mdx.slug.gh_slugify", kwds = {} }
+pymdownx.highlight.anchor_linenums = true
+pymdownx.highlight.line_spans = "__span"
+pymdownx.highlight.pygments_lang_class = true
+pymdownx.inlinehilite = {}
+pymdownx.superfences.custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+]
+pymdownx.details = {}
+pymdownx.tabbed.alternate_style = true
+pymdownx.quotes.callouts = true
+# Local extension (tools/site/portal_mdx, found through PYTHONPATH=tools/site):
+# GitHub-style nested lists and table pipe escapes, optional line breaks in
+# the code spans of tables, evidence chips, GitHub suffixes for repeated
+# headings, severity cell classes.
+portal_mdx = {}

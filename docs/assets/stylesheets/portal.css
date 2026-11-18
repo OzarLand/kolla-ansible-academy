@@ -1,0 +1,1168 @@
+/*
+ * Kolla Ansible Day 2 portal: visual identity on top of the Zensical theme.
+ *
+ * Neutral slate base, one accent colour, system fonts, no web fonts and no
+ * animation beyond the theme defaults. Every colour is a custom property
+ * defined once per scheme (light: data-md-color-scheme="default",
+ * dark: "slate"). Text/background pairs meet WCAG AA in both schemes.
+ *
+ * Contents
+ *   1. Tokens (fonts, colours per scheme)
+ *   2. Layout and typography
+ *   3. Evidence chips            [CODE] / [NOT AVAILABLE]
+ *   4. Impact chips              front matter `impact`
+ *   5. Admonitions               GitHub alerts: note, tip, important, warning, caution
+ *   6. Tables                    wide tables, key/value tables, severity cells
+ *   7. Code blocks
+ *   8. Grid cards (hub pages)
+ *   9. Home page hero, search trigger, recently updated
+ *  10. Page footer line, tags, anchors
+ *  11. Reduced motion
+ *  12. Print
+ */
+
+/* ------------------------------------------------------------------ 1. Tokens */
+
+:root,
+body {
+  --portal-font-text: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    "Noto Sans", "Liberation Sans", Arial, sans-serif;
+  --portal-font-code: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", "DejaVu Sans Mono", monospace;
+
+  /* The theme reads these two (it sets them on <body>). */
+  --md-text-font-family: var(--portal-font-text);
+  --md-code-font-family: var(--portal-font-code);
+}
+
+[data-md-color-scheme="default"] {
+  color-scheme: light;
+
+  --portal-bg: #ffffff;
+  --portal-surface: #f5f7f9;
+  --portal-surface-strong: #eceff3;
+  --portal-border: #dde2e8;
+  --portal-border-strong: #c3cbd5;
+  --portal-text: #1a2029;
+  --portal-text-muted: #55606e;
+  --portal-accent: #0f62a6;
+  --portal-accent-strong: #0a4a80;
+  --portal-accent-soft: #e7f0f8;
+
+  /* Evidence chips */
+  --portal-ev-code-fg: #3b4755;
+  --portal-ev-code-bg: #eef1f4;
+  --portal-ev-code-border: #cfd6de;
+  --portal-ev-na-fg: #7a4a00;
+  --portal-ev-na-bg: #fdf3dc;
+  --portal-ev-na-border: #e8cf94;
+
+  /* Status hues: text, tint, border. Shared by chips, severity, admonitions. */
+  --portal-green-fg: #1b6a3b;
+  --portal-green-bg: #e9f5ed;
+  --portal-green-border: #b9dcc5;
+  --portal-slate-fg: #3b4755;
+  --portal-slate-bg: #eef1f4;
+  --portal-slate-border: #cfd6de;
+  --portal-blue-fg: #0f5a99;
+  --portal-blue-bg: #e7f0f8;
+  --portal-blue-border: #b8d3ea;
+  --portal-amber-fg: #7a4a00;
+  --portal-amber-bg: #fdf3dc;
+  --portal-amber-border: #e8cf94;
+  --portal-orange-fg: #94380a;
+  --portal-orange-bg: #fdece1;
+  --portal-orange-border: #efc3a6;
+  --portal-red-fg: #a11b12;
+  --portal-red-bg: #fde7e4;
+  --portal-red-border: #efb5ae;
+  --portal-violet-fg: #54389a;
+  --portal-violet-bg: #f0ecfa;
+  --portal-violet-border: #cfc3ec;
+  --portal-teal-fg: #0b635d;
+  --portal-teal-bg: #e4f4f2;
+  --portal-teal-border: #b2dcd8;
+
+  /* Solid chips: the two classes that must stand out. */
+  --portal-critical-bg: #b42318;
+  --portal-critical-fg: #ffffff;
+  --portal-window-bg: #54389a;
+  --portal-window-fg: #ffffff;
+
+  /* Theme variables */
+  --md-default-bg-color: var(--portal-bg);
+  --md-default-fg-color: var(--portal-text);
+  --md-default-fg-color--light: var(--portal-text-muted);
+  --md-default-fg-color--lighter: #1a202952;
+  --md-default-fg-color--lightest: #1a202912;
+  --md-primary-fg-color: var(--portal-accent);
+  --md-primary-fg-color--light: #3c82bd;
+  --md-primary-fg-color--dark: var(--portal-accent-strong);
+  --md-primary-bg-color: #ffffff;
+  --md-primary-bg-color--light: #ffffffb3;
+  --md-accent-fg-color: var(--portal-accent-strong);
+  --md-accent-fg-color--transparent: #0f62a61a;
+  --md-accent-bg-color: #ffffff;
+  --md-typeset-color: var(--portal-text);
+  --md-typeset-a-color: var(--portal-accent);
+  --md-typeset-table-color: var(--portal-border);
+  --md-typeset-table-color--light: #1a202908;
+  --md-typeset-mark-color: #ffe58a;
+  --md-code-fg-color: #27303b;
+  --md-code-bg-color: #f2f4f7;
+  --md-code-bg-color--light: #f2f4f7e6;
+  --md-code-bg-color--lighter: #f2f4f78a;
+  --md-code-hl-comment-color: #5b6673;
+  --md-code-hl-string-color: #1a6f43;
+  --md-code-hl-number-color: #b32424;
+  --md-code-hl-keyword-color: #2a5cb0;
+  --md-code-hl-function-color: #8a3a9b;
+  --md-code-hl-constant-color: #5b47c2;
+  --md-code-hl-special-color: #b5124a;
+  --md-admonition-fg-color: var(--portal-text);
+  --md-admonition-bg-color: var(--portal-bg);
+  --md-footer-bg-color: #1a2029;
+  --md-footer-bg-color--dark: #12161c;
+}
+
+[data-md-color-scheme="slate"] {
+  color-scheme: dark;
+
+  --portal-bg: #11151a;
+  --portal-surface: #181d24;
+  --portal-surface-strong: #1f262f;
+  --portal-border: #2a323d;
+  --portal-border-strong: #3d4856;
+  --portal-text: #dfe4ea;
+  --portal-text-muted: #a1acb9;
+  --portal-accent: #74b7ee;
+  --portal-accent-strong: #a3d0f5;
+  --portal-accent-soft: #15293b;
+
+  --portal-ev-code-fg: #c5ced8;
+  --portal-ev-code-bg: #222a33;
+  --portal-ev-code-border: #3a4552;
+  --portal-ev-na-fg: #f0c674;
+  --portal-ev-na-bg: #33290f;
+  --portal-ev-na-border: #5e4a17;
+
+  --portal-green-fg: #8fd3a6;
+  --portal-green-bg: #14261b;
+  --portal-green-border: #24492f;
+  --portal-slate-fg: #c5ced8;
+  --portal-slate-bg: #222a33;
+  --portal-slate-border: #3a4552;
+  --portal-blue-fg: #8cc3f2;
+  --portal-blue-bg: #13273a;
+  --portal-blue-border: #214665;
+  --portal-amber-fg: #f0c674;
+  --portal-amber-bg: #33290f;
+  --portal-amber-border: #5e4a17;
+  --portal-orange-fg: #f6a878;
+  --portal-orange-bg: #382011;
+  --portal-orange-border: #663a1d;
+  --portal-red-fg: #ff9d95;
+  --portal-red-bg: #3d1613;
+  --portal-red-border: #6f2822;
+  --portal-violet-fg: #c3b1f5;
+  --portal-violet-bg: #251d3d;
+  --portal-violet-border: #43357a;
+  --portal-teal-fg: #7fd4cb;
+  --portal-teal-bg: #10292a;
+  --portal-teal-border: #1d4a4a;
+
+  --portal-critical-bg: #c62f25;
+  --portal-critical-fg: #ffffff;
+  --portal-window-bg: #6a4bc4;
+  --portal-window-fg: #ffffff;
+
+  --md-default-bg-color: var(--portal-bg);
+  --md-default-fg-color: var(--portal-text);
+  --md-default-fg-color--light: var(--portal-text-muted);
+  --md-default-fg-color--lighter: #dfe4ea52;
+  --md-default-fg-color--lightest: #dfe4ea1a;
+  --md-primary-fg-color: var(--portal-accent);
+  --md-primary-fg-color--light: #a3d0f5;
+  --md-primary-fg-color--dark: #4a97d8;
+  --md-primary-bg-color: #11151a;
+  --md-primary-bg-color--light: #11151ab3;
+  --md-accent-fg-color: var(--portal-accent-strong);
+  --md-accent-fg-color--transparent: #74b7ee24;
+  --md-accent-bg-color: #11151a;
+  --md-typeset-color: var(--portal-text);
+  --md-typeset-a-color: var(--portal-accent);
+  --md-typeset-table-color: var(--portal-border);
+  --md-typeset-table-color--light: #dfe4ea0a;
+  --md-typeset-mark-color: #574300;
+  --md-code-fg-color: #d5dbe2;
+  --md-code-bg-color: #181d24;
+  --md-code-bg-color--light: #181d24e6;
+  --md-code-bg-color--lighter: #181d248a;
+  --md-code-hl-comment-color: #9aa5b2;
+  --md-code-hl-string-color: #7fcf9c;
+  --md-code-hl-number-color: #f29488;
+  --md-code-hl-keyword-color: #8db4f0;
+  --md-code-hl-function-color: #d79be3;
+  --md-code-hl-constant-color: #b0a3f0;
+  --md-code-hl-special-color: #f58cae;
+  --md-admonition-fg-color: var(--portal-text);
+  --md-admonition-bg-color: var(--portal-bg);
+  --md-footer-bg-color: #0c0f13;
+  --md-footer-bg-color--dark: #090b0e;
+}
+
+/* ------------------------------------------------- 2. Layout and typography */
+
+/* Same text size on very large screens: more content, not bigger letters. */
+@media screen and (min-width: 100em) {
+  html {
+    font-size: 125%;
+  }
+}
+
+/* A wider page than the theme default (61rem) leaves room for tables. */
+.md-grid {
+  max-width: 70rem;
+}
+
+/* Opaque header: no frosted glass over the scrolling text. */
+.md-header {
+  background-color: var(--portal-bg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.md-header--shadow {
+  box-shadow: 0 0.05rem 0 var(--portal-border);
+}
+
+/* The page title that waits to slide into the header sits 1.25rem to the
+   right of its place. On a small screen a long title then widens the page
+   (seen without JavaScript): it is clipped to the title area. */
+.md-header__title > .md-header__ellipsis {
+  overflow: hidden;
+}
+
+.md-typeset {
+  font-size: 0.78rem;
+  line-height: 1.65;
+}
+
+.md-typeset h1 {
+  margin-bottom: 0.8em;
+  font-size: 1.7rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--portal-text);
+}
+
+.md-typeset h2 {
+  margin-top: 2.2em;
+  padding-top: 0.9em;
+  font-size: 1.2rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  border-top: 0.05rem solid var(--portal-border);
+}
+
+.md-typeset h3 {
+  margin-top: 1.9em;
+  font-size: 0.98rem;
+  font-weight: 650;
+  letter-spacing: -0.005em;
+}
+
+.md-typeset h4 {
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+/* The source separates sections with `---`; headings already draw that line. */
+.md-typeset hr:has(+ h2) {
+  display: none;
+}
+
+.md-typeset a {
+  text-decoration-thickness: 0.05rem;
+  text-underline-offset: 0.16em;
+}
+
+.md-typeset a:focus-visible,
+.md-nav__link:focus-visible,
+.md-tabs__link:focus-visible {
+  outline: 0.1rem solid var(--portal-accent);
+  outline-offset: 0.1rem;
+  border-radius: 0.1rem;
+}
+
+/* --------------------------------------------------------- 3. Evidence chips */
+
+.md-typeset .ev,
+.md-nav .ev {
+  display: inline-block;
+  padding: 0.18em 0.5em;
+  font-family: var(--portal-font-text);
+  font-size: 0.72em;
+  font-weight: 650;
+  font-style: normal;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  vertical-align: 0.08em;
+  border: 0.05rem solid;
+  border-radius: 0.2rem;
+}
+
+.md-typeset .ev-code,
+.md-nav .ev-code {
+  color: var(--portal-ev-code-fg);
+  background-color: var(--portal-ev-code-bg);
+  border-color: var(--portal-ev-code-border);
+}
+
+.md-typeset .ev-na,
+.md-nav .ev-na {
+  color: var(--portal-ev-na-fg);
+  background-color: var(--portal-ev-na-bg);
+  border-color: var(--portal-ev-na-border);
+}
+
+/* In headings the chip follows the heading, at a fixed readable size. */
+.md-typeset :is(h1, h2, h3, h4, h5, h6) .ev {
+  font-size: 0.6rem;
+  vertical-align: 0.25em;
+}
+
+/* In the table of contents the chip is reduced to a quiet label. */
+.md-nav .ev {
+  padding: 0 0.3em;
+  font-size: 0.82em;
+  vertical-align: 0;
+}
+
+/* ----------------------------------------------------------- 4. Impact chips */
+
+.md-typeset .portal-impact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+  margin: -0.4rem 0 1.2rem;
+}
+
+.md-typeset .portal-impact__label {
+  margin-right: 0.2rem;
+  font-size: 0.62rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  color: var(--portal-text-muted);
+  text-transform: uppercase;
+}
+
+.md-typeset .portal-impact__chip {
+  display: inline-block;
+  padding: 0.22em 0.7em;
+  font-size: 0.66rem;
+  font-weight: 650;
+  line-height: 1.4;
+  color: var(--portal-slate-fg);
+  text-decoration: none;
+  white-space: nowrap;
+  background-color: var(--portal-slate-bg);
+  border: 0.05rem solid var(--portal-slate-border);
+  border-radius: 0.25rem;
+}
+
+.md-typeset .portal-impact__chip:hover,
+.md-typeset .portal-impact__chip:focus-visible {
+  text-decoration: underline;
+}
+
+.md-typeset .portal-impact__chip--read-only {
+  color: var(--portal-green-fg);
+  background-color: var(--portal-green-bg);
+  border-color: var(--portal-green-border);
+}
+
+.md-typeset .portal-impact__chip--writes-config {
+  color: var(--portal-slate-fg);
+  background-color: var(--portal-slate-bg);
+  border-color: var(--portal-slate-border);
+}
+
+.md-typeset .portal-impact__chip--pulls-images {
+  color: var(--portal-blue-fg);
+  background-color: var(--portal-blue-bg);
+  border-color: var(--portal-blue-border);
+}
+
+.md-typeset .portal-impact__chip--restarts-on-drift {
+  color: var(--portal-amber-fg);
+  background-color: var(--portal-amber-bg);
+  border-color: var(--portal-amber-border);
+}
+
+.md-typeset .portal-impact__chip--recreates-containers {
+  color: var(--portal-orange-fg);
+  background-color: var(--portal-orange-bg);
+  border-color: var(--portal-orange-border);
+}
+
+.md-typeset .portal-impact__chip--recovery {
+  color: var(--portal-teal-fg);
+  background-color: var(--portal-teal-bg);
+  border-color: var(--portal-teal-border);
+}
+
+/* The two classes an operator must not miss are solid. */
+.md-typeset .portal-impact__chip--critical {
+  color: var(--portal-critical-fg);
+  background-color: var(--portal-critical-bg);
+  border-color: var(--portal-critical-bg);
+}
+
+.md-typeset .portal-impact__chip--maintenance-window {
+  color: var(--portal-window-fg);
+  background-color: var(--portal-window-bg);
+  border-color: var(--portal-window-bg);
+}
+
+/* ------------------------------------------------------------ 5. Admonitions */
+
+.md-typeset .admonition,
+.md-typeset details {
+  --portal-adm-fg: var(--portal-blue-fg);
+  --portal-adm-bg: var(--portal-blue-bg);
+  --portal-adm-border: var(--portal-blue-border);
+
+  padding: 0 0.9rem;
+  font-size: 0.72rem;
+  color: var(--portal-text);
+  background-color: var(--portal-adm-bg);
+  border: 0.05rem solid var(--portal-adm-border);
+  border-left: 0.2rem solid var(--portal-adm-fg);
+  border-radius: 0.2rem;
+  box-shadow: none;
+}
+
+.md-typeset .admonition-title,
+.md-typeset summary {
+  margin-top: 0.7rem;
+  margin-bottom: 0.6em;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--portal-adm-fg);
+  text-transform: uppercase;
+}
+
+.md-typeset .admonition > .admonition-title::before,
+.md-typeset details > summary::before {
+  top: 0.05em;
+  background-color: var(--portal-adm-fg);
+}
+
+.md-typeset details > summary::after {
+  color: var(--portal-adm-fg);
+}
+
+.md-typeset :is(.admonition, details).note {
+  --portal-adm-fg: var(--portal-blue-fg);
+  --portal-adm-bg: var(--portal-blue-bg);
+  --portal-adm-border: var(--portal-blue-border);
+}
+
+.md-typeset :is(.admonition, details).tip {
+  --portal-adm-fg: var(--portal-green-fg);
+  --portal-adm-bg: var(--portal-green-bg);
+  --portal-adm-border: var(--portal-green-border);
+}
+
+.md-typeset :is(.admonition, details).important {
+  --portal-adm-fg: var(--portal-violet-fg);
+  --portal-adm-bg: var(--portal-violet-bg);
+  --portal-adm-border: var(--portal-violet-border);
+}
+
+.md-typeset :is(.admonition, details).warning {
+  --portal-adm-fg: var(--portal-amber-fg);
+  --portal-adm-bg: var(--portal-amber-bg);
+  --portal-adm-border: var(--portal-amber-border);
+}
+
+.md-typeset :is(.admonition, details).caution {
+  --portal-adm-fg: var(--portal-red-fg);
+  --portal-adm-bg: var(--portal-red-bg);
+  --portal-adm-border: var(--portal-red-border);
+}
+
+/* The theme tints the types it knows (note, tip, warning) with its own
+   colours, in a rule as specific as this one: this one comes later. */
+.md-typeset :is(.admonition, details):is(.note, .tip, .important, .warning, .caution) {
+  background-color: var(--portal-adm-bg);
+}
+
+/* Icons: set in zensical.toml ([project.theme.icon.admonition]). */
+.md-typeset .note > :is(.admonition-title, summary)::before {
+  -webkit-mask-image: var(--md-admonition-icon--note);
+  mask-image: var(--md-admonition-icon--note);
+}
+
+.md-typeset .tip > :is(.admonition-title, summary)::before {
+  -webkit-mask-image: var(--md-admonition-icon--tip);
+  mask-image: var(--md-admonition-icon--tip);
+}
+
+.md-typeset .important > :is(.admonition-title, summary)::before {
+  -webkit-mask-image: var(--md-admonition-icon--important, var(--md-admonition-icon--info));
+  mask-image: var(--md-admonition-icon--important, var(--md-admonition-icon--info));
+}
+
+.md-typeset .warning > :is(.admonition-title, summary)::before {
+  -webkit-mask-image: var(--md-admonition-icon--warning);
+  mask-image: var(--md-admonition-icon--warning);
+}
+
+.md-typeset .caution > :is(.admonition-title, summary)::before {
+  -webkit-mask-image: var(--md-admonition-icon--caution, var(--md-admonition-icon--danger));
+  mask-image: var(--md-admonition-icon--caution, var(--md-admonition-icon--danger));
+}
+
+/* Plain <details> (no alert type): neutral. */
+.md-typeset details:not([class]) {
+  --portal-adm-fg: var(--portal-slate-fg);
+  --portal-adm-bg: var(--portal-surface);
+  --portal-adm-border: var(--portal-border);
+}
+
+/* Inline code and chips inside a tinted box keep their own contrast. */
+.md-typeset :is(.admonition, details) code {
+  background-color: var(--portal-bg);
+}
+
+/* ----------------------------------------------------------------- 6. Tables */
+
+.md-typeset table:not([class]) {
+  font-size: 0.68rem;
+  line-height: 1.5;
+  border: 0.05rem solid var(--portal-border);
+  border-radius: 0.2rem;
+}
+
+.md-typeset table:not([class]) th {
+  padding: 0.6em 0.9em;
+  font-weight: 650;
+  color: var(--portal-text);
+  vertical-align: bottom;
+  background-color: var(--portal-surface);
+  border-bottom: 0.05rem solid var(--portal-border-strong);
+}
+
+.md-typeset table:not([class]) td {
+  padding: 0.6em 0.9em;
+}
+
+.md-typeset table:not([class]) :is(td, th) + :is(td, th) {
+  border-left: 0.05rem solid var(--portal-border);
+}
+
+/*
+ * Code in cells (paths, `file:line` citations, commands). A line may break
+ * after `-`, and after `/` and `,` where tools/site/portal_mdx/breaks.py has
+ * put a <wbr>. In a table that is fitted to the text column, a token that is
+ * still too long breaks where the line ends: one long identifier must not
+ * make the whole table scroll sideways.
+ */
+.md-typeset table:not([class]) code {
+  font-size: 0.92em;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * Wide tables (five columns or more). Instead of being squeezed into the
+ * text column, the table takes the width its content needs, each column
+ * capped so prose cells stay readable, and scrolls sideways inside the
+ * theme's scroll wrapper. The page itself never scrolls sideways.
+ *
+ * The scroll wrapper is added by the theme's script, hence the
+ * `.md-typeset__table >` prefix: without JavaScript the table keeps the
+ * theme's fallback (it scrolls on its own).
+ */
+.md-typeset__table > table:not([class]):has(> thead th:nth-child(5)) {
+  width: max-content;
+  min-width: 100%;
+  max-width: none;
+}
+
+.md-typeset table:not([class]):has(> thead th:nth-child(5)) :is(th, td) {
+  min-width: 4.5rem;
+  max-width: min(15rem, 75vw);
+}
+
+/* The first column is the key of the row (tag, role, command, number). */
+.md-typeset table:not([class]):has(> thead th:nth-child(5)) :is(th, td):first-child {
+  max-width: min(11rem, 60vw);
+}
+
+/* Tokens stay whole here: the table scrolls anyway. */
+.md-typeset table:not([class]):has(> thead th:nth-child(5)) code {
+  overflow-wrap: break-word;
+}
+
+/* Dense tables (seven columns or more): smaller type, narrower columns. */
+.md-typeset table:not([class]):has(> thead th:nth-child(7)) {
+  font-size: 0.62rem;
+}
+
+.md-typeset table:not([class]):has(> thead th:nth-child(7)) :is(th, td) {
+  padding: 0.5em 0.7em;
+  max-width: min(13rem, 75vw);
+}
+
+.md-typeset table:not([class]):has(> thead th:nth-child(7)) :is(th, td):first-child {
+  max-width: min(10rem, 60vw);
+}
+
+/*
+ * On screens wide enough for it, the first column of a wide table stays in
+ * place while the others scroll, so a cell is always read next to its key.
+ * The scroll area is then exactly the text column (the theme lets tables
+ * run 0.8rem into each margin, which would show cells left of a fixed one).
+ */
+@media screen and (min-width: 60em) {
+  .md-typeset__scrollwrap:has(> .md-typeset__table > table > thead th:nth-child(5)) {
+    margin-right: 0;
+    margin-left: 0;
+  }
+
+  .md-typeset__table:has(> table > thead th:nth-child(5)) {
+    padding: 0;
+  }
+
+  .md-typeset__table > table:not([class]):has(> thead th:nth-child(5)) {
+    overflow: visible;
+  }
+
+  .md-typeset__table > table:not([class]):has(> thead th:nth-child(5)) :is(th, td):first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background-color: var(--portal-bg);
+    box-shadow: inset -0.1rem 0 0 var(--portal-border-strong);
+  }
+
+  .md-typeset__table > table:not([class]):has(> thead th:nth-child(5)) th:first-child {
+    background-color: var(--portal-surface);
+  }
+
+  .md-typeset__table > table:not([class]):has(> thead th:nth-child(5)) :is(th, td):first-child + :is(th, td) {
+    border-left: 0;
+  }
+}
+
+.md-typeset__scrollwrap {
+  scrollbar-color: var(--portal-border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.md-typeset__scrollwrap:focus-visible {
+  outline: 0.1rem solid var(--portal-accent);
+}
+
+/*
+ * Key/value tables: two columns under an empty header row (`| | |`), used
+ * for one record per section (risks, findings, questions). Rendered as a
+ * compact definition table with a narrow first column.
+ */
+.md-typeset table:not([class]):has(> thead th:first-child:empty + th:last-child:empty) > thead {
+  display: none;
+}
+
+.md-typeset__table:has(> table > thead th:first-child:empty + th:last-child:empty) {
+  display: block;
+}
+
+.md-typeset table:not([class]):has(> thead th:first-child:empty + th:last-child:empty) td {
+  padding: 0.5em 0.9em;
+}
+
+.md-typeset table:not([class]):has(> thead th:first-child:empty + th:last-child:empty) tr:first-child td {
+  border-top: 0;
+}
+
+.md-typeset table:not([class]):has(> thead th:first-child:empty + th:last-child:empty) td:first-child {
+  width: 10.5rem;
+  min-width: 8rem;
+  font-weight: 650;
+  color: var(--portal-text);
+  background-color: var(--portal-surface);
+}
+
+/* The keys are written `**Key**`: one weight, not bold on top of bold. */
+.md-typeset table:not([class]):has(> thead th:first-child:empty + th:last-child:empty) td:first-child strong {
+  font-weight: inherit;
+}
+
+@media screen and (max-width: 44.984375em) {
+  /* Small screens: key above value, no sideways scrolling. */
+  .md-typeset table:not([class]):has(> thead th:first-child:empty + th:last-child:empty),
+  .md-typeset table:not([class]):has(> thead th:first-child:empty + th:last-child:empty) :is(tbody, tr, td) {
+    display: block;
+    width: auto;
+  }
+
+  .md-typeset table:not([class]):has(> thead th:first-child:empty + th:last-child:empty) td:first-child {
+    width: auto;
+    padding-bottom: 0.3em;
+    border-top: 0.05rem solid var(--portal-border);
+  }
+
+  .md-typeset table:not([class]):has(> thead th:first-child:empty + th:last-child:empty) td + td {
+    border-top: 0;
+    border-left: 0;
+  }
+}
+
+/* Severity cells (class set by tools/site/portal_mdx/severity.py). */
+.md-typeset td.sev {
+  font-weight: 650;
+}
+
+.md-typeset td.sev-low {
+  color: var(--portal-green-fg);
+  background-color: var(--portal-green-bg);
+}
+
+.md-typeset td.sev-medium {
+  color: var(--portal-amber-fg);
+  background-color: var(--portal-amber-bg);
+}
+
+.md-typeset td.sev-high {
+  color: var(--portal-orange-fg);
+  background-color: var(--portal-orange-bg);
+}
+
+.md-typeset td.sev-critical {
+  color: var(--portal-red-fg);
+  background-color: var(--portal-red-bg);
+  box-shadow: inset 0.2rem 0 0 var(--portal-critical-bg);
+}
+
+/* ------------------------------------------------------------ 7. Code blocks */
+
+.md-typeset code {
+  padding: 0.12em 0.36em;
+  font-size: 0.88em;
+  border-radius: 0.15rem;
+}
+
+.md-typeset pre > code {
+  padding: 0.85em 1.1em;
+  font-size: 0.7rem;
+  line-height: 1.6;
+  border: 0.05rem solid var(--portal-border);
+  border-radius: 0.25rem;
+  tab-size: 2;
+}
+
+/* The copy button is always visible, not only when the block is hovered. */
+.md-code__nav {
+  background-color: var(--md-code-bg-color);
+  border-radius: 0.2rem;
+}
+
+.md-code__button {
+  color: var(--portal-text-muted);
+}
+
+.md-code__button:hover,
+.md-code__button:focus-visible {
+  color: var(--portal-accent);
+}
+
+/* Diagrams are centred; one that is wider than the column scrolls sideways
+   (portal-mermaid.js keeps it from shrinking below a readable size). The SVG
+   sits in a shadow root: only inherited properties reach it. */
+.md-typeset div.mermaid {
+  display: block;
+  margin: 1.2em 0;
+  overflow-x: auto;
+  text-align: center;
+  scrollbar-color: var(--portal-border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+/* Diagram source shown until Mermaid has rendered it (or if it cannot). */
+.md-typeset pre.mermaid {
+  display: block;
+  padding: 0.85em 1.1em;
+  font-size: 0.66rem;
+  color: var(--portal-text-muted);
+  background-color: var(--portal-surface);
+  border: 0.05rem dashed var(--portal-border-strong);
+  border-radius: 0.25rem;
+}
+
+/* ------------------------------------------------------------- 8. Grid cards */
+
+.md-typeset .grid {
+  grid-gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+}
+
+.md-typeset .grid.cards > :is(ul, ol) > li,
+.md-typeset .grid > .card {
+  padding: 0.8rem 0.9rem;
+  font-size: 0.72rem;
+  background-color: var(--portal-bg);
+  border: 0.05rem solid var(--portal-border);
+  border-radius: 0.3rem;
+}
+
+.md-typeset .grid.cards > :is(ul, ol) > li:hover,
+.md-typeset .grid.cards > :is(ul, ol) > li:focus-within,
+.md-typeset .grid > .card:hover,
+.md-typeset .grid > .card:focus-within {
+  border-color: var(--portal-accent);
+  box-shadow: none;
+}
+
+.md-typeset .grid.cards > :is(ul, ol) > li > p:first-child {
+  font-size: 0.8rem;
+}
+
+.md-typeset .grid.cards > :is(ul, ol) > li > hr {
+  margin: 0.6em 0;
+  border-bottom-color: var(--portal-border);
+}
+
+.md-typeset .grid.cards > :is(ul, ol) > li > p:first-child a {
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.md-typeset .grid.cards > :is(ul, ol) > li > p:first-child a:hover {
+  text-decoration: underline;
+}
+
+/* --------------------------- 9. Home page hero, search trigger, recently updated */
+
+.portal-hero {
+  background-color: var(--portal-surface);
+  border-bottom: 0.05rem solid var(--portal-border);
+}
+
+.portal-hero__inner {
+  padding: 2.2rem 1.2rem 2.4rem;
+}
+
+@media screen and (max-width: 76.234375em) {
+  .portal-hero__inner {
+    padding: 1.6rem 0.8rem 1.8rem;
+  }
+}
+
+.portal-hero__eyebrow {
+  margin: 0 0 0.5rem;
+  font-size: 0.62rem;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  color: var(--portal-text-muted);
+  text-transform: uppercase;
+}
+
+.portal-hero__title {
+  margin: 0;
+  font-size: clamp(1.45rem, 7vw, 2.1rem);
+  font-weight: 750;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: var(--portal-text);
+}
+
+.portal-hero__lead {
+  max-width: 34rem;
+  margin: 0.8rem 0 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--portal-text-muted);
+}
+
+.portal-search {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  width: 100%;
+  max-width: 28rem;
+  min-height: 2.5rem;
+  padding: 0 0.7rem 0 0.8rem;
+  margin: 1.4rem 0 0;
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: var(--portal-text-muted);
+  text-align: left;
+  cursor: pointer;
+  background-color: var(--portal-bg);
+  border: 0.05rem solid var(--portal-border-strong);
+  border-radius: 0.3rem;
+}
+
+.portal-search[hidden] {
+  display: none;
+}
+
+.portal-search:hover {
+  color: var(--portal-text);
+  border-color: var(--portal-accent);
+}
+
+.portal-search:focus-visible {
+  outline: 0.1rem solid var(--portal-accent);
+  outline-offset: 0.1rem;
+}
+
+.portal-search svg {
+  flex: none;
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.portal-search__label {
+  flex: 1;
+}
+
+.portal-search__kbd {
+  flex: none;
+  padding: 0.15em 0.5em;
+  font-family: var(--portal-font-text);
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--portal-text-muted);
+  white-space: nowrap;
+  background-color: var(--portal-surface);
+  border: 0.05rem solid var(--portal-border);
+  border-radius: 0.2rem;
+}
+
+.portal-search--inline {
+  max-width: 20rem;
+  margin: 0;
+}
+
+/* Keyboard hint, same convention as the theme's header search button. */
+.portal-search__kbd::after {
+  content: "Ctrl K";
+}
+
+[data-platform^="Mac"] .portal-search__kbd::after {
+  content: "\2318 K";
+}
+
+/* No keyboard hint where there is no keyboard. */
+@media (hover: none) {
+  .portal-search__kbd {
+    display: none;
+  }
+}
+
+/* The home page has no sidebars: its column stays readable and starts at
+   the hero's left edge. */
+.md-container:has(> .portal-hero) .md-content__inner {
+  padding-top: 0;
+}
+
+@media screen and (min-width: 76.25em) {
+  .md-container:has(> .portal-hero) .md-content__inner {
+    max-width: 56rem;
+    margin-right: auto;
+    margin-left: 1.2rem;
+  }
+}
+
+.md-container:has(> .portal-hero) .md-typeset > h2:first-of-type {
+  padding-top: 0;
+  margin-top: 1.2rem;
+  border-top: 0;
+}
+
+.md-container:has(> .portal-hero) .md-typeset > :is(p, ul, ol) {
+  max-width: 44rem;
+}
+
+.md-typeset ul.portal-recent {
+  max-width: 44rem;
+  padding: 0;
+  margin: 0.6em 0 0.8em;
+  list-style: none;
+  border: 0.05rem solid var(--portal-border);
+  border-radius: 0.3rem;
+}
+
+.md-typeset ul.portal-recent > li {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0.45em 0.9em;
+  margin: 0;
+  font-size: 0.72rem;
+}
+
+.md-typeset ul.portal-recent > li + li {
+  border-top: 0.05rem solid var(--portal-border);
+}
+
+.md-typeset .portal-recent time {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  color: var(--portal-text-muted);
+}
+
+/* ------------------------------------- 10. Page footer line, tags, anchors */
+
+.md-typeset .portal-updated {
+  padding-top: 0.8rem;
+  margin: 2.4rem 0 0;
+  font-size: 0.66rem;
+  color: var(--portal-text-muted);
+  border-top: 0.05rem solid var(--portal-border);
+}
+
+.md-typeset .portal-updated time {
+  font-variant-numeric: tabular-nums;
+}
+
+.md-typeset .md-tags:not([hidden]) {
+  gap: 0.3rem;
+  padding-top: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+.md-typeset .md-tag {
+  padding: 0.15em 0.6em;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--portal-text-muted);
+  background: var(--portal-surface);
+  border: 0.05rem solid var(--portal-border);
+  border-radius: 0.2rem;
+}
+
+/* Stable item anchors written as `<a id="r12"></a>` on their own line take
+   no room; the heading that follows carries the visible spacing. */
+.md-typeset p:has(> a[id]:only-child:empty) {
+  height: 0;
+  margin: 0;
+}
+
+/* ---------------------------------------------------------- 11. Reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* -------------------------------------------------------------------- 12. Print */
+
+@media print {
+  .md-header,
+  .md-tabs,
+  .md-sidebar,
+  .md-footer,
+  .md-top,
+  .md-content__button,
+  .md-code__nav,
+  .headerlink,
+  .portal-hero .portal-search,
+  .md-typeset .md-tags {
+    display: none !important;
+  }
+
+  html,
+  body {
+    font-size: 10pt;
+  }
+
+  .md-grid {
+    max-width: none;
+  }
+
+  .md-content__inner {
+    margin: 0;
+  }
+
+  .md-typeset a {
+    color: inherit;
+    text-decoration: underline;
+  }
+
+  /* External targets are printed after the link text. */
+  .md-typeset a[href^="http"]::after {
+    font-size: 0.85em;
+    content: " (" attr(href) ")";
+    overflow-wrap: anywhere;
+  }
+
+  .md-typeset :is(h1, h2, h3, h4) {
+    break-after: avoid;
+  }
+
+  .md-typeset :is(pre, tr, .admonition, .mermaid) {
+    break-inside: avoid;
+  }
+
+  .md-typeset pre > code {
+    white-space: pre-wrap;
+    overflow: visible;
+  }
+
+  /* Wide tables are refitted to the page instead of being clipped. */
+  .md-typeset__scrollwrap {
+    overflow: visible;
+  }
+
+  .md-typeset table:not([class]) {
+    width: 100% !important;
+    max-width: 100% !important;
+    font-size: 7.5pt;
+  }
+
+  .md-typeset table:not([class]) :is(th, td) {
+    position: static !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    white-space: normal !important;
+    box-shadow: none !important;
+  }
+
+  .md-typeset table:not([class]) code {
+    overflow-wrap: anywhere !important;
+  }
+
+  .md-typeset .ev,
+  .md-typeset .portal-impact__chip,
+  .md-typeset td.sev {
+    color: #000 !important;
+    background: none !important;
+    border-color: #000 !important;
+    box-shadow: none !important;
+  }
+
+  .md-typeset .portal-impact__chip {
+    border: 0.75pt solid #000;
+  }
+
+  .md-typeset .portal-updated[hidden] {
+    display: none;
+  }
+}

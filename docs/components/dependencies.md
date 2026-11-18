@@ -1,5 +1,7 @@
 ---
 title: Component dependencies
+description: What depends on what in Kolla-Ansible Ussuri, in four kinds of dependency, from the shared substrate and infrastructure to compute hosts and deployment order.
+tags: [dependencies, haproxy, keepalived, mariadb, rabbitmq, memcached, keystone, nova, neutron, openvswitch, ovn, chrony, iscsi, fluentd, kolla-toolbox]
 ---
 
 # Component dependencies

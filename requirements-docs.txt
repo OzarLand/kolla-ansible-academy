@@ -1,0 +1,25 @@
+# Build dependencies of the portal (make docs-deps).
+#
+# Every package is pinned to an exact version, transitive dependencies
+# included, so that two builds of the same commit give the same site.
+# Python 3.11 or newer is required; CI uses 3.13 (.github/workflows/docs.yml).
+#
+# To upgrade: install the new Zensical in an empty virtual environment, copy
+# the output of `pip freeze` here, then run `make docs-check docs-build`.
+# See tools/site/README.md.
+
+zensical==0.1.2
+
+# Required by zensical 0.1.2
+click==8.5.1
+Jinja2==3.1.6
+Markdown==3.11.3
+pathspec==1.1.1
+Pygments==2.21.0
+pymdown-extensions==13.1
+PyYAML==6.0.3
+tomli==2.5.0
+zensical-ui==0.0.42
+
+# Required by Jinja2
+MarkupSafe==3.0.4

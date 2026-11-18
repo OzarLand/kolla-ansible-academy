@@ -1,10 +1,28 @@
 ---
 title: Reconfigure a single service
+description: What a single-service reconfigure such as -t keystone runs, what the tag also touches, what restarts on drift, the risks and the verification.
+tags: [keystone, glance, placement, cinder, heat, haproxy, reconfigure, tags, loop-notify, one-shot, limit]
+impact: [restarts-on-drift]
 ---
 
 # Reconfigure a single service
 
-<!-- TODO editorial: intro, key answers -->
+What `kolla-ansible -t <svc> reconfigure` does for one API service, with keystone as the command example: after the
+gather-facts and group_by plays, which run on all hosts, the haproxy play runs on the haproxy hosts (the service's
+frontend, and a HAProxy restart if the rendered frontend changed) and the service play on the service hosts (`common`,
+then the service's containers, all of which restart on every drifted host). The commands with their scope and
+restarts are in [§1](#1-commands), what a narrow tag also touches in
+[§2](#2-execute-a-service-specific-tag-implicit-effects), and the sequence, the interruption, the VM impact, the risks
+and the verification in [§3](#3-sequence-impact-risks-and-verification-of--t-svc-reconfigure). §2 and §3 are written
+for the [assumed deployment](index.md#assumed-deployment); **Scope**, **Restarts** and **One-shot** are defined in
+[Conventions used by the command sections](index.md#conventions-used-by-the-command-sections), drift in
+[Drift](index.md#drift) and "the code guarantees" in [Code guarantees and environment
+dependence](index.md#code-guarantees-and-environment-dependence).
+
+> [!WARNING]
+> [R8](../risk/risk-register.md#r8): a changed `services.d/<svc>*.cfg` restarts HAProxy on all haproxy hosts — see
+> [§1.2](#12-avoid-touching-haproxy-during-a-service-run) and
+> [§3](#3-sequence-impact-risks-and-verification-of--t-svc-reconfigure).
 
 ## 1. Commands
 
@@ -104,4 +122,19 @@ For an API service such as keystone, glance, cinder, heat or placement:
     answers through the VIP, the container start times show which hosts restarted, and
     `docker ps --filter name=haproxy` shows whether HAProxy restarted.
 
-<!-- TODO editorial: related -->
+## Related
+
+- [Risk register](../risk/risk-register.md) — the risks this page names: [R8](../risk/risk-register.md#r8) (HAProxy
+  restart), [R19](../risk/risk-register.md#r19) (Keystone), [R20](../risk/risk-register.md#r20) (glance file backend),
+  [R23](../risk/risk-register.md#r23) (`--limit` on a large inventory), [R24](../risk/risk-register.md#r24) (10 s
+  SIGKILL) and [R14](../risk/risk-register.md#r14) (Docker restart by `bootstrap-servers`)
+- [Keystone](../components/keystone.md) — service card and where to look for the service of the §1.1 example
+- [HAProxy + Keepalived](../components/haproxy-keepalived.md) — service card and where to look for HAProxy, including
+  the haproxy play under a service tag
+- [Pre-execution checklist](pre-execution-checklist.md) — the checks before every production run
+- [Predict and inspect a run](predict-a-run.md) — `genconfig` and the exit codes of `kolla_set_configs --check`, used
+  in the verification of §3
+- [Tags §2](../risk/tags.md#2-ansible-29-semantics-that-kolla-relies-on) — the Ansible 2.9 semantics behind the
+  implicit effects: tag inheritance, handlers that ignore tags, the haproxy play, loop-notify
+- [Command quick lookup by tag](command-quick-lookup.md) — hosts touched, possible restarts and one-shot containers
+  per tag

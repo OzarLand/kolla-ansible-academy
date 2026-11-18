@@ -1,10 +1,16 @@
 ---
 title: Write config first, apply in controlled batches
+description: Write the configuration with genconfig, then apply it batch by batch with deploy-containers --limit, or roll a reconfigure with ANSIBLE_SERIAL.
+tags: [nova, genconfig, deploy-containers, reconfigure, serial, limit, loop-notify, kolla-set-configs]
+impact: [writes-config, restarts-on-drift]
 ---
 
 # Write config first, apply in controlled batches
 
-<!-- TODO editorial: intro, key answers -->
+How to write the configuration first and apply it batch by batch, with Nova as the example. `genconfig`, a review of the
+diff, then `deploy-containers --limit <batch>` is the only built-in way to separate "write the config" from "apply it"
+([Execution flow §4](../concepts/deployment-execution-flow.md#4-action-matrix-what-each-kolla_action-does)). The page
+also covers a rolling `reconfigure` with `ANSIBLE_SERIAL`.
 
 > [!NOTE]
 > **Key answers**
@@ -97,4 +103,16 @@ Caveats:
 - Hosts restarted by Docker or reboot also pick up the new config, because `COPY_ALWAYS` copies the files and rewrites
   `/run_command` at container start (kolla `docker/base/set_configs.py:319-324,391-393`). Keep the window short.
 
-<!-- TODO editorial: related -->
+## Related
+
+- [Execution flow §4](../concepts/deployment-execution-flow.md#4-action-matrix-what-each-kolla_action-does) — the action
+  matrix: what `genconfig` and `deploy-containers` run and skip
+- [Execution flow §5](../concepts/deployment-execution-flow.md#5-batching-serial-and-its-interaction-with-order) —
+  batching with `serial`: a batch runs the complete play before the next batch starts
+- [Tags §2.5](../risk/tags.md#25-run_once-with-serial-code) — what `run_once` tasks repeat when `serial` is set
+- [Kolla images §3](../concepts/kolla-images.md#3-kolla_set_configs---check-what-it-compares-and-its-exit-codes) — what
+  `kolla_set_configs --check` compares and what it never compares
+- [Predict and inspect a run](predict-a-run.md) — the `kolla_set_configs --check` command, to see what will restart
+  after `genconfig`
+- [Reconfigure Nova](reconfigure-nova.md) — what `-t nova reconfigure` runs and restarts
+- [R1](../risk/risk-register.md#r1) — the risk whose precautions name this pattern and `ANSIBLE_SERIAL`

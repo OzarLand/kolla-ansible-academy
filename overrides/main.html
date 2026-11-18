@@ -1,0 +1,66 @@
+{#-
+  Portal page template. It only adds presentation around the page's Markdown:
+  the Mermaid loader, the impact chips of the front matter and the
+  "Last updated" line. Content stays in docs/.
+-#}
+{% extends "base.html" %}
+
+{% block extrahead %}
+  <meta name="portal-updates" content="{{ 'assets/data/updates.json' | url }}">
+  {#-
+    Mermaid is vendored and loaded only on pages that contain a diagram.
+    The theme bundle mounts diagrams on DOMContentLoaded and downloads Mermaid
+    from a CDN when `window.mermaid` is undefined at that moment. Deferred
+    scripts run before DOMContentLoaded, in order, so the vendored file and
+    its set-up are always there first, and the page keeps rendering while
+    they download. portal-mermaid.js also covers the case where the vendored
+    file fails to load: the bundle then still never contacts a CDN.
+  -#}
+  {% if page and page.content and '<pre class="mermaid">' in page.content %}
+    <script defer src="{{ 'assets/vendor/mermaid/mermaid.min.js' | url }}"></script>
+    <script defer src="{{ 'assets/javascripts/portal-mermaid.js' | url }}"></script>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  {#- "View source": the page's Markdown file on GitHub. -#}
+  {% if page.edit_url and "content.action.view" in config.theme.features %}
+    <a href="{{ page.edit_url }}" title="View source on GitHub" aria-label="View source on GitHub" class="md-content__button md-icon">
+      {% include ".icons/" ~ (config.theme.icon.view or "material/file-eye-outline") ~ ".svg" %}
+    </a>
+  {% endif %}
+
+  {#- Impact chips, from the `impact` list of the front matter. -#}
+  {% set impact = (page.meta.impact if page.meta and page.meta.impact else []) %}
+  {% if impact is string %}{% set impact = [impact] %}{% endif %}
+  {% set chips %}
+    {% if impact %}
+      <p class="portal-impact">
+        <span class="portal-impact__label">Impact</span>
+        {% for item in impact %}
+          <a class="portal-impact__chip portal-impact__chip--{{ item | e }}" href="{{ 'start/conventions/' | url }}#operation-impact-classes">{{ item | replace("-", " ") | capitalize }}</a>
+        {% endfor %}
+      </p>
+    {% endif %}
+  {% endset %}
+
+  {#- The chips go right under the page's H1, which is part of the Markdown. -#}
+  {% if "</h1>" in page.content %}
+    {% set parts = page.content | split("</h1>", 1) %}
+    {{ parts[0] | safe }}</h1>
+    {{ chips }}
+    {{ parts[1] | safe }}
+  {% else %}
+    <h1>{{ page.title | d(config.site_name, true) }}</h1>
+    {{ chips }}
+    {{ page.content }}
+  {% endif %}
+
+  {#- Filled by portal.js from assets/data/updates.json; hidden without it. -#}
+  <p class="portal-updated" data-portal-updated="{{ page.url }}" hidden></p>
+
+  {% include "partials/tags.html" %}
+  {% include "partials/source-file.html" %}
+  {% include "partials/feedback.html" %}
+  {% include "partials/comments.html" %}
+{% endblock %}

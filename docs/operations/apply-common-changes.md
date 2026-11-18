@@ -1,10 +1,17 @@
 ---
 title: Apply common changes (fluentd, cron, kolla_toolbox)
+description: Why -t common reconfigure reconfigures no host, how common reaches hosts through another play such as -t chrony, what restarts and how to verify.
+tags: [fluentd, cron, kolla-toolbox, chrony, reconfigure, tags, loop-notify, kolla-set-configs]
+impact: [restarts-on-drift]
 ---
 
 # Apply `common` changes (fluentd, cron, kolla_toolbox)
 
-<!-- TODO editorial: intro, key answers -->
+How to push changes of the `common` role (fluentd, cron, kolla_toolbox) to hosts: `-t common reconfigure` reconfigures
+no host, so the commands use a play that reaches the hosts first, such as `-t chrony reconfigure`. The commands are in
+[§1](#1-commands), why the tag does nothing in [§2](#2-the-tag-does-nothing), which hosts get `common`, what restarts
+and the impact in [§3](#3-how-common-actually-reaches-hosts), and the sequence, the risks and the verification in
+[§4](#4-sequence-risks-and-verification). Drift is defined in [Drift](index.md#drift).
 
 > [!NOTE]
 > **Key answers**
@@ -12,6 +19,10 @@ title: Apply common changes (fluentd, cron, kolla_toolbox)
 > - **`-t common reconfigure` reconfigures no host** [CODE] ([§2](#2-the-tag-does-nothing)). `common` reaches a host in
 >   the first matching play of a run; `-t chrony` is the recommended way to push its changes
 >   ([§3](#3-how-common-actually-reaches-hosts)).
+
+> [!WARNING]
+> [R2](../risk/risk-register.md#r2): fleet-wide restarts after an `enable_*` change — see "Hidden coupling" in
+> [§3](#3-how-common-actually-reaches-hosts).
 
 ## 1. Commands
 
@@ -100,4 +111,17 @@ included `reconfigure.yml` tasks are filtered out because they do not carry the 
   - after: `docker ps --filter name=fluentd --filter name=cron --filter name=kolla_toolbox` shows fresh start times;
     `docker logs fluentd` has no parse errors; logs still reach the configured output.
 
-<!-- TODO editorial: related -->
+## Related
+
+- [Risk register](../risk/risk-register.md) — the risks this page names: [R2](../risk/risk-register.md#r2) (fleet-wide
+  restarts after an `enable_*` change) and [R25](../risk/risk-register.md#r25) (`-t common` mistaken for a
+  reconfigure)
+- [Common: fluentd, cron, kolla_toolbox](../components/common.md) — service card and where to look
+- [Chrony](../components/chrony.md) — service card and where to look for the tag used to push `common` changes
+- [Pre-execution checklist](pre-execution-checklist.md) — the checks before every production run
+- [Tags §2.1](../risk/tags.md#21-dynamic-include_tasks-and-tag-inheritance-code) — dynamic `include_tasks` and tag
+  inheritance: the tag semantics behind §2
+- [Repository architecture §5.1](../concepts/repository-architecture.md#51-the-common-role-and-the-common_run-guard) —
+  the `common` role and the `common_run` guard
+- [Why a small change creates a large workload](../risk/small-change-large-workload.md) —
+  `enable_<new service>: yes` changes fluentd/logrotate on every host

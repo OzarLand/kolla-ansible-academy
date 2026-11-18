@@ -1,19 +1,31 @@
 ---
 title: Update container images
+description: How pull, deploy, reconfigure and upgrade treat images, which hosts download, what is recreated, the risks of a tag change applied with deploy, and the checks.
+tags: [images, pull, deploy, upgrade, nova, neutron, openvswitch, loop-notify, serial, one-shot]
+impact: [pulls-images, recreates-containers, critical]
 ---
 
 # Update container images
 
-<!-- TODO editorial: intro, key answers -->
+How `kolla-ansible pull`, `deploy`, `reconfigure` and `upgrade` treat container images: `pull` never changes running
+containers, and after a `pull` that downloaded something the next `deploy`, `reconfigure` or `upgrade` recreates the
+affected containers. The commands are in [§1](#1-commands), the pull and recreation mechanism with the restart set per
+case in [§2](#2-how-image-pulling-and-recreation-work-code), the hosts that download in
+[§3](#3-which-nodes-download), the risks in [§4](#4-risks) and the verification in [§5](#5-verification). The image
+counts per host in §2 are for the service set of the [assumed deployment](index.md#assumed-deployment).
 
 > [!NOTE]
 > **Key answers**
 >
-> - **Images ([§2–5](#2-how-image-pulling-and-recreation-work-code)):** a `deploy` without `pull` does not download a
->   rebuilt image, and a new `openstack_tag` applied with `deploy` recreates every container on every host [CODE]
+> - **Images ([§2 to §5](#2-how-image-pulling-and-recreation-work-code)):** a `deploy` without `pull` does not download
+>   a rebuilt image, and a new `openstack_tag` applied with `deploy` recreates every container on every host [CODE]
 >   ([§2](#2-how-image-pulling-and-recreation-work-code)). Risks of doing so: [§4](#4-risks).
 > - **Images:** `pull` never changes running containers, and `deploy`/`reconfigure` never pull an image that is already
 >   present locally [CODE] ([§1.1](#11-images)).
+
+> [!CAUTION]
+> [R12](../risk/risk-register.md#r12): changing the tag and running `deploy` (instead of `upgrade`) recreates the whole
+> fleet in one go, without the upgrade-specific ordering — see [§4](#4-risks).
 
 ## 1. Commands
 
@@ -104,4 +116,22 @@ Every host that runs at least one container whose image reference changed:
   - `docker ps --format '{{.Names}} {{.Image}}'` shows the new tag everywhere;
   - `docker inspect -f '{{.Image}}' nova_compute` equals the pulled image ID.
 
-<!-- TODO editorial: related -->
+## Related
+
+- [Risk register](../risk/risk-register.md) — the risk items for these operations: [R11](../risk/risk-register.md#r11)
+  (`kolla-ansible pull`), [R12](../risk/risk-register.md#r12) (changing `openstack_tag` and running `deploy` instead of
+  `upgrade`), [R13](../risk/risk-register.md#r13) (rebuilt image pushed under the same tag) and
+  [R7](../risk/risk-register.md#r7) (`openvswitch_vswitchd` restart or recreate)
+- [Open vSwitch](../components/openvswitch.md) — service card and where to look for the OVS image change of §4
+- [Pre-execution checklist](pre-execution-checklist.md) — the checks before every production run, including "Pull
+  first"
+- [Write config first, apply in controlled batches
+  §1.2](controlled-batches.md#12-rolling-reconfigure-with-ansible_serial) — which plays `ANSIBLE_SERIAL` runs in
+  batches
+- [Kolla images §4](../concepts/kolla-images.md#4-one-shot-containers-what-the-environment-variables-run) — one-shot
+  containers per image: what the environment variables run
+- [Repository architecture
+  §6](../concepts/repository-architecture.md#6-custom-modules--container-lifecycle-via-kolla_docker) — how
+  `kolla_docker` decides to pull an image and to recreate a container
+- [Tags §2.4](../risk/tags.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code) — loop-notify,
+  which restarts the siblings of a recreated container

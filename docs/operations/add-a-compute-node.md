@@ -1,10 +1,21 @@
 ---
 title: Add a compute node
+description: The three limited commands that add a compute, what deploy --limit touches on the new host and on the others, and the caveats about /etc/hosts.
+tags: [nova, neutron, bootstrap-servers, pull, deploy, limit, facts, scaling]
 ---
 
 # Add a compute node
 
-<!-- TODO editorial: intro, key answers -->
+How to add a compute node with `bootstrap-servers`, `pull` and `deploy`, each with `--limit` on the new host, and what
+`deploy --limit` then touches: it creates the containers of the new compute, delegates tasks to the controllers,
+gathers facts for all hosts, and does not touch existing computes apart from the delegated `setup`. The commands are in
+[§1](#1-commands), and what the run touches, what it leaves untouched and the caveats are in
+[§2](#2-add-a-compute-node); the page gives no verification steps for the new compute. §2 is written for the
+[assumed deployment](index.md#assumed-deployment), with `compute004` as the new host.
+
+> [!WARNING]
+> Existing hosts' `/etc/hosts` is not updated (`bootstrap-servers --limit`), and a full `bootstrap-servers` run carries
+> its own Docker-restart risk ([R14](../risk/risk-register.md#r14)) — see the caveats in [§2](#2-add-a-compute-node).
 
 ## 1. Commands
 
@@ -53,4 +64,20 @@ task files:
     [NOT AVAILABLE] Whether live migration to it fails meanwhile ([fact sheet E
     §3](../reference/factsheets/e-host-bootstrap-ops-playbooks.md#3-etchosts-generation)).
 
-<!-- TODO editorial: related -->
+## Related
+
+- [Risk register](../risk/risk-register.md) — [R14](../risk/risk-register.md#r14) (`bootstrap-servers` re-run on a
+  live host), which this page names, and [R23](../risk/risk-register.md#r23) (any run with `--limit` on a large
+  inventory)
+- [Nova](../components/nova.md) — service cards of the roles `nova` and `nova-cell`, and where to look
+- [Pre-execution checklist](pre-execution-checklist.md) — the checks before every production run
+- [Compute scaling
+  §2](../concepts/compute-scaling-and-performance.md#2-work-per-compute-host-read-from-the-task-files) — work per
+  compute host, read from the task files: the 11 `compare_container` items of a compute
+- [Execution flow
+  §2.4](../concepts/deployment-execution-flow.md#24-compute-node-deployment-what-one-compute-host-experiences) —
+  compute node deployment: what one compute host experiences
+- [Fact sheet E §3](../reference/factsheets/e-host-bootstrap-ops-playbooks.md#3-etchosts-generation) — `/etc/hosts`
+  generation
+- [Reconfigure Nova §6](reconfigure-nova.md#6-operational-risks-and-verification) — the checks listed after a Nova
+  run (`openstack compute service list`, `nova-manage cell_v2 list_hosts`); this page lists none

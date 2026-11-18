@@ -1,5 +1,7 @@
 ---
 title: Nova deep dive
+description: Nova in depth, with its two roles and ten plays, its dependencies, what restarts what, the nova_libvirt restart, live migration, consoles and the upgrade path.
+tags: [nova, libvirt, dependencies, loop-notify, one-shot, upgrade, unknowns]
 ---
 
 # Nova deep dive

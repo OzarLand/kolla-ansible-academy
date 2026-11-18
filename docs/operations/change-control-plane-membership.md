@@ -1,10 +1,24 @@
 ---
 title: Change control-plane membership
+description: What adding, removing or replacing a controller changes through the rabbitmq and memcached groups, which containers restart, and why to schedule and batch it.
+tags: [rabbitmq, memcached, mariadb, nova, neutron, haproxy, reconfigure, inventory, loop-notify]
+impact: [restarts-on-drift, maintenance-window]
 ---
 
 # Change control-plane membership
 
-<!-- TODO editorial: intro, key answers -->
+What adding, removing or replacing a controller triggers on the rest of the platform through the `rabbitmq` and
+`memcached` groups, which are children of `control` in the default inventory. [§1](#1-commands) gives no command: it
+states what restarts, with the risks R3 and R4, and that Galera and RabbitMQ membership changes need their own
+procedures (Ussuri has no automated member removal);
+[§2](#2-change-control-plane-membership-add-or-remove-a-controller) lists what restarts when `control04` is added and
+`-t nova,neutron reconfigure` is run. The page gives no verification steps, and §2 is written for the
+[assumed deployment](index.md#assumed-deployment).
+
+> [!WARNING]
+> [R3](../risk/risk-register.md#r3) and [R4](../risk/risk-register.md#r4): in the default inventory a controller change
+> restarts all nova and neutron containers on all computes, and most control-plane services — see
+> [§1.1](#11-remove-or-replace-a-controller).
 
 ## 1. Commands
 
@@ -40,6 +54,18 @@ title: Change control-plane membership
 **Takeaway:** controller membership changes are fleet-wide restart events for every messaging consumer. Schedule them
 as such, and batch the compute side.
 
-<!-- TODO editorial: related -->
+## Related
+
+- [Risk register](../risk/risk-register.md) — the risks this page names: [R3](../risk/risk-register.md#r3) (changing
+  RabbitMQ group membership) and [R4](../risk/risk-register.md#r4) (changing memcached membership)
+- [RabbitMQ](../components/rabbitmq.md) — service card and where to look
+- [Memcached](../components/memcached.md) — service card and where to look
+- [MariaDB/Galera](../components/mariadb.md) — service card and where to look; Galera membership changes restart all
+  DB nodes
+- [Pre-execution checklist](pre-execution-checklist.md) — the checks before every production run
+- [Write config first, apply in controlled batches](controlled-batches.md) — how to apply in batches (`genconfig`,
+  then `deploy-containers --limit`; `ANSIBLE_SERIAL`); its examples use the nova tags
+- [Why a small change creates a large workload](../risk/small-change-large-workload.md) — one extra controller changes
+  the transport URL in every messaging service everywhere
 
 [sheet-b-14]: ../reference/factsheets/b-mariadb-rabbitmq-keystone.md#14-config-files-generated-ansiblerolesmariadbtasksconfigyml

@@ -1,17 +1,19 @@
 ---
 title: Pre-execution checklist
+description: The eight checks to make before every production run of kolla-ansible, from knowing the diff to keeping rollback material.
+tags: [genconfig, kolla-set-configs, loop-notify, serial, pull, limit, mariadb-backup, risk]
+impact: [writes-config]
 ---
 
 # Pre-execution checklist
 
-<!-- TODO editorial: intro, key answers (old section heading: "Pre-execution checklist (applies to every production run)") -->
+What to check before running `kolla-ansible` against a production cloud. The checklist applies to every production run.
 
 > [!NOTE]
 > **Key answers**
 >
 > - **Before every production run:** the pre-execution checklist. Know the diff, the restart set and the batch size;
->   pull first; health gates and workload gates; scope; rollback material ([Pre-execution
->   checklist](#pre-execution-checklist)).
+>   pull first; health gates and workload gates; scope; rollback material (steps 1 to 8 below).
 
 1. **Know the diff before you run.**
    - Run `kolla-ansible genconfig` with the same tags and `--limit`. This writes config but does not restart any
@@ -56,4 +58,15 @@ title: Pre-execution checklist
    - Previous image tags still present locally (do not `prune-images` before you are done).
    - A MariaDB backup (`kolla-ansible mariadb_backup`).
 
-<!-- TODO editorial: related -->
+## Related
+
+- [Risk register](../risk/risk-register.md) — the 25 risks, each with its precautions
+- [Predict and inspect a run](predict-a-run.md) — the commands of step 1, with the exit codes of the check
+- [Write config first, apply in controlled batches](controlled-batches.md) — `genconfig`, then
+  `deploy-containers --limit` batch by batch
+- [Tags §2.4](../risk/tags.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code) — loop-notify,
+  the mechanism of step 2
+- [Execution flow §5](../concepts/deployment-execution-flow.md#5-batching-serial-and-its-interaction-with-order) —
+  batching with `serial`, and the plays that are not batched (step 3)
+- [Update container images](update-container-images.md) — `pull` before `upgrade` (step 4)
+- [Database operations](database-operations.md) — the `mariadb_backup` command of step 8

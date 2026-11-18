@@ -1,0 +1,31 @@
+{#-
+  Breadcrumb above the page title: Home, then the sections the page is in.
+  The theme's partial stays silent for a page one level down (every
+  operation, troubleshooting, risk and concept page), because Zensical 0.1.2
+  does not provide `nav.homepage` and a one-item path is not shown. Here the
+  path starts at the home page, so those pages get a way up as well, which
+  matters on small screens where the tabs are not displayed.
+-#}
+{% import "partials/path-item.html" as item with context %}
+{% if page.meta and page.meta.hide %}
+  {% set hidden = "hidden" if "path" in page.meta.hide %}
+{% endif %}
+{% set sections = page.ancestors | reverse | list %}
+{#- Nothing on the home page itself (its URL is empty). -#}
+{% if sections and page.url %}
+  <nav class="md-path" aria-label="Breadcrumb" {{ hidden }}>
+    <ol class="md-path__list">
+      {#- The first tab is the home section itself: no second "Home". -#}
+      {% if (sections | first).title != (nav.items | first).title %}
+        <li class="md-path__item">
+          <a href="{{ '.' | url }}" class="md-path__link">
+            <span class="md-ellipsis">{{ (nav.items | first).title }}</span>
+          </a>
+        </li>
+      {% endif %}
+      {% for nav_item in sections %}
+        {{ item.render(nav_item) }}
+      {% endfor %}
+    </ol>
+  </nav>
+{% endif %}

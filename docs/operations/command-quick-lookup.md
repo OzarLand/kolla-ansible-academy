@@ -1,22 +1,20 @@
 ---
 title: Command quick lookup by tag
+description: One row per command and tag, with the hosts touched, the containers that can restart, the one-shot containers and what drives the duration.
+tags: [tags, reconfigure, deploy-containers, genconfig, pull, one-shot, keystone, glance, placement, nova, neutron, openvswitch, haproxy, chrony, mariadb, rabbitmq]
+impact: [restarts-on-drift, writes-config, pulls-images]
 ---
 
 # Command quick lookup by tag
 
-<!-- TODO editorial: intro, key answers (old section heading: "Quick lookup: tag → scope → typical impact") -->
+One row per command: the hosts it touches with the default inventory, the containers that can restart, the one-shot
+containers it runs and what drives its duration. Twelve rows are `-t <tag> reconfigure`; the last four are `reconfigure`
+without a tag, `deploy-containers`, `genconfig` and `pull`.
 
-The examples assume:
-
-- the inventory is `/etc/kolla/multinode` (adapt `-i`);
-- `globals.yml` and `passwords.yml` are in `/etc/kolla`;
-- Ansible is 2.9.
-
-Conventions:
-
-- **Scope** = plays and hosts touched.
-- **Restarts** = containers that *can* restart (only if drift is detected).
-- **One-shot** = bootstrap containers that run regardless of drift.
+What the examples assume (inventory, location of `globals.yml` and `passwords.yml`, Ansible version) and the conventions
+**Scope**, **Restarts** and **One-shot** are in [Conventions used by the command
+sections](index.md#conventions-used-by-the-command-sections). "Can restart" follows the **Restarts** convention:
+containers that can restart, only if drift is detected.
 
 | Command | Hosts touched (default inventory) | Can restart | One-shot containers | Typical duration driver |
 |---|---|---|---|---|
@@ -37,4 +35,16 @@ Conventions:
 | `genconfig -t X` | X's hosts (+haproxy) | none | none | templating |
 | `pull -t X` | X's hosts | none | none | image size × hosts |
 
-<!-- TODO editorial: related -->
+## Related
+
+- [Tags §3](../risk/tags.md#3-what-a-tag-really-executes-master-table) — the master table: what each tag executes and
+  on which hosts
+- [Tags §3.1](../risk/tags.md#31-per-tag-answers-files-vms-apis-networkingstorage-safety-prerequisites) — per-tag
+  answers: files, VMs, APIs, networking and storage, safety, prerequisites
+- [Tag index](../risk/tag-index.md) — each tag with its component page
+- [Operations catalogue](index.md#operations-catalogue) — the operation pages, with their full command lines
+- [Predict and inspect a run](predict-a-run.md) — how to see what will restart before running one of these commands
+- [Kolla images §4](../concepts/kolla-images.md#4-one-shot-containers-what-the-environment-variables-run) — what each
+  one-shot container runs
+- [Compute scaling §2](../concepts/compute-scaling-and-performance.md#2-work-per-compute-host-read-from-the-task-files)
+  — the work per compute host, read from the task files

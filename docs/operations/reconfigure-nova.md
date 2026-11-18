@@ -1,21 +1,40 @@
 ---
 title: Reconfigure Nova
+description: What -t nova reconfigure runs on controllers and on every compute, which changes restart nova_compute, nova_libvirt and nova_ssh, the risks and the checks.
+tags: [nova, libvirt, reconfigure, genconfig, loop-notify, serial, one-shot, kolla-set-configs]
+impact: [restarts-on-drift]
 ---
 
 # Reconfigure Nova
 
-<!-- TODO editorial: intro, key answers -->
+What `kolla-ansible -t nova reconfigure` does on the haproxy hosts, on the controllers and on every compute, with the
+two narrower commands `-t nova-api reconfigure` (only the Nova control plane, no compute impact) and
+`-t nova-cell reconfigure` (only the cell part: conductors, consoles, computes). The commands are in [§1](#1-commands),
+the execution sequence in [§2](#2-execution-sequence-kolla-ansible--t-nova-reconfigure), the restart set in
+[§3](#3-what-changes-per-type-of-change-code) (per type of change) and
+[§4](#4-are-all-compute-nodes-affected-does-nova-compute-restart-on-every-compute) (computes), the effect on running
+VMs, live migration and scheduling in [§5](#5-running-vms-live-migration-scheduling), and the risks and the
+verification in [§6](#6-operational-risks-and-verification). §2 to §6 are written for the
+[assumed deployment](index.md#assumed-deployment); the columns "Guaranteed by code" and "Depends on environment" of §5
+are defined in [Code guarantees and environment dependence](index.md#code-guarantees-and-environment-dependence),
+**Scope**, **Restarts** and **One-shot** in [Conventions used by the command
+sections](index.md#conventions-used-by-the-command-sections) and drift in [Drift](index.md#drift).
 
 > [!NOTE]
 > **Key answers**
 >
-> - **`-t nova reconfigure` ([§2–6](#2-execution-sequence-kolla-ansible--t-nova-reconfigure)):** every compute runs the
->   tasks. Restarts happen only where drift is detected, in practice on no compute or on all of them, and `nova_libvirt`
->   and `nova_ssh` restart whenever `nova_compute` restarts because of config or image drift
+> - **`-t nova reconfigure` ([§2 to §6](#2-execution-sequence-kolla-ansible--t-nova-reconfigure)):** every compute runs
+>   the tasks. Restarts happen only where drift is detected, in practice on no compute or on all of them, and
+>   `nova_libvirt` and `nova_ssh` restart whenever `nova_compute` restarts because of config or image drift
 >   ([§4](#4-are-all-compute-nodes-affected-does-nova-compute-restart-on-every-compute)). Whether running VMs survive is
 >   [NOT AVAILABLE] ([§5](#5-running-vms-live-migration-scheduling)).
 > - **Nova without touching computes:** `-t nova-api reconfigure`
 >   ([§1.2](#12-reconfigure-only-the-nova-control-plane-no-compute-impact)).
+
+> [!WARNING]
+> [R1](../risk/risk-register.md#r1): a nova-compute drift restarts `nova_compute`, `nova_libvirt` and `nova_ssh` on
+> each compute where it occurs, so a change common to all computes restarts them on every compute — see
+> [§4](#4-are-all-compute-nodes-affected-does-nova-compute-restart-on-every-compute).
 
 ## 1. Commands
 
@@ -33,10 +52,10 @@ kolla-ansible -i multinode -t nova reconfigure
   Keystone registration, SIGHUP of `nova_scheduler`, `discover_hosts` [CODE, when cell0 is mapped and the cell is
   unchanged: `roles/nova/tasks/bootstrap.yml:52-54`, `roles/nova-cell/tasks/bootstrap.yml:35-41`, `create_cells.yml:2`,
   `discover_computes.yml:5-18`; [Tags §3](../risk/tags.md#3-what-a-tag-really-executes-master-table)].
-- **Restarts:** depend on the drift ([§2–6](#2-execution-sequence-kolla-ansible--t-nova-reconfigure)). A nova-compute
-  drift restarts `nova_compute`, `nova_libvirt` and `nova_ssh` on each compute where it occurs, so a change common to
-  all computes restarts them on every compute [CODE `roles/nova-cell/tasks/check-containers.yml:2-20`, loop-notify,
-  [Tags §2.4](../risk/tags.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code)].
+- **Restarts:** depend on the drift ([§2 to §6](#2-execution-sequence-kolla-ansible--t-nova-reconfigure)). A
+  nova-compute drift restarts `nova_compute`, `nova_libvirt` and `nova_ssh` on each compute where it occurs, so a change
+  common to all computes restarts them on every compute [CODE `roles/nova-cell/tasks/check-containers.yml:2-20`,
+  loop-notify, [Tags §2.4](../risk/tags.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code)].
 
 ### 1.2 Reconfigure only the Nova control plane (no compute impact)
 
@@ -135,4 +154,20 @@ sequenceDiagram
   - `virsh list --all` inside `nova_libvirt` on a sample of computes (domains running), with guest pings;
   - `nova-manage cell_v2 list_hosts` count equals the number of computes.
 
-<!-- TODO editorial: related -->
+## Related
+
+- [Risk register](../risk/risk-register.md) — the risks this page names: [R1](../risk/risk-register.md#r1) (any config
+  change touching nova-compute), [R2](../risk/risk-register.md#r2) (fleet-wide restarts after an `enable_*` change),
+  [R3](../risk/risk-register.md#r3) (changing RabbitMQ group membership, password or port) and
+  [R24](../risk/risk-register.md#r24) (effective container stop timeout of 10 s)
+- [Nova](../components/nova.md) — service cards of the roles `nova` and `nova-cell`, and where to look
+- [Nova deep dive §5](../components/nova-deep-dive.md#5-nova-libvirt-why-its-restart-is-special) — nova-libvirt: why
+  its restart is special
+- [Pre-execution checklist](pre-execution-checklist.md) — the checks before every production run
+- [Write config first, apply in controlled batches](controlled-batches.md) — `genconfig`, then
+  `deploy-containers --limit` batch by batch, and rolling runs with `ANSIBLE_SERIAL`
+- [Tags §2.4](../risk/tags.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code) — loop-notify:
+  one changed item notifies the handlers of all items
+- [Compute scaling
+  §2](../concepts/compute-scaling-and-performance.md#2-work-per-compute-host-read-from-the-task-files) — work per
+  compute host, read from the task files: the source of the per-compute counts of §4

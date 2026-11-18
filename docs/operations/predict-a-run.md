@@ -1,17 +1,20 @@
 ---
 title: Predict and inspect a run
+description: The commands that show what a kolla-ansible run would target, render and restart, from the Ansible listings to kolla_set_configs --check and prechecks.
+tags: [genconfig, kolla-set-configs, check-mode, prechecks, tags]
+impact: [read-only, writes-config]
 ---
 
 # Predict and inspect a run
 
-<!-- TODO editorial: intro, key answers (old section heading: "Inspection (no changes)") -->
+The commands that show what a run would target, render and restart before it runs. Each row of the table gives one
+command, what it shows and its limits.
 
 > [!NOTE]
 > **Key answers**
 >
 > - **Predict a run:** `genconfig`, then `kolla_set_configs --check` in each container; the meaning of exit codes 0, 1,
->   2 and 137 is in the same table [CODE]. `--list-tasks` is not useful ([Predict and inspect a
->   run](#predict-and-inspect-a-run)).
+>   2 and 137 is in the same table [CODE]. `--list-tasks` is not useful (table below).
 
 | Goal | Command | Notes |
 |---|---|---|
@@ -23,4 +26,19 @@ title: Predict and inspect a run
 | Check-mode run | `EXTRA_OPTS="--check --diff" kolla-ansible … reconfigure` | [CODE] `kolla_docker` does not declare check-mode support (`kolla_docker.py:1031-1035`), so Ansible skips it under `--check` (ansible 2.9.27 `lib/ansible/module_utils/basic.py:1595-1596`). Many tasks register outputs used later. [NOT AVAILABLE] Whether such a run fails or gives partial results; staging only |
 | Pre-deployment checks | `kolla-ansible -i multinode prechecks [-t <svc>]` | Read-only ([fact sheet E](../reference/factsheets/e-host-bootstrap-ops-playbooks.md)). `-t <svc>` skips the `prechecks` role (untagged) but runs `<svc>/precheck.yml` |
 
-<!-- TODO editorial: related -->
+## Related
+
+- [Kolla images §3](../concepts/kolla-images.md#3-kolla_set_configs---check-what-it-compares-and-its-exit-codes) — what
+  `kolla_set_configs --check` compares, what it never compares, and its exit codes
+- [Tags §2.6](../risk/tags.md#26---list-tasks-is-not-usable-for-kolla-code) — why `--list-tasks` shows only
+  placeholders and why some plays list 0 hosts
+- [Pre-execution checklist](pre-execution-checklist.md) — step 1 uses `genconfig` and the check before a production run
+- [Write config first, apply in controlled batches](controlled-batches.md) — applying what `genconfig` wrote, batch by
+  batch
+- [Execution flow §4](../concepts/deployment-execution-flow.md#4-action-matrix-what-each-kolla_action-does) — the rows
+  `genconfig` and `precheck` of the action matrix
+- [Fact sheet E
+  §5](../reference/factsheets/e-host-bootstrap-ops-playbooks.md#5-ansiblerolesprechecks-kolla-ansible-prechecks) —
+  what `prechecks` checks
+- [Open questions Q9](../troubleshooting/open-questions.md#q9) — check mode (`--check --diff`) usability:
+  [NOT AVAILABLE]

@@ -1,10 +1,96 @@
 ---
+template: home.html
 title: Kolla Ansible Day 2
+# TODO editorial: verify (restates the introduction of reference/method-and-limits.md)
+description: "Source-level study of Kolla-Ansible ussuri-eol: what each tag really executes and what Kolla-Ansible commands do to a running production platform."
 ---
 
 # Kolla Ansible Day 2
 
-<!-- TODO editorial -->
+<!-- TODO editorial: home page skeleton. Finalise every sentence from the corpus; add no fact that a page does not state. -->
+
+## Start from what you need
+
+<div class="grid cards" markdown>
+
+- **[I am about to run a command](operations/index.md)**
+
+    ---
+
+    Operations: the Day-2 procedures, the pre-execution checklist and the command lookup by tag.
+
+- **[Something did not behave as expected](troubleshooting/index.md)**
+
+    ---
+
+    Troubleshooting: known bugs and limitations, open questions, and what the sources do not establish.
+
+- **[I need the facts about one component](components/index.md)**
+
+    ---
+
+    Components: one page per OpenStack service and per infrastructure dependency, with its service card.
+
+- **[I need to judge the risk of a change](risk/index.md)**
+
+    ---
+
+    Risk and impact: the risk register, what a tag really executes, and the tag index.
+
+- **[I want to understand how a run works](concepts/index.md)**
+
+    ---
+
+    Concepts: repository architecture, execution flow, compute scaling and the Kolla images.
+
+- **[I need the detailed evidence](reference/index.md)**
+
+    ---
+
+    Reference: findings, glossary, generated inventory, per-role fact sheets, listings and method.
+
+</div>
+
+<!-- TODO editorial: check each card against the hub page it links to. -->
+
+## Frequently used procedures
+
+<!-- TODO editorial: confirm the selection and the order. -->
+
+- [Pre-execution checklist](operations/pre-execution-checklist.md)
+- [Predict and inspect a run](operations/predict-a-run.md)
+- [Reconfigure a single service](operations/reconfigure-a-service.md)
+- [Reconfigure Nova](operations/reconfigure-nova.md)
+- [Reconfigure Neutron](operations/reconfigure-neutron.md)
+- [Write config first, apply in controlled batches](operations/controlled-batches.md)
+- [Update container images](operations/update-container-images.md)
+- [Add a compute node](operations/add-a-compute-node.md)
+- [Command quick lookup by tag](operations/command-quick-lookup.md)
+
+## Recently updated
+
+<div data-portal-recent="8" markdown>
+
+Every change is in the [commit history of the repository](https://github.com/OzarLand/kolla-ansible-day2/commits/main/docs).
+
+</div>
+
+## How to read this portal
+
+Every statement carries one of two evidence labels:
+
+- [CODE] shown by the sources, with a `path:line` citation nearby. <!-- TODO editorial: verify -->
+- [NOT AVAILABLE] the sources do not establish it. <!-- TODO editorial: verify -->
+
+The study rests only on reading source code; nothing was run against a host. <!-- TODO editorial: verify -->
+
+Operation pages show their impact classes under the title, for example `read-only`, `restarts-on-drift` or `critical`.
+<!-- TODO editorial: verify, and link to start/conventions.md#operation-impact-classes once that section exists -->
+The labels are defined in [Conventions and evidence labels](start/conventions.md#evidence-labels).
+
+Not sure where to look? [Find it fast](start/find-it-fast.md) lists typical operator questions and the section that
+answers each one, and [Ten things to know before a production run](start/ten-things-to-know.md) is the short list to
+read first. <!-- TODO editorial: verify -->
 
 ## Raw material (to integrate)
 
