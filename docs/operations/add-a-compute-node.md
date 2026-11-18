@@ -7,11 +7,12 @@ tags: [nova, neutron, bootstrap-servers, pull, deploy, limit, facts, scaling]
 # Add a compute node
 
 How to add a compute node with `bootstrap-servers`, `pull` and `deploy`, each with `--limit` on the new host, and what
-`deploy --limit` then touches: it creates the containers of the new compute, delegates tasks to the controllers,
-gathers facts for all hosts, and does not touch existing computes apart from the delegated `setup`. The commands are in
-[§1](#1-commands), and what the run touches, what it leaves untouched and the caveats are in
-[§2](#2-add-a-compute-node); the page gives no verification steps for the new compute. §2 is written for the
-[assumed deployment](index.md#assumed-deployment), with `compute004` as the new host.
+`deploy --limit` then touches: it creates the containers of the new compute, delegates tasks to the controllers, gathers
+facts for all hosts, and does not touch existing computes apart from the delegated `setup`. The page gives no
+verification steps for the new compute.
+
+The scenario section is written for the [assumed deployment](index.md#assumed-deployment), with `compute004` as the new
+host.
 
 > [!WARNING]
 > Existing hosts' `/etc/hosts` is not updated (`bootstrap-servers --limit`), and a full `bootstrap-servers` run carries

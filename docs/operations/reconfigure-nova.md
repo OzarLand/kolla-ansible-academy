@@ -9,16 +9,12 @@ impact: [restarts-on-drift]
 
 What `kolla-ansible -t nova reconfigure` does on the haproxy hosts, on the controllers and on every compute, with the
 two narrower commands `-t nova-api reconfigure` (only the Nova control plane, no compute impact) and
-`-t nova-cell reconfigure` (only the cell part: conductors, consoles, computes). The commands are in [§1](#1-commands),
-the execution sequence in [§2](#2-execution-sequence-kolla-ansible--t-nova-reconfigure), the restart set in
-[§3](#3-what-changes-per-type-of-change-code) (per type of change) and
-[§4](#4-are-all-compute-nodes-affected-does-nova-compute-restart-on-every-compute) (computes), the effect on running
-VMs, live migration and scheduling in [§5](#5-running-vms-live-migration-scheduling), and the risks and the
-verification in [§6](#6-operational-risks-and-verification). §2 to §6 are written for the
-[assumed deployment](index.md#assumed-deployment); the columns "Guaranteed by code" and "Depends on environment" of §5
-are defined in [Code guarantees and environment dependence](index.md#code-guarantees-and-environment-dependence),
-**Scope**, **Restarts** and **One-shot** in [Conventions used by the command
-sections](index.md#conventions-used-by-the-command-sections) and drift in [Drift](index.md#drift).
+`-t nova-cell reconfigure` (only the cell part: conductors, consoles, computes).
+
+The scenario sections are written for the [assumed deployment](index.md#assumed-deployment); the page uses the
+[conventions of the command sections](index.md#conventions-used-by-the-command-sections), the definition of
+[drift](index.md#drift) and the notion of [code guarantees and environment
+dependence](index.md#code-guarantees-and-environment-dependence).
 
 > [!NOTE]
 > **Key answers**

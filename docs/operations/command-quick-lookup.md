@@ -11,10 +11,9 @@ One row per command: the hosts it touches with the default inventory, the contai
 containers it runs and what drives its duration. Twelve rows are `-t <tag> reconfigure`; the last four are `reconfigure`
 without a tag, `deploy-containers`, `genconfig` and `pull`.
 
-What the examples assume (inventory, location of `globals.yml` and `passwords.yml`, Ansible version) and the conventions
-**Scope**, **Restarts** and **One-shot** are in [Conventions used by the command
-sections](index.md#conventions-used-by-the-command-sections). "Can restart" follows the **Restarts** convention:
-containers that can restart, only if drift is detected.
+The table follows the [conventions of the command sections](index.md#conventions-used-by-the-command-sections), which
+also say what the examples assume: "Can restart" is the **Restarts** convention, containers that can restart, only if
+[drift](index.md#drift) is detected.
 
 | Command | Hosts touched (default inventory) | Can restart | One-shot containers | Typical duration driver |
 |---|---|---|---|---|

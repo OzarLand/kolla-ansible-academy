@@ -12,6 +12,8 @@ diff, then `deploy-containers --limit <batch>` is the only built-in way to separ
 ([Execution flow §4](../concepts/deployment-execution-flow.md#4-action-matrix-what-each-kolla_action-does)). The page
 also covers a rolling `reconfigure` with `ANSIBLE_SERIAL`.
 
+The page uses the definition of [drift](index.md#drift) of the Operations hub.
+
 > [!NOTE]
 > **Key answers**
 >

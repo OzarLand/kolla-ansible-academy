@@ -7,6 +7,9 @@
  *     Git history) feeds the "Last updated" line of each page and the
  *     "Recently updated" list of the home page (at most N pages, whole days
  *     only; N is the value of data-portal-recent).
+ *  3. Wide tables and diagrams scroll sideways inside a wrapper: a wrapper
+ *     that really scrolls becomes reachable with the keyboard (Tab, then the
+ *     arrow keys) and gets a name for screen readers.
  *
  * Nothing here carries content. When JavaScript is off or updates.json is
  * missing, the page simply shows less: both elements stay hidden or keep
@@ -120,9 +123,60 @@
       });
   }
 
+  /* ------------------------------------------------- 3. Scrolling regions */
+
+  function nameOf(region) {
+    // The nearest heading above the table or diagram, when there is one.
+    for (var el = region; el && !el.matches("article"); el = el.parentElement) {
+      for (var prev = el.previousElementSibling; prev; prev = prev.previousElementSibling) {
+        if (/^H[1-6]$/.test(prev.tagName)) {
+          var text = prev.textContent.replace(/\u00b6/g, "").trim();
+          if (text) return text;
+        }
+      }
+    }
+    return "";
+  }
+
+  function markScrollRegions() {
+    document
+      .querySelectorAll(".md-typeset__scrollwrap, .md-typeset div.mermaid")
+      .forEach(function (region) {
+        var scrolls = region.scrollWidth > region.clientWidth + 1;
+        if (scrolls && !region.hasAttribute("tabindex")) {
+          var kind = region.classList.contains("mermaid") ? "Diagram" : "Table";
+          var name = nameOf(region);
+          region.setAttribute("tabindex", "0");
+          region.setAttribute("role", "region");
+          region.setAttribute("aria-label", name ? kind + ": " + name : kind);
+          region.setAttribute("data-portal-scroll", "");
+        } else if (!scrolls && region.hasAttribute("data-portal-scroll")) {
+          ["tabindex", "role", "aria-label", "data-portal-scroll"].forEach(function (attr) {
+            region.removeAttribute(attr);
+          });
+        }
+      });
+  }
+
+  function initScrollRegions() {
+    // The theme wraps the tables, and Mermaid draws the diagrams, after this
+    // script has started: look again once the page has settled.
+    markScrollRegions();
+    window.addEventListener("load", function () {
+      markScrollRegions();
+      setTimeout(markScrollRegions, 1500);
+    });
+    var pending;
+    window.addEventListener("resize", function () {
+      clearTimeout(pending);
+      pending = setTimeout(markScrollRegions, 200);
+    });
+  }
+
   function init() {
     initSearchTriggers();
     initUpdates();
+    initScrollRegions();
   }
 
   if (document.readyState === "loading") {

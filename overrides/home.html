@@ -10,7 +10,8 @@
 {% endblock %}
 
 {% block hero %}
-  <section class="portal-hero">
+  {#- A named section is a landmark: the hero sits outside <main>. -#}
+  <section class="portal-hero" aria-label="Introduction">
     <div class="md-grid portal-hero__inner">
       <p class="portal-hero__eyebrow">{{ config.site_author }}</p>
       {#- The page's H1: the one of the Markdown source is not repeated below.
@@ -45,6 +46,12 @@
 {% endblock %}
 
 {% block content %}
+  {#- "View source", as on every other page (overrides/main.html). -#}
+  {% if page.edit_url and "content.action.view" in config.theme.features %}
+    <a href="{{ page.edit_url }}" title="View source on GitHub" aria-label="View source on GitHub" class="md-content__button md-icon">
+      {% include ".icons/" ~ (config.theme.icon.view or "material/file-eye-outline") ~ ".svg" %}
+    </a>
+  {% endif %}
   {% if "</h1>" in page.content %}
     {{ (page.content | split("</h1>", 1))[1] | safe }}
   {% else %}

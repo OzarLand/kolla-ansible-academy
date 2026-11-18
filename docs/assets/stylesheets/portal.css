@@ -428,6 +428,62 @@ body {
   border-color: var(--portal-window-bg);
 }
 
+/*
+ * The same class names written in the text as code spans (catalogue of the
+ * Operations hub, definitions on the Conventions page): the class is set by
+ * tools/site/portal_mdx/impact.py. They keep the look of code, never break
+ * in the middle of a name, and take the colour of the matching chip.
+ */
+.md-typeset code.impact {
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--portal-slate-fg);
+  background-color: var(--portal-slate-bg);
+  box-shadow: inset 0 0 0 0.05rem var(--portal-slate-border);
+}
+
+.md-typeset code.impact--read-only {
+  color: var(--portal-green-fg);
+  background-color: var(--portal-green-bg);
+  box-shadow: inset 0 0 0 0.05rem var(--portal-green-border);
+}
+
+.md-typeset code.impact--pulls-images {
+  color: var(--portal-blue-fg);
+  background-color: var(--portal-blue-bg);
+  box-shadow: inset 0 0 0 0.05rem var(--portal-blue-border);
+}
+
+.md-typeset code.impact--restarts-on-drift {
+  color: var(--portal-amber-fg);
+  background-color: var(--portal-amber-bg);
+  box-shadow: inset 0 0 0 0.05rem var(--portal-amber-border);
+}
+
+.md-typeset code.impact--recreates-containers {
+  color: var(--portal-orange-fg);
+  background-color: var(--portal-orange-bg);
+  box-shadow: inset 0 0 0 0.05rem var(--portal-orange-border);
+}
+
+.md-typeset code.impact--recovery {
+  color: var(--portal-teal-fg);
+  background-color: var(--portal-teal-bg);
+  box-shadow: inset 0 0 0 0.05rem var(--portal-teal-border);
+}
+
+.md-typeset code.impact--critical {
+  color: var(--portal-critical-fg);
+  background-color: var(--portal-critical-bg);
+  box-shadow: none;
+}
+
+.md-typeset code.impact--maintenance-window {
+  color: var(--portal-window-fg);
+  background-color: var(--portal-window-bg);
+  box-shadow: none;
+}
+
 /* ------------------------------------------------------------ 5. Admonitions */
 
 .md-typeset .admonition,
@@ -537,7 +593,7 @@ body {
 }
 
 /* Inline code and chips inside a tinted box keep their own contrast. */
-.md-typeset :is(.admonition, details) code {
+.md-typeset :is(.admonition, details) code:not(.impact) {
   background-color: var(--portal-bg);
 }
 
@@ -667,8 +723,11 @@ body {
   scrollbar-width: thin;
 }
 
-.md-typeset__scrollwrap:focus-visible {
+/* A wrapper that scrolls is focusable (portal.js): Tab, then arrow keys. */
+.md-typeset__scrollwrap:focus-visible,
+.md-typeset div.mermaid:focus-visible {
   outline: 0.1rem solid var(--portal-accent);
+  outline-offset: 0.1rem;
 }
 
 /*
@@ -722,6 +781,30 @@ body {
   .md-typeset table:not([class]):has(> thead th:first-child:empty + th:last-child:empty) td + td {
     border-top: 0;
     border-left: 0;
+  }
+}
+
+@media screen and (max-width: 44.984375em) {
+  /*
+   * Small screens: a table of three or four columns fitted to the screen
+   * gets columns of a few characters, and names break in the middle
+   * (`placemen` / `t`). It takes the width its content needs instead, each
+   * column capped, and scrolls sideways inside the theme's scroll wrapper,
+   * like the wide tables above.
+   */
+  .md-typeset__table > table:not([class]):has(> thead th:nth-child(3)) {
+    width: max-content;
+    min-width: 100%;
+    max-width: none;
+  }
+
+  .md-typeset table:not([class]):has(> thead th:nth-child(3)) :is(th, td) {
+    min-width: 4.5rem;
+    max-width: 62vw;
+  }
+
+  .md-typeset table:not([class]):has(> thead th:nth-child(3)) code {
+    overflow-wrap: break-word;
   }
 }
 

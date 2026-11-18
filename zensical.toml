@@ -8,7 +8,9 @@ site_name = "Kolla Ansible Day 2"
 site_url = "https://ozarland.github.io/kolla-ansible-day2/"
 site_description = "Source-code study of Kolla-Ansible ussuri-eol for Day-2 operations: procedures, impact, risks and reference."
 site_author = "OzarLand"
-copyright = "OzarLand"
+# Footer line. The licence is the one of the repository (LICENSE: Apache
+# License 2.0); HTML is allowed here.
+copyright = 'OzarLand &middot; Licensed under the <a href="https://github.com/OzarLand/kolla-ansible-day2/blob/main/LICENSE">Apache License 2.0</a>'
 
 repo_url = "https://github.com/OzarLand/kolla-ansible-day2"
 repo_name = "OzarLand/kolla-ansible-day2"
@@ -16,7 +18,12 @@ repo_name = "OzarLand/kolla-ansible-day2"
 edit_uri = "blob/main/docs/"
 
 docs_dir = "docs"
+# Must match SITE_DIR in the Makefile.
 site_dir = "site"
+# `operations/reconfigure-nova.md` is served as `operations/reconfigure-nova/`.
+# Every link the templates and scripts build is relative to the page, so the
+# site works under /kolla-ansible-day2/ and unpacked at a web root alike
+# (404.html excepted: it is served for any path and uses site_url).
 use_directory_urls = true
 # The README files that document vendored assets are not pages. Only the
 # Markdown is excluded: the pattern must not match the assets themselves.
@@ -57,6 +64,7 @@ nav = [
     "troubleshooting/open-questions.md",
     "troubleshooting/what-is-not-known.md",
   ] },
+  # Components in two groups: OpenStack services, then what they depend on.
   { "Components" = [
     "components/index.md",
     "components/dependencies.md",
@@ -183,6 +191,11 @@ toggle.name = "Switch to system preference"
 # Remove the "Made with Zensical" footer line; the copyright line stays.
 generator = false
 
+# The `tags` of a page's front matter are shown under the page and are the
+# "Tags" filter of the search dialog. The search itself is the built-in one;
+# its only option in Zensical 0.1.2 is `separator`, left at its default,
+# which already splits on `-`, `_`, `/` and `.`: `nova_libvirt`, `loop-notify`
+# and `--limit` are found by their words. `description` is not indexed.
 [project.plugins.tags]
 
 # Broken internal links and anchors are reported, and fail `build --strict`.
@@ -211,7 +224,8 @@ footnotes = {}
 sane_lists = {}
 toc.permalink = true
 toc.slugify = { object = "portal_mdx.slug.gh_slugify", kwds = {} }
-pymdownx.highlight.anchor_linenums = true
+# No `anchor_linenums`: it puts an empty link on every line of every code
+# block (a link without a name for screen readers), and no page links to a line.
 pymdownx.highlight.line_spans = "__span"
 pymdownx.highlight.pygments_lang_class = true
 pymdownx.inlinehilite = {}

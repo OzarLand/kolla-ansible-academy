@@ -4,7 +4,7 @@ r"""Markdown helpers of the Kolla Ansible Day 2 portal.
 (``portal_mdx``) and uses :func:`portal_mdx.slug.gh_slugify` for heading ids.
 The build runs with ``PYTHONPATH=tools/site`` so the package is importable.
 
-The extension bundles seven small, independent features; each can be turned
+The extension bundles eight small, independent features; each can be turned
 off with an option of the same name:
 
 ``lists``
@@ -27,6 +27,9 @@ off with an option of the same name:
     (:mod:`portal_mdx.anchors`).
 ``severity``
     severity cells of the risk tables get a class (:mod:`portal_mdx.severity`).
+``impact``
+    a code span that is exactly an impact class name gets a class
+    (:mod:`portal_mdx.impact`).
 
 None of them changes the text of a page: the Markdown source stays the single
 source of truth and renders the same way on github.com.
@@ -39,6 +42,7 @@ from markdown import Extension, Markdown
 from .anchors import AnchorsExtension
 from .breaks import TableBreaksExtension
 from .evidence import EvidenceExtension
+from .impact import ImpactExtension
 from .lists import GithubListsExtension
 from .pipes import TablePipesExtension
 from .placeholders import PlaceholdersExtension
@@ -64,6 +68,7 @@ class PortalExtension(Extension):
             "placeholders": [True, "Show <name> placeholders that are not HTML elements as text"],
             "anchors": [True, "GitHub suffixes (-1, -2) for repeated headings"],
             "severity": [True, "Add a class to severity cells of risk tables"],
+            "impact": [True, "Add a class to code spans that name an impact class"],
         }
         super().__init__(**kwargs)
 
@@ -83,6 +88,8 @@ class PortalExtension(Extension):
             AnchorsExtension().extendMarkdown(md)
         if self.getConfig("severity"):
             SeverityExtension().extendMarkdown(md)
+        if self.getConfig("impact"):
+            ImpactExtension().extendMarkdown(md)
 
 
 def makeExtension(**kwargs: object) -> PortalExtension:

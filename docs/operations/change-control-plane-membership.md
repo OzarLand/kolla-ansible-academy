@@ -8,12 +8,12 @@ impact: [restarts-on-drift, maintenance-window]
 # Change control-plane membership
 
 What adding, removing or replacing a controller triggers on the rest of the platform through the `rabbitmq` and
-`memcached` groups, which are children of `control` in the default inventory. [§1](#1-commands) gives no command: it
-states what restarts, with the risks R3 and R4, and that Galera and RabbitMQ membership changes need their own
-procedures (Ussuri has no automated member removal);
-[§2](#2-change-control-plane-membership-add-or-remove-a-controller) lists what restarts when `control04` is added and
-`-t nova,neutron reconfigure` is run. The page gives no verification steps, and §2 is written for the
-[assumed deployment](index.md#assumed-deployment).
+`memcached` groups, which are children of `control` in the default inventory. The page gives no command line and no
+verification steps: it states what restarts, with the risks R3 and R4, lists what restarts when `control04` is added and
+`-t nova,neutron reconfigure` is run, and says that Galera and RabbitMQ membership changes need their own procedures
+(Ussuri has no automated member removal).
+
+The scenario section is written for the [assumed deployment](index.md#assumed-deployment).
 
 > [!WARNING]
 > [R3](../risk/risk-register.md#r3) and [R4](../risk/risk-register.md#r4): in the default inventory a controller change

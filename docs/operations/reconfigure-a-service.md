@@ -10,13 +10,12 @@ impact: [restarts-on-drift]
 What `kolla-ansible -t <svc> reconfigure` does for one API service, with keystone as the command example: after the
 gather-facts and group_by plays, which run on all hosts, the haproxy play runs on the haproxy hosts (the service's
 frontend, and a HAProxy restart if the rendered frontend changed) and the service play on the service hosts (`common`,
-then the service's containers, all of which restart on every drifted host). The commands with their scope and
-restarts are in [§1](#1-commands), what a narrow tag also touches in
-[§2](#2-execute-a-service-specific-tag-implicit-effects), and the sequence, the interruption, the VM impact, the risks
-and the verification in [§3](#3-sequence-impact-risks-and-verification-of--t-svc-reconfigure). §2 and §3 are written
-for the [assumed deployment](index.md#assumed-deployment); **Scope**, **Restarts** and **One-shot** are defined in
-[Conventions used by the command sections](index.md#conventions-used-by-the-command-sections), drift in
-[Drift](index.md#drift) and "the code guarantees" in [Code guarantees and environment
+then the service's containers, all of which restart on every drifted host). The page also says what a narrow tag touches
+besides the service.
+
+The scenario sections are written for the [assumed deployment](index.md#assumed-deployment); the page uses the
+[conventions of the command sections](index.md#conventions-used-by-the-command-sections), the definition of
+[drift](index.md#drift) and the notion of [code guarantees and environment
 dependence](index.md#code-guarantees-and-environment-dependence).
 
 > [!WARNING]

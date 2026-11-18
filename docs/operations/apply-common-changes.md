@@ -7,11 +7,10 @@ impact: [restarts-on-drift]
 
 # Apply `common` changes (fluentd, cron, kolla_toolbox)
 
-How to push changes of the `common` role (fluentd, cron, kolla_toolbox) to hosts: `-t common reconfigure` reconfigures
-no host, so the commands use a play that reaches the hosts first, such as `-t chrony reconfigure`. The commands are in
-[§1](#1-commands), why the tag does nothing in [§2](#2-the-tag-does-nothing), which hosts get `common`, what restarts
-and the impact in [§3](#3-how-common-actually-reaches-hosts), and the sequence, the risks and the verification in
-[§4](#4-sequence-risks-and-verification). Drift is defined in [Drift](index.md#drift).
+How to push changes of the `common` role (fluentd, cron, kolla_toolbox) to hosts. `-t common reconfigure` reconfigures
+no host, so the commands use a play that reaches the hosts first, such as `-t chrony reconfigure`.
+
+The page uses the definition of [drift](index.md#drift) of the Operations hub.
 
 > [!NOTE]
 > **Key answers**

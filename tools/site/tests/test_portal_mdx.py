@@ -567,6 +567,28 @@ class TableBreaksTest(unittest.TestCase):
         )
 
 
+class ImpactTest(unittest.TestCase):
+    def test_exact_name_gets_class(self) -> None:
+        html = render("| Page | Impact |\n|---|---|\n| A | `read-only`, `writes-config` |\n")
+        self.assertIn('<code class="impact impact--read-only">read-only</code>', html)
+        self.assertIn('<code class="impact impact--writes-config">writes-config</code>', html)
+
+    def test_all_eight_names(self) -> None:
+        from portal_mdx.impact import IMPACT_CLASSES
+
+        self.assertEqual(len(IMPACT_CLASSES), 8)
+        html = render(" ".join(f"`{name}`" for name in sorted(IMPACT_CLASSES)))
+        self.assertEqual(html.count('class="impact impact--'), 8)
+
+    def test_other_code_is_left_alone(self) -> None:
+        html = render("`--read-only` and `critical: true` and `nova`\n\n```text\ncritical\n```\n")
+        self.assertNotIn("impact", html)
+
+    def test_text_is_unchanged_and_option_turns_it_off(self) -> None:
+        self.assertIn("<code>recovery</code>", render("`recovery`", impact=False))
+        self.assertIn(">recovery</code>", render("`recovery`"))
+
+
 class SeverityTest(unittest.TestCase):
     SUMMARY = (
         "| # | Likelihood | Severity |\n|---|---|---|\n"

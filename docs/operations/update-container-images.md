@@ -9,10 +9,10 @@ impact: [pulls-images, recreates-containers, critical]
 
 How `kolla-ansible pull`, `deploy`, `reconfigure` and `upgrade` treat container images: `pull` never changes running
 containers, and after a `pull` that downloaded something the next `deploy`, `reconfigure` or `upgrade` recreates the
-affected containers. The commands are in [§1](#1-commands), the pull and recreation mechanism with the restart set per
-case in [§2](#2-how-image-pulling-and-recreation-work-code), the hosts that download in
-[§3](#3-which-nodes-download), the risks in [§4](#4-risks) and the verification in [§5](#5-verification). The image
-counts per host in §2 are for the service set of the [assumed deployment](index.md#assumed-deployment).
+affected containers.
+
+The image counts per host in [§2](#2-how-image-pulling-and-recreation-work-code) are for the service set of the [assumed
+deployment](index.md#assumed-deployment).
 
 > [!NOTE]
 > **Key answers**

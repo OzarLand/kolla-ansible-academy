@@ -8,12 +8,12 @@ impact: [restarts-on-drift, critical]
 # Reconfigure Neutron
 
 What `kolla-ansible -t neutron reconfigure` does: it runs the haproxy play (neutron-server frontend) and the neutron
-play on `neutron-server`, every agent group, every compute and `manila-share`. The commands are in [§1](#1-commands),
-the targets and the per-host steps in [§2](#2-execution-and-targets), the restart set per change in
-[§3](#3-what-restarts-code), the impact on networking in [§4](#4-impact-on-networking), and the risks and the
-verification in [§5](#5-risks-and-verification). The columns "code-guaranteed" and "environment-dependent" of §4 are
-defined in [Code guarantees and environment dependence](index.md#code-guarantees-and-environment-dependence), drift in
-[Drift](index.md#drift), and §2 to §5 are written for the [assumed deployment](index.md#assumed-deployment).
+play on `neutron-server`, every agent group, every compute and `manila-share`. The page gives the restart set per change
+and what is known of the impact on networking.
+
+The scenario sections are written for the [assumed deployment](index.md#assumed-deployment); the page uses the
+definition of [drift](index.md#drift) and the notion of [code guarantees and environment
+dependence](index.md#code-guarantees-and-environment-dependence).
 
 > [!NOTE]
 > **Key answers**
