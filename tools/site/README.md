@@ -154,8 +154,16 @@ Actions used, by major version:
 
 A repository administrator does this once:
 
-1. Open **Settings**, then **Pages**.
-2. Under **Build and deployment**, set **Source** to **GitHub Actions**.
+1. Open **Settings**, then **Actions**, then **General**. Under **Actions permissions**, allow the actions the
+   workflow uses, all created by GitHub: `actions/checkout`, `actions/setup-python`, `actions/cache`,
+   `actions/upload-artifact`, `actions/upload-pages-artifact`, `actions/configure-pages` and `actions/deploy-pages`.
+   If the organization restricts actions, the same setting is under the organization's **Settings**, **Actions**,
+   **General**.
+2. Open **Settings**, then **Pages**.
+3. Under **Build and deployment**, set **Source** to **GitHub Actions**.
+
+Step 1 is needed here: with the settings found when the workflow was added, every run of it ended with the conclusion
+`startup_failure` before any job started, while a workflow with `run` steps only and no action succeeded.
 
 GitHub creates the `github-pages` environment and, by default, limits its deployments to the default branch. The
 workflow deploys from `main`, which must stay the default branch or be added under **Settings**, **Environments**,
