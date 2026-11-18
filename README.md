@@ -5,6 +5,17 @@ with the number of compute nodes, and what Kolla-Ansible commands do to a runnin
 only on reading source code; nothing was run against a host ([Method and limits of the
 study](docs/reference/method-and-limits.md)).
 
+## Versions studied
+
+| Component | Version |
+|---|---|
+| OpenStack release | Ussuri (`openstack_release: "ussuri"`, `ansible/group_vars/all.yml:530`) |
+| Kolla-Ansible | 10.x series, the Ussuri series: tag `ussuri-eol`, commit `8a94fe9`. The last numbered release tag of the series in `openstack/kolla-ansible` is `10.4.0`; `ussuri-eol` is a later commit |
+| Kolla (images) | tag `ussuri-eol` of `openstack/kolla` |
+| Ansible | 2.9.27 |
+
+All conclusions come from the Ussuri implementation, not from newer releases.
+
 ## Portal
 
 **<https://ozarland.github.io/kolla-ansible-day2/>**

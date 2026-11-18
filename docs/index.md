@@ -1,7 +1,7 @@
 ---
 template: home.html
 title: Kolla Ansible Day 2
-description: "Source-level study of Kolla-Ansible ussuri-eol: what each tag really executes and what Kolla-Ansible commands do to a running production platform."
+description: "Source-level study of Kolla-Ansible 10.x (OpenStack Ussuri, tag ussuri-eol): what each tag really executes and what commands do to a running platform."
 tags: [reconfigure, deploy, tags, risk, evidence, unknowns]
 ---
 
@@ -124,6 +124,13 @@ linked section says, and the linked section is the reference.
 The portal is a source-level study of Kolla-Ansible `ussuri-eol` (`openstack/kolla-ansible`, tag `ussuri-eol`, HEAD
 `8a94fe9`). All conclusions come from the Ussuri implementation, not from newer releases ([Method and limits of the
 study](reference/method-and-limits.md)).
+
+| Component | Version |
+|---|---|
+| OpenStack release | Ussuri (`openstack_release: "ussuri"`, `ansible/group_vars/all.yml:530`) |
+| Kolla-Ansible | 10.x series, the Ussuri series: tag `ussuri-eol`, commit `8a94fe9`. The last numbered release tag of the series in `openstack/kolla-ansible` is `10.4.0`; `ussuri-eol` is a later commit |
+| Kolla (images) | tag `ussuri-eol` of `openstack/kolla` |
+| Ansible | 2.9.27 |
 
 - **Source code only.** The study rests only on reading source code: kolla-ansible `ussuri-eol`, the kolla image
   repository `ussuri-eol`, and the Ansible 2.9.27 source (2.8.20 for comparison). The only Ansible output used is its
