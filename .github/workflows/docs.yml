@@ -42,6 +42,9 @@ permissions:
 # request cancels the run in progress. On main a run that has started always
 # finishes and the next one waits; only a run that is still waiting is
 # replaced by a newer one.
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -98,3 +101,29 @@ jobs:
         with:
           path: site
 
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    # A deployment in progress always finishes; the next one waits.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      # Fails with an explicit message while GitHub Pages is not enabled with
+      # the source "GitHub Actions" (see tools/site/README.md). The build job
+      # is not affected: uploading the Pages artifact does not need Pages.
+      - name: Check the GitHub Pages configuration
+        uses: actions/configure-pages@v6
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
