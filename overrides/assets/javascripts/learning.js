@@ -42,7 +42,11 @@
     if (pages === null) return;
     box.checked = pages.indexOf(page) !== -1;
     box.closest("[data-oz-read]").hidden = false;
+    var cheer = document.querySelector("[data-oz-cheer]");
+    var line = document.querySelector("[data-oz-lumo-line]");
     box.addEventListener("change", function () {
+      if (cheer) cheer.hidden = !box.checked;
+      if (line) line.hidden = box.checked;
       var current = load(release) || [];
       var at = current.indexOf(page);
       if (box.checked && at === -1) current.push(page);

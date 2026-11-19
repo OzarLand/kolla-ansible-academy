@@ -128,6 +128,35 @@
     {% endset %}
   {% endif %}
 
+  {#- Lumo's caution on the pages of an operation rated Critical (impact
+      class `critical`, see start/conventions), and his reading note on the
+      glossary, whose terms are the definitions shown on hover. -#}
+  {% if config.extra.portal.kind == "release" and "critical" in impact %}
+    {% set chips %}{{ chips }}
+      <div class="oz-lumo oz-lumo--caution">
+        <img class="oz-lumo__pose" src="{{ 'assets/images/ozarland/lumo/caution.webp' | url }}" width="400" height="400" alt="Lumo holds a lantern forward and raises a palm in a careful gesture.">
+        <div class="oz-lumo__bubble">
+          <p class="oz-lumo__name">Lumo: pause here</p>
+          <p>This page covers an operation rated <strong>Critical</strong> in the
+          <a href="{{ 'risk/risk-register/' | url }}#matrix">risk register</a>. Read its risks before you run anything,
+          and try it on a test platform first.</p>
+        </div>
+      </div>
+    {% endset %}
+  {% endif %}
+  {% if config.extra.portal.kind == "release" and page.url == "reference/glossary/" %}
+    {% set chips %}{{ chips }}
+      <div class="oz-lumo">
+        <img class="oz-lumo__pose" src="{{ 'assets/images/ozarland/lumo/reading.webp' | url }}" width="400" height="400" alt="Lumo sits on a wooden crate and reads an open book beside a lantern.">
+        <div class="oz-lumo__bubble">
+          <p class="oz-lumo__name">Lumo</p>
+          <p>You do not need to learn this page by heart. On every other page, the first time one of these terms
+          appears it is underlined: hover it or tap it to see its meaning here, and where it is defined.</p>
+        </div>
+      </div>
+    {% endset %}
+  {% endif %}
+
   {#- Illustration of a section index page of a release (oz_sections). -#}
   {% set art = oz_sections[page.url] if (config.extra.portal.kind == "release" and page.url in oz_sections) else none %}
   {% if art %}
@@ -182,9 +211,13 @@
   {#- End of a journey page: mark as read (learning.js) and the next step. -#}
   {% if oz.found %}
     <nav class="oz-step-end" aria-label="Learning journey">
-      <p class="oz-step-end__lumo">
+      <p class="oz-step-end__lumo" data-oz-lumo-line>
         <img src="{{ 'assets/images/ozarland/lumo/avatar.webp' | url }}" width="160" height="160" alt="">
         <span><strong>Lumo:</strong> {% if oz.next %}ready for the next step? Take your time: you can come back to this page whenever you need it.{% else %}this is the last page of the journey. Well done for coming this far!{% endif %}</span>
+      </p>
+      <p class="oz-step-end__cheer" data-oz-cheer hidden>
+        <img src="{{ 'assets/images/ozarland/lumo/celebrating.webp' | url }}" width="400" height="400" alt="">
+        <span><strong>Lumo:</strong> nicely done! One more page on your journey.</span>
       </p>
       <label class="oz-step-end__read" data-oz-read hidden>
         <input type="checkbox" data-oz-read-toggle data-oz-release="{{ config.extra.portal.current }}" data-oz-page="{{ page.url }}">

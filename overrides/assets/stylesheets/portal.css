@@ -2550,3 +2550,34 @@ a.portal-cta:focus-visible {
 .oz-quiz__q.is-wrong [data-oz-feedback] {
   color: var(--portal-amber-fg);
 }
+
+/* Lumo's caution (pages of a Critical operation) and cheer (page marked as read). */
+.md-typeset .oz-lumo--caution .oz-lumo__bubble,
+.md-typeset .oz-lumo--caution .oz-lumo__bubble::before {
+  background-color: var(--portal-orange-bg);
+  border-color: var(--portal-orange-border);
+}
+
+.md-typeset .oz-lumo--caution .oz-lumo__name {
+  color: var(--portal-orange-fg);
+}
+
+.md-typeset .oz-step-end__cheer {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin: 0 0 0.8rem;
+  font-size: 0.75rem;
+  color: var(--portal-green-fg);
+}
+
+.md-typeset .oz-step-end__lumo[hidden],
+.md-typeset .oz-step-end__cheer[hidden] {
+  display: none;
+}
+
+.md-typeset .oz-step-end__cheer img {
+  flex: none;
+  width: 3.4rem;
+  height: auto;
+}

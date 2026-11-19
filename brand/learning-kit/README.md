@@ -60,10 +60,14 @@ Site files: `overrides/assets/images/ozarland/` (mascot and spot scenes converte
 | `mascot/map.png` | `lumo/map.webp` | journey page (`overrides/journey.html`) |
 | `mascot/avatar.png` | `lumo/avatar.webp` | end of each page of the journey (`overrides/main.html`) |
 | `spots/well-done.png` | `lumo/well-done.webp` | journey page, when every page is read |
+| `mascot/caution.png` | `lumo/caution.webp` | pages of an operation rated Critical (`impact: [critical]`) |
+| `mascot/celebrating.png` | `lumo/celebrating.webp` | end of a journey page, once it is marked as read |
+| `mascot/reading.png` | `lumo/reading.webp` | glossary page |
+| `mascot/lab.png` | `lumo/lab.webp` | journey page, "Practise safely" |
+| `mascot/thinking.png` | `lumo/thinking.webp` | "Check yourself" quizzes |
 | `journey/journey-map.webp`, `stage-1.webp` … `stage-5.webp` | `journey/` | journey page |
 | `badges/level-*.svg` | `badges/` | level chip of every page |
 | `badges/stage-*.svg`, `journey-complete.svg` | `badges/` | seals of the journey page |
 | `callouts/*.svg` | `callouts/` | callouts guide, why, lab, checkpoint, careful, remember, quiz |
 
-Not used yet: the poses `thinking`, `caution`, `reading`, `celebrating`, `lab` and the spots `empty-search`,
-`page-end` (`lumo/`).
+Not used yet: the spots `empty-search` and `page-end` (`lumo/`).
