@@ -40,3 +40,5 @@ and `tag = "2024.1-eom"` in `versions.toml`, the learning blocks and the journey
   `maintenance-window` once the 2024.1 risk register is written.
 - glossary: check the anchor `concepts/compute-scaling-and-performance.md#1-how-ansible-core-216-spends-time-in-kolla-ansible`
   and the R/F/Q identifier ranges once those pages exist.
+- impact classes: in 2024.1 `genconfig` and `-t common` can pull the fluentd image (`roles/common/tasks/config.yml:42-51`).
+  Decide whether the `writes-config` class text ("restarts no container") needs a note about that pull before release.
