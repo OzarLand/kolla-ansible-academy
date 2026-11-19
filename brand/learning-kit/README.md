@@ -73,4 +73,6 @@ Site files: `overrides/assets/images/ozarland/` (mascot and spot scenes converte
 | `badges/stage-*.svg`, `journey-complete.svg` | `badges/` | seals of the journey page |
 | `callouts/*.svg` | `callouts/` | callouts guide, why, lab, checkpoint, careful, remember, quiz |
 
-Not used yet: the spots `empty-search` and `page-end` (`lumo/`).
+| `spots/empty-search.png` | `lumo/empty-search.webp` | search without result: `learning.js` adds Lumo's help to the search dialog of the theme (template `#oz-empty-search` of `overrides/main.html`) |
+
+Not used yet: the spot `page-end` (`lumo/`).

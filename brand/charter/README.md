@@ -270,4 +270,5 @@ Site files: `overrides/assets/images/ozarland/districts/` (banners resized to 14
 
 Not applied: the dark "chalkboard" code blocks (the syntax colours of the theme are made for light code blocks),
 `seal-progress.svg` (its check mark reads as "done"), `step-stone-2…9.svg` (identical to 1: the number is CSS text),
-the parchment texture, `pages/empty-search.webp` (the search dialog of the theme has no hook for it).
+the parchment texture, `pages/empty-search.webp` (the empty search shows the learning kit's Lumo spot
+`lumo/empty-search.webp` instead: see `brand/learning-kit/README.md`).

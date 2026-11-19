@@ -490,6 +490,48 @@
     });
   }
 
+  /* ----------------------------------------------------- empty search help
+   * The search dialog of the theme lives in an open shadow root, without
+   * classes to rely on: its status (role=status) says "No results" and its
+   * result list (role=listbox) is empty. Lumo's help, from
+   * <template id="oz-empty-search">, goes right after that list. If the
+   * theme changes its markup, nothing is shown and search works as before. */
+
+  function setupEmptySearch(template) {
+    function attach(root) {
+      if (root.ozEmptySearch) return;
+      root.ozEmptySearch = true;
+      var help = null;
+      function update() {
+        var input = root.querySelector("input[role=combobox]");
+        var status = root.querySelector("[role=status]");
+        var list = root.querySelector("[role=listbox]");
+        if (!input || !status || !list) return;
+        var query = input.value.trim();
+        var empty = query !== "" && list.children.length === 0 && /no results/i.test(status.textContent);
+        if (empty && !help) {
+          help = template.content.firstElementChild.cloneNode(true);
+          list.parentNode.insertBefore(help, list.nextSibling);
+        }
+        if (!help) return;
+        /* Change the DOM only when needed: the observer sees every change. */
+        if (help.hidden === empty) help.hidden = !empty;
+        var slot = help.querySelector("[data-oz-query]");
+        if (empty && slot.textContent !== query) slot.textContent = query;
+      }
+      new MutationObserver(update).observe(root, { childList: true, subtree: true, characterData: true });
+      root.addEventListener("input", update);
+      update();
+    }
+    function scan() {
+      Array.prototype.forEach.call(document.body.children, function (element) {
+        if (element.shadowRoot) attach(element.shadowRoot);
+      });
+    }
+    new MutationObserver(scan).observe(document.body, { childList: true });
+    scan();
+  }
+
   /* ---------------------------------------------------- what would you do?
    * A scenario of a page (front matter `scenarios`, overrides/main.html):
    * choosing an action shows its verdict and why, under that action. */
@@ -537,6 +579,8 @@
     document.querySelectorAll("[data-oz-resume]").forEach(setupResume);
     document.querySelectorAll("[data-oz-scenario]").forEach(setupScenario);
     document.querySelectorAll("[data-oz-remember]").forEach(setupRemember);
+    var emptySearch = document.getElementById("oz-empty-search");
+    if (emptySearch && "content" in emptySearch) setupEmptySearch(emptySearch);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

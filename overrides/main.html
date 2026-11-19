@@ -58,6 +58,29 @@
     {% if page and page.url != "reference/glossary/" %}
       <meta name="portal-glossary" content="{{ 'assets/data/glossary.json' | url }}">
     {% endif %}
+    {#- Lumo when the search finds nothing (learning.js copies it into the
+        search dialog of the theme, a shadow root: hence its own styles). -#}
+    <template id="oz-empty-search">
+      <div class="oz-empty-search" hidden>
+        <style>
+          .oz-empty-search { display: flex; gap: 0.9rem; align-items: center; margin: 0.4rem 1rem 1rem; padding: 0.8rem; border: 1px dashed #c4904f; border-radius: 0.5rem; background: rgba(243, 227, 195, 0.35); font-size: 0.85rem; line-height: 1.5; }
+          .oz-empty-search[hidden] { display: none; }
+          .oz-empty-search img { flex: none; width: 7.5rem; height: auto; }
+          .oz-empty-search p { margin: 0 0 0.4rem; }
+          .oz-empty-search p:last-child { margin: 0; }
+          .oz-empty-search a { color: inherit; font-weight: 600; text-decoration: underline; }
+          @media (max-width: 40em) { .oz-empty-search { flex-direction: column; align-items: flex-start; } }
+        </style>
+        <img src="{{ 'assets/images/ozarland/lumo/empty-search.webp' | url }}" width="600" height="400" alt="">
+        <div>
+          <p><strong>Lumo:</strong> nothing found for "<span data-oz-query></span>" in this release. Let's look
+          another way.</p>
+          <p>Try a shorter word or another spelling, or the name of a command, a tag or a container.</p>
+          <p>Or look the word up in the <a href="{{ 'reference/glossary/' | url }}">Glossary</a>, or start from your
+          situation in <a href="{{ 'start/find-it-fast/' | url }}">Find it fast</a>.</p>
+        </div>
+      </div>
+    </template>
   {% endif %}
   {#-
     Mermaid is vendored and loaded only on pages that contain a diagram.
