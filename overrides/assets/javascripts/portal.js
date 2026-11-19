@@ -1,5 +1,5 @@
 /*
- * Kolla Ansible Day 2 portal: progressive enhancement only.
+ * Kolla-Ansible Academy portal: progressive enhancement only.
  *
  *  1. Search triggers: any [data-portal-search] button opens the theme's
  *     search dialog.

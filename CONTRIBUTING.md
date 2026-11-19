@@ -100,7 +100,7 @@ kolla-ansible -i multinode -t nova reconfigure
   URL.
 - **A link to a page of another release** is the one exception: each release is a separate site, so the link is the
   absolute address of the published page, for example
-  `https://ozarland.github.io/kolla-ansible-day2/ussuri/operations/reconfigure-nova/#2-what-restarts`. A relative
+  `https://ozarland.github.io/kolla-ansible-academy/ussuri/operations/reconfigure-nova/#2-what-restarts`. A relative
   link such as `../../ussuri/operations/reconfigure-nova.md` is refused: it works on github.com but not on the site.
   `make docs-check` verifies that the release exists and has that page and that anchor. Such a link only points the
   reader to the other study; it is not evidence for the release being written.

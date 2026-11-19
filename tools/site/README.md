@@ -59,12 +59,12 @@ directory of its configuration file, and its TOML format has no include.
 ### Addresses
 
 - A page of a release: `<portal address><id>/<path>/`, for example
-  `https://ozarland.github.io/kolla-ansible-day2/ussuri/operations/reconfigure-nova/`. The canonical link, the sitemap
+  `https://ozarland.github.io/kolla-ansible-academy/ussuri/operations/reconfigure-nova/`. The canonical link, the sitemap
   and "View source" (`blob/main/docs/<id>/<path>.md`) follow.
 - The root address is the welcome page; its main button opens the default release.
-- An address without a release, such as `/kolla-ansible-day2/operations/reconfigure-nova/`, was published before the
+- An address without a release, such as `/kolla-ansible-academy/operations/reconfigure-nova/`, was published before the
   portal had releases. The not-found page redirects it to the same path under the release named by `unprefixed`
-  (`/kolla-ansible-day2/ussuri/operations/reconfigure-nova/`), query and fragment kept, when that path is a page of
+  (`/kolla-ansible-academy/ussuri/operations/reconfigure-nova/`), query and fragment kept, when that path is a page of
   that release; the list of those pages is written into the page at build time. Old path `P` becomes `ussuri/P`.
 - Any address under a planned release leads to its one page, `/<id>/`.
 - Anything else shows the not-found page, which lists the available and the planned releases.
@@ -97,8 +97,8 @@ python3 -m venv .venv     # once; the Makefile uses .venv when it exists, no act
 make docs-deps
 make docs-check
 make docs-build
-make docs-serve           # one release, rebuilt on change: http://localhost:8000/kolla-ansible-day2/ussuri/
-make docs-preview         # the built portal, all releases: http://localhost:8000/kolla-ansible-day2/
+make docs-serve           # one release, rebuilt on change: http://localhost:8000/kolla-ansible-academy/ussuri/
+make docs-preview         # the built portal, all releases: http://localhost:8000/kolla-ansible-academy/
 ```
 
 Without `.venv` the Makefile runs `python3` from `PATH`, which is what CI does. `make PYTHON=/path/to/python ...`
@@ -273,7 +273,7 @@ For a private repository:
 
 The other way is to make the repository public: Pages is then available with every plan.
 
-The expected address is `https://ozarland.github.io/kolla-ansible-day2/`, the `site_url` of `zensical.base.toml`
+The expected address is `https://ozarland.github.io/kolla-ansible-academy/`, the `site_url` of `zensical.base.toml`
 (the address of the portal root; each release is one level below). If the portal is published at another address
 (custom domain, or a generated address when access is restricted), set `site_url` to it: the canonical links, the
 sitemaps and the not-found page use it.

@@ -1,5 +1,5 @@
 /*
- * Kolla Ansible Day 2 portal: Mermaid set-up.
+ * Kolla-Ansible Academy portal: Mermaid set-up.
  *
  * Loaded (deferred) right after assets/vendor/mermaid/mermaid.min.js, and only
  * on pages that contain a diagram (see overrides/main.html). The theme bundle

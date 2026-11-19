@@ -1,4 +1,4 @@
-# OzarLand · Kolla Ansible Day 2 graphic charter
+# OzarLand · Kolla-Ansible Academy graphic charter
 
 **A shared land for better OpenStack operations.** This portal helps engineers understand what Kolla-Ansible commands do to a running OpenStack cloud by reading the source. The visual world frames that work as a shared, careful journey: welcoming, curious, and trustworthy.
 

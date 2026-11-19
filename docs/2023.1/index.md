@@ -1,11 +1,11 @@
 ---
 template: home.html
-title: Kolla Ansible Day 2
+title: Kolla-Ansible Academy
 description: "Source-level study of Kolla-Ansible 16.x (OpenStack 2023.1, tag 2023.1-eol): what each tag really executes and what commands do to a running platform."
 tags: [reconfigure, deploy, tags, risk, evidence, unknowns]
 ---
 
-# Kolla Ansible Day 2
+# Kolla-Ansible Academy
 
 > [!TIP]
 > New to Kolla-Ansible Day-2 operations? Follow the [learning journey](start/learning-journey.md): five stages, from
@@ -91,7 +91,7 @@ lookup by tag](operations/command-quick-lookup.md) has one row per command and t
 
 <div data-portal-recent="8" markdown>
 
-Every change is in the [commit history of the repository](https://github.com/OzarLand/kolla-ansible-day2/commits/main/docs/2023.1).
+Every change is in the [commit history of the repository](https://github.com/OzarLand/kolla-ansible-academy/commits/main/docs/2023.1).
 
 </div>
 

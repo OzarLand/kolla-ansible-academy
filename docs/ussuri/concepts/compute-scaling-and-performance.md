@@ -356,4 +356,4 @@ What the code shows:
   compute changes)
 - [Open questions](../troubleshooting/open-questions.md) ([Q7](../troubleshooting/open-questions.md#q7),
   [Q8](../troubleshooting/open-questions.md#q8): timings and image sizes)
-- [Kolla Ansible Day 2](../index.md)
+- [Kolla-Ansible Academy](../index.md)

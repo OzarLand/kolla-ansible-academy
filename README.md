@@ -1,19 +1,25 @@
-# Kolla Ansible Day 2
+# Kolla-Ansible Academy
 
-A source-level study of Kolla-Ansible for Day-2 operations: what each tag really executes, how runs scale with the
-number of compute nodes, and what Kolla-Ansible commands do to a running production platform. The study rests only on
-reading source code; nothing was run against a host ([Method and limits of the
-study](docs/ussuri/reference/method-and-limits.md)).
+**Learn Kolla-Ansible Day-2 operations from the source code.** Part of [OzarLand](https://github.com/OzarLand/ozarland):
+*a shared land for better OpenStack operations.*
+
+The Academy makes learning Kolla-Ansible easier: it explains what each tag really executes, how runs scale with the
+number of compute nodes, and what Kolla-Ansible commands do to a running platform, with a learning journey in five
+stages for beginners. The study rests only on reading source code; nothing was run against a host ([Method and limits
+of the study](docs/2023.1/reference/method-and-limits.md)).
 
 The repository is organised by release of OpenStack and Kolla-Ansible. Each release is a separate study, with its own
-pages under `docs/<release>/` and its own site in the portal. One release is studied today, Ussuri.
+pages under `docs/<release>/` and its own site in the portal. Two releases are studied today, Ussuri and 2023.1.
+
+This repository was named `kolla-ansible-day2` until 2026-11. GitHub redirects the old repository address; the old site
+address `https://ozarland.github.io/kolla-ansible-day2/` is not redirected by GitHub.
 
 ## Releases
 
 | Release | OpenStack | Kolla-Ansible | Sources | Portal |
 |---|---|---|---|---|
-| `ussuri` | Ussuri | 10.x, tag `ussuri-eol` | [docs/ussuri/](docs/ussuri/index.md) | <https://ozarland.github.io/kolla-ansible-day2/ussuri/> |
-| `2023.1` | 2023.1 Antelope | 16.x, tag `2023.1-eol` | [docs/2023.1/](docs/2023.1/index.md) | <https://ozarland.github.io/kolla-ansible-day2/2023.1/> |
+| `ussuri` | Ussuri | 10.x, tag `ussuri-eol` | [docs/ussuri/](docs/ussuri/index.md) | <https://ozarland.github.io/kolla-ansible-academy/ussuri/> |
+| `2023.1` | 2023.1 Antelope | 16.x, tag `2023.1-eol` | [docs/2023.1/](docs/2023.1/index.md) | <https://ozarland.github.io/kolla-ansible-academy/2023.1/> |
 
 These are the available releases of [versions.toml](versions.toml), the registry that every tool reads. The registry
 also lists the planned releases, from Victoria (Kolla-Ansible 11.x) onwards. A planned release has no content: the
@@ -48,17 +54,17 @@ does not carry over.
 
 ## Portal
 
-**<https://ozarland.github.io/kolla-ansible-day2/>**
+**<https://ozarland.github.io/kolla-ansible-academy/>**
 
 The portal is the recommended way to read the study: it has a search on every page, a navigation by operator need and
 the impact classes of each operation. The Docs workflow ([.github/workflows/docs.yml](.github/workflows/docs.yml))
 rebuilds and publishes it on every push to `main` that changes the documentation.
 
 Each release is a site of its own under the address of the portal, for example
-`https://ozarland.github.io/kolla-ansible-day2/ussuri/`: its search, its navigation and its "recently updated" list
+`https://ozarland.github.io/kolla-ansible-academy/ussuri/`: its search, its navigation and its "recently updated" list
 cover that release only. The header of every page shows the release being read and lets the reader switch to another
 one. The root address is a welcome page that explains the purpose of the project (to make learning Day-2 operations easier) and links to the default release, 2023.1. The addresses published before the portal had releases, such as
-`/kolla-ansible-day2/operations/reconfigure-nova/`, are redirected to the same page under `/ussuri/`.
+`/kolla-ansible-academy/operations/reconfigure-nova/`, are redirected to the same page under `/ussuri/`.
 
 The portal is generated from the Markdown under `docs/<release>/`, which is the single source. Every page can also be
 read here on GitHub, starting from [docs/ussuri/index.md](docs/ussuri/index.md).
@@ -93,8 +99,8 @@ python3 -m venv .venv     # once; the Makefile uses .venv when it exists, no act
 make docs-deps
 make docs-check
 make docs-build
-make docs-serve           # one release, rebuilt on change: http://localhost:8000/kolla-ansible-day2/ussuri/
-make docs-preview         # the built portal, all releases: http://localhost:8000/kolla-ansible-day2/
+make docs-serve           # one release, rebuilt on change: http://localhost:8000/kolla-ansible-academy/ussuri/
+make docs-preview         # the built portal, all releases: http://localhost:8000/kolla-ansible-academy/
 ```
 
 | Target | What it does |

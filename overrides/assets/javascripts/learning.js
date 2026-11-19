@@ -14,7 +14,7 @@
 (function () {
   "use strict";
 
-  var PREFIX = "ozarland-day2:read:";
+  var PREFIX = "kolla-ansible-academy:read:";
 
   function load(release) {
     try {

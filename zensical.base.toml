@@ -1,4 +1,4 @@
-# Shared site configuration of the Kolla Ansible Day 2 portal (Zensical,
+# Shared site configuration of the Kolla-Ansible Academy portal (Zensical,
 # native format): what every release has in common.
 #
 # This file is not given to Zensical. The portal is one site per release of
@@ -14,19 +14,19 @@
 # adds content.
 
 [project]
-site_name = "Kolla Ansible Day 2"
+site_name = "Kolla-Ansible Academy"
 # Address of the portal root. The site of a release is published one level
 # below, at <site_url><id>/.
-site_url = "https://ozarland.github.io/kolla-ansible-day2/"
+site_url = "https://ozarland.github.io/kolla-ansible-academy/"
 # Description of the root pages; each release sets its own in docs/<id>.toml.
-site_description = "Source-code studies of Kolla-Ansible for Day-2 operations, one per OpenStack release."
+site_description = "Learn Kolla-Ansible Day-2 operations from the source code, one study per OpenStack release."
 site_author = "OzarLand"
 # Footer line. The licence is the one of the repository (LICENSE: Apache
 # License 2.0); HTML is allowed here.
-copyright = 'OzarLand &middot; Licensed under the <a href="https://github.com/OzarLand/kolla-ansible-day2/blob/main/LICENSE">Apache License 2.0</a>'
+copyright = 'OzarLand &middot; Licensed under the <a href="https://github.com/OzarLand/kolla-ansible-academy/blob/main/LICENSE">Apache License 2.0</a>'
 
-repo_url = "https://github.com/OzarLand/kolla-ansible-day2"
-repo_name = "OzarLand/kolla-ansible-day2"
+repo_url = "https://github.com/OzarLand/kolla-ansible-academy"
+repo_name = "OzarLand/kolla-ansible-academy"
 # "View source" opens the Markdown file on GitHub (content.action.view).
 # Prefix up to the repository root: the tooling appends docs/<id>/.
 edit_uri = "blob/main/"
@@ -34,7 +34,7 @@ edit_uri = "blob/main/"
 # docs_dir, site_dir and nav are not set here: they belong to a release.
 # `operations/reconfigure-nova.md` is served as `operations/reconfigure-nova/`.
 # Every link the templates and scripts build is relative to the page, so the
-# site works under /kolla-ansible-day2/ and unpacked at a web root alike
+# site works under /kolla-ansible-academy/ and unpacked at a web root alike
 # (404.html excepted: it is served for any path and uses site_url).
 use_directory_urls = true
 
