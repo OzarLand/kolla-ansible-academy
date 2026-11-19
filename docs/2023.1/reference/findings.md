@@ -2,6 +2,22 @@
 title: Technical findings
 description: The fifteen headline findings of the source study, F1 to F15, re-checked against 2023.1-eol, each with its evidence, status and why it matters.
 tags: [evidence, loop-notify, tags, limit, serial, images, kolla-set-configs, one-shot, reconfigure, nova, neutron, docker]
+quiz:
+  - q: "In 2023.1, a config change touches one nova-compute container only. Which containers of that host can restart?"
+    options: ["Every container of that role on that host: a nova-compute-only change restarts <code>nova_libvirt</code> and <code>nova_ssh</code>", "Only the container whose config changed"]
+    answer: 0
+    explain: "Loop-notify amplification still holds in 2023.1 <span class=\"ev ev-code\">CODE</span>: when one item of a config/check loop changes, ansible-core 2.14 notifies the handlers of all executed items. Restart blast radius is per role-on-host, not per container."
+    see: "f1--loop-notify-amplification"
+  - q: "In 2023.1, what does <code>-t common</code> do?"
+    options: ["Nothing: it is a no-op, because tags on the dynamic <code>include_tasks</code> do not propagate", "It renders the common configs and restarts what changed"]
+    answer: 1
+    explain: "F2 no longer holds in 2023.1 <span class=\"ev ev-code\">CODE</span>: <code>common</code> is a play of its own, with play-level <code>tags: common</code>, so <code>-t common</code> renders the common configs and restarts what changed. A service tag (e.g. <code>-t nova</code>) skips it."
+    see: "f2---t-common-is-a-no-op"
+  - q: "In 2023.1, does <code>reconfigure</code> run Neutron's DB sync?"
+    options: ["No: <code>bootstrap_neutron</code> runs on <code>deploy</code> but is skipped on <code>reconfigure</code>", "Only when <code>enable_neutron_sfc</code> is set", "Yes: <code>bootstrap_neutron</code> is imported without any condition and runs on every <code>deploy</code> and <code>reconfigure</code>"]
+    answer: 2
+    explain: "The Ussuri Neutron exception is gone <span class=\"ev ev-code\">CODE</span>: <code>bootstrap_neutron</code> runs on every <code>deploy</code> and <code>reconfigure</code>, and <code>neutron_enable_rolling_upgrade</code> is read only by <code>upgrade.yml</code>. A reconfigure applies schema migrations if the image tag moved, for Neutron too."
+    see: "f5--reconfigure--deploy"
 ---
 
 # Technical findings

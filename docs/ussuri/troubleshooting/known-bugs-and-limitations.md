@@ -2,6 +2,19 @@
 title: Known bugs and limitations
 description: The implementation limitations and bugs found in Kolla-Ansible ussuri-eol, by area, each with its evidence and its status.
 tags: [bugs, evidence, serial, docker, kolla-set-configs, tags, upgrade, pull, bootstrap-servers, haproxy, keepalived, openvswitch, neutron, rabbitmq, mariadb, keystone, glance, cinder, heat, swift, octavia]
+quiz:
+  - q: "Does <code>kolla_docker</code> use <code>graceful_timeout</code> and <code>client_timeout</code> from <code>docker_common_options</code>?"
+    options: ["Yes, both are applied to every container", "No: both are ignored"]
+    answer: 1
+    explain: "<code>graceful_timeout</code>/<code>client_timeout</code> from <code>docker_common_options</code> are ignored, and <code>restart_policy</code> is never compared <span class=\"ev ev-code\">CODE</span>."
+  - q: "Why does the openvswitch task <code>Set system-id</code> report changed on every run?"
+    options: ["It is a <code>command</code> task with no <code>changed_when</code>, and <code>command</code> always returns changed", "The system-id is regenerated on every run"]
+    answer: 0
+    explain: "<code>Set system-id</code> always reports changed: it is a <code>command</code> task with no <code>changed_when</code>, and <code>command</code> always returns changed <span class=\"ev ev-code\">CODE</span>."
+  - q: "The <code>heat_domain_admin_password</code> is changed. Where does the new password end up?"
+    options: ["In <code>heat.conf</code> and in Keystone", "In Keystone only", "In <code>heat.conf</code>, but never in Keystone"]
+    answer: 2
+    explain: "<code>bootstrap_heat</code> creates <code>heat_user_domain</code>/<code>heat_domain_admin</code> only when the domain is absent: a changed <code>heat_domain_admin_password</code> reaches <code>heat.conf</code> but never Keystone <span class=\"ev ev-code\">CODE</span>. Its impact is <span class=\"ev ev-na\">NOT AVAILABLE</span>."
 ---
 
 # Known bugs and limitations

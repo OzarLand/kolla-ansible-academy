@@ -207,12 +207,13 @@
       The texts may hold inline HTML (<code>). Every answer restates what the
       section `see` establishes; learning.js gives the feedback. -#}
   {% if page.meta and page.meta.quiz %}
-    <section class="admonition quiz oz-quiz" aria-labelledby="check-yourself">
+    <section class="admonition quiz oz-quiz" aria-labelledby="check-yourself" data-oz-quiz data-oz-release="{{ config.extra.portal.current }}" data-oz-page="{{ page.url }}">
       <p class="admonition-title" id="check-yourself">Check yourself</p>
       <div class="oz-quiz__intro">
         <img src="{{ 'assets/images/ozarland/lumo/thinking.webp' | url }}" width="400" height="400" alt="">
         <p><strong>Lumo:</strong> {{ page.meta.quiz | length }} quick questions to check the main ideas of this page.
-        Nothing is recorded: choose an answer to see the explanation and the section that gives the evidence.</p>
+        Choose an answer to see the explanation and the section that gives the evidence. Your score counts your first
+        choices and stays in this browser only.<span class="oz-quiz__best" data-oz-quiz-best hidden></span></p>
       </div>
       {% for item in page.meta.quiz %}
         {% set qn = loop.index %}
@@ -228,6 +229,15 @@
           </details>
         </fieldset>
       {% endfor %}
+      {#- Shown by learning.js once every question has an answer. -#}
+      <div class="oz-quiz__score" data-oz-quiz-score hidden>
+        <img data-oz-quiz-pose="right" src="{{ 'assets/images/ozarland/lumo/celebrating.webp' | url }}" width="400" height="400" alt="" hidden>
+        <img data-oz-quiz-pose="again" src="{{ 'assets/images/ozarland/lumo/pointing.webp' | url }}" width="400" height="400" alt="" hidden>
+        <div>
+          <p role="status" data-oz-quiz-result></p>
+          <button type="button" class="portal-cta" data-oz-quiz-retry>Try the questions again</button>
+        </div>
+      </div>
     </section>
   {% endif %}
 

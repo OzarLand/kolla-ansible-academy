@@ -330,6 +330,11 @@ quiz:
 ```
 
 A quiz only restates what the page already establishes, with the same evidence, and `see` points to the section
-that gives it (check_site checks the anchor); leave `see` out on a page without sections. Quizzes are on the concept,
-operation and risk pages of the learning journey. The answers differ between releases when the code does: write each
-release's quiz from its own page.
+that gives it (check_site checks the anchor); leave `see` out on a page without sections. Every page of the learning
+journey has a quiz, except the lookup pages (glossary, find it fast, command quick lookup). The answers differ between
+releases when the code does: write each release's quiz from its own page.
+
+The score counts the first choice of each question. `learning.js` keeps the best score of each page in the reader's
+browser (`kolla-ansible-academy:quiz:<release>`); the journey page shows it next to the page, with a "Continue where you
+left off" link (`overrides/partials/resume.html`, also on the release home) to the first page not yet marked as read.
+"Reset my progress" forgets both.

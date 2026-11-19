@@ -80,7 +80,9 @@
         through five stages, and every page tells you where you are and what to read next. (My name comes from
         <em lang="la">lumen</em>, Latin for light: like my lantern, the Academy sheds light on what the code really
         does.)</p>
-        <p><a class="portal-cta portal-cta--primary" href="{{ config.extra.journey.page | url }}">Start the learning journey</a></p>
+        <p><a class="portal-cta portal-cta--primary" href="{{ config.extra.journey.page | url }}" data-oz-resume-start>Start the learning journey</a></p>
+        {% set journey = config.extra.journey %}
+        {% include "partials/resume.html" %}
       </div>
     </div>
   {% endif %}

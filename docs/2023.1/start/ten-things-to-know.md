@@ -2,6 +2,19 @@
 title: Ten things to know before a production run
 description: Ten things to know before running Kolla-Ansible 2023.1 on production, most of them with the section that gives the evidence.
 tags: [reconfigure, deploy, loop-notify, serial, tags, limit, images, kolla-set-configs, genconfig, handlers, risk]
+quiz:
+  - q: "What is the only lightweight path to apply config?"
+    options: ["<code>reconfigure</code>", "<code>deploy</code> with a service tag", "<code>genconfig</code> followed by <code>deploy-containers</code>"]
+    answer: 2
+    explain: "<code>reconfigure</code> is <code>deploy</code> for 57 of the 59 roles that have a <code>reconfigure.yml</code>. The only lightweight path is <code>genconfig</code> followed by <code>deploy-containers</code>."
+  - q: "Without batching, how do handlers restart a service?"
+    options: ["On every host of the play at once", "One host at a time"]
+    answer: 0
+    explain: "Without batching, handlers restart a service on every host of the play at once. Batching is <code>ANSIBLE_SERIAL</code> for <code>reconfigure</code>/<code>upgrade</code> and <code>-e kolla_serial=N</code> for <code>deploy</code>, which ignores <code>ANSIBLE_SERIAL</code>."
+  - q: "In 2023.1, what applies fluentd, cron and kolla_toolbox changes?"
+    options: ["Any service tag, which also runs <code>common</code>", "<code>-t common</code> or a run without tags", "<code>-t chrony</code>"]
+    answer: 1
+    explain: "<code>common</code> is its own play, tagged <code>common</code>, so these changes need <code>-t common</code> or a run without tags; a service tag leaves them pending. The Ussuri workaround <code>-t chrony</code> no longer exists."
 ---
 
 # Ten things to know before a production run

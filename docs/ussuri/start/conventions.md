@@ -2,6 +2,22 @@
 title: Conventions and evidence labels
 description: The two evidence labels, the impact classes shown on operation pages with the sections that support them, and how the pages are built.
 tags: [evidence, risk]
+quiz:
+  - q: "What does the evidence label <span class=\"ev ev-code\">CODE</span> mean?"
+    options: ["It was observed during a test run on a host", "It is shown by the sources, with a <code>path:line</code> citation nearby"]
+    answer: 1
+    explain: "<span class=\"ev ev-code\">CODE</span> means shown by the sources, with a <code>path:line</code> citation nearby. The study rests only on reading source code; nothing was run against a host, and no run is used as evidence."
+    see: "evidence-labels"
+  - q: "What does the evidence label <span class=\"ev ev-na\">NOT AVAILABLE</span> mean?"
+    options: ["The feature does not exist in this release", "The command failed when it was tried", "The sources do not establish it"]
+    answer: 2
+    explain: "<span class=\"ev ev-na\">NOT AVAILABLE</span> means the sources do not establish it."
+    see: "evidence-labels"
+  - q: "An operation page carries an impact class. What does that class say?"
+    options: ["That at least one command of the page has that impact", "That every command of the page has that impact"]
+    answer: 0
+    explain: "A page can carry several classes: a class says that at least one command of the page has that impact, not that all do."
+    see: "operation-impact-classes"
 ---
 
 # Conventions and evidence labels

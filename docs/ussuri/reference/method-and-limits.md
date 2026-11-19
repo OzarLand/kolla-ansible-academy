@@ -2,6 +2,22 @@
 title: Method and limits of the study
 description: How the Kolla-Ansible ussuri-eol sources were read, in six phases, and the limits of a study that rests on source code only.
 tags: [evidence, unknowns, images]
+quiz:
+  - q: "Does the Ussuri study use any run against a host as evidence?"
+    options: ["Yes: the <code>--list-tasks</code> listings ran the playbook against the hosts", "No: the only Ansible output used is the <code>--list-tags</code>/<code>--list-tasks</code> parse of the playbooks, which runs nothing against a host"]
+    answer: 1
+    explain: "The study rests only on reading source code: kolla-ansible <code>ussuri-eol</code>, the kolla image repository <code>ussuri-eol</code>, and the Ansible 2.9.27 source."
+    see: "limits-of-this-study"
+  - q: "Can you take restart or deploy wall times from this study?"
+    options: ["No: no run is used, so no wall time is known; work can only be counted from the code", "Yes, from the performance analysis phase"]
+    answer: 0
+    explain: "There are no timings. The performance analysis read per-host task chains from the role sources and the <code>--list-tasks</code> listing; it ran nothing."
+    see: "limits-of-this-study"
+  - q: "Were the kolla images built and run to see what their start scripts do?"
+    options: ["Yes, each image was built once for validation", "Only the Nova and Neutron images", "No: the kolla image sources were read, not built or run"]
+    answer: 2
+    explain: "The base start path and the start scripts of the listed images were read from the kolla <code>ussuri-eol</code> repository. What the scripts do against real services and data is <span class=\"ev ev-na\">NOT AVAILABLE</span>."
+    see: "limits-of-this-study"
 ---
 
 # Method and limits of the study

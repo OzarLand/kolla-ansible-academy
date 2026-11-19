@@ -2,6 +2,22 @@
 title: Method and limits of the study
 description: How the Kolla-Ansible 2023.1-eol sources were read, starting from the Ussuri study and re-checking every statement, and the limits of the study.
 tags: [evidence, unknowns, images]
+quiz:
+  - q: "Was any run against a host used as evidence for the 2023.1 pages?"
+    options: ["Yes: real-Docker lab experiments confirmed the restart behaviour", "No: the study rests only on reading source code"]
+    answer: 1
+    explain: "The only Ansible output used is the <code>--list-tags</code>/<code>--list-tasks</code> parse of the playbooks, which runs nothing against a host. No runtime or lab result is used, from Ussuri or from 2023.1."
+    see: "limits-of-this-study"
+  - q: "What does the study tell you about the impact of a command on running VMs and the data plane?"
+    options: ["Nothing established: every such statement is <span class=\"ev ev-na\">NOT AVAILABLE</span>", "It is measured in the Ussuri lab runs, which carry over to 2023.1"]
+    answer: 0
+    explain: "No container or VM behaviour is used as evidence, so every statement about data-plane or VM impact is <span class=\"ev ev-na\">NOT AVAILABLE</span>. There are no timings either: work can only be counted from the code."
+    see: "limits-of-this-study"
+  - q: "How were statements from the earlier Ussuri study treated for 2023.1?"
+    options: ["Kept as they were wherever the cited file still exists", "Kept when the cited lines were unchanged", "Every statement was re-checked against the 2023.1 sources; nothing is carried over from Ussuri"]
+    answer: 2
+    explain: "Each Ussuri citation was looked up in the 2023.1 sources by its cited text, and every statement was then re-read against those sources. Unmarked citations were re-read too, since the same lines do not prove the same behaviour."
+    see: "method"
 ---
 
 # Method and limits of the study

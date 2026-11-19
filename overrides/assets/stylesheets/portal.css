@@ -1614,8 +1614,8 @@ body {
   margin: 1.4rem 0 0;
 }
 
-.md-typeset a.portal-cta,
-a.portal-cta {
+.md-typeset :is(a, button).portal-cta,
+:is(a, button).portal-cta {
   display: inline-flex;
   align-items: center;
   min-height: 2.2rem;
@@ -1629,12 +1629,12 @@ a.portal-cta {
   border-radius: 0.3rem;
 }
 
-.md-typeset a.portal-cta:hover,
-a.portal-cta:hover {
+.md-typeset :is(a, button).portal-cta:hover,
+:is(a, button).portal-cta:hover {
   border-color: var(--oz-wood-dark);
 }
 
-a.portal-cta:focus-visible {
+:is(a, button).portal-cta:focus-visible {
   outline: 0.1rem solid var(--portal-accent);
   outline-offset: 0.1rem;
 }
@@ -2978,4 +2978,96 @@ a.portal-cta:focus-visible {
 .md-typeset .oz-lumo__why {
   font-size: 0.7rem;
   color: var(--portal-text-muted);
+}
+
+/* ---------------------------------------------------------------------------
+ * 19. Quiz score, quiz marks of the journey, "Continue where you left off"
+ * (overrides/main.html, journey.html, partials/resume.html, learning.js).
+ * ------------------------------------------------------------------------- */
+.md-typeset .oz-quiz__score {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.6rem 0.8rem;
+  margin: 0.4rem 0 0.2rem;
+  background-color: var(--portal-bg);
+  border: 0.05rem dashed var(--portal-amber-fg);
+  border-radius: 0.4rem;
+}
+
+.md-typeset .oz-quiz__score[hidden],
+.md-typeset .oz-quiz__score img[hidden] {
+  display: none;
+}
+
+.md-typeset .oz-quiz__score.is-perfect {
+  border-style: solid;
+  border-color: var(--portal-green-fg);
+}
+
+.md-typeset .oz-quiz__score img {
+  flex: none;
+  width: 4.5rem;
+  height: auto;
+}
+
+.md-typeset .oz-quiz__score p {
+  margin: 0 0 0.5rem;
+}
+
+.md-typeset .oz-quiz__score .portal-cta {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.oz-quiz__best {
+  font-weight: 700;
+}
+
+.oz-quiz-mark {
+  padding: 0 0.3rem;
+  margin-left: 0.4rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--portal-amber-fg);
+  text-transform: uppercase;
+  border: 0.05rem solid currentcolor;
+  border-radius: 0.6rem;
+}
+
+.oz-quiz-mark.is-perfect {
+  color: var(--portal-green-fg);
+}
+
+.oz-progress__quiz {
+  margin-top: -0.4rem;
+  font-size: 0.7rem;
+  color: var(--portal-text-muted);
+}
+
+.md-typeset .oz-resume {
+  margin: 0.6rem 0;
+}
+
+.md-typeset .oz-resume a.portal-cta {
+  gap: 0.3rem;
+  height: auto;
+  padding: 0.4rem 1rem;
+}
+
+.md-typeset .oz-resume[hidden],
+.md-typeset .oz-resume a[hidden] {
+  display: none;
+}
+
+.oz-resume__stage {
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+@media screen and (max-width: 44.9375em) {
+  .md-typeset .oz-quiz__score {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

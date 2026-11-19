@@ -2,6 +2,22 @@
 title: What is not known
 description: Everything the 2023.1 study marks NOT AVAILABLE, grouped by topic, with links to the sections that mark each point.
 tags: [unknowns, evidence, nova, libvirt, neutron, openvswitch, ovn, iscsi, glance, haproxy, keepalived, mariadb, rabbitmq, keystone, memcached, heat, upgrade, images, check-mode, scaling]
+quiz:
+  - q: "Do running VMs survive a <code>nova_libvirt</code> restart or recreate?"
+    options: ["Yes: QEMU keeps running and libvirtd re-attaches", "No: every VM on the host stops", "The sources do not establish it"]
+    answer: 2
+    explain: "<span class=\"ev ev-na\">NOT AVAILABLE</span> (Q1): the sources do not establish where libvirtd puts QEMU processes, whether QEMU survives the stop of the container, or whether libvirtd re-attaches to running domains when it starts."
+    see: "running-vms-and-compute-hosts"
+  - q: "Why can the study not tell you how long an initial deploy or a reconfigure takes?"
+    options: ["Because the duration is the same on every cloud", "Because the study uses source code only, with no timings"]
+    answer: 1
+    explain: "The study rests on source code only, with no timings and no container or VM behaviour used as evidence, so any duration of an initial deploy or of a reconfigure (image pulls, first container starts, per-task overhead) is <span class=\"ev ev-na\">NOT AVAILABLE</span>."
+    see: "timings-counts-and-scale"
+  - q: "In a MariaDB restart batch, a node fails its WSREP wait. What is established?"
+    options: ["A batch whose hosts all fail ends the playbook; otherwise the next batch still restarts its nodes", "The playbook always stops at the first failed node", "Nothing: not even whether the next batch runs"]
+    answer: 0
+    explain: "A batch whose hosts all fail ends the playbook; otherwise the next batch still restarts its nodes <span class=\"ev ev-code\">CODE</span>. Whether the failed node is then still joining, and how large the quorum and availability risk is, is <span class=\"ev ev-na\">NOT AVAILABLE</span>."
+    see: "control-plane-haproxy-mariadb-rabbitmq-keystone-memcached-heat"
 ---
 
 # What is not known

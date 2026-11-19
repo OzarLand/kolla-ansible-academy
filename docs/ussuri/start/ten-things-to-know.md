@@ -2,6 +2,19 @@
 title: Ten things to know before a production run
 description: Ten things to know before running Kolla-Ansible Ussuri on production, most of them with the section that gives the evidence.
 tags: [reconfigure, deploy, loop-notify, serial, tags, limit, images, kolla-set-configs, genconfig, handlers, risk]
+quiz:
+  - q: "What is the only lightweight path to apply config?"
+    options: ["<code>reconfigure</code>", "<code>deploy</code> with a service tag", "<code>genconfig</code> followed by <code>deploy-containers</code>"]
+    answer: 2
+    explain: "<code>reconfigure</code> is <code>deploy</code> for 70 of the 72 roles that have a <code>reconfigure.yml</code>. The only lightweight path is <code>genconfig</code> followed by <code>deploy-containers</code>."
+  - q: "Config is applied by a full stop/start. What is the effective SIGKILL timeout?"
+    options: ["10 s: <code>docker_graceful_timeout</code> is silently ignored", "60 s, set by <code>docker_graceful_timeout</code>"]
+    answer: 0
+    explain: "Config is applied by a full stop/start, never a reload, and the effective SIGKILL timeout is 10 s. <code>docker_graceful_timeout</code> is silently ignored."
+  - q: "What does <code>-t common</code> do in Ussuri?"
+    options: ["It pushes fluentd and cron changes", "Nothing: use <code>-t chrony</code> or a service tag"]
+    answer: 1
+    explain: "<code>-t common</code> does nothing. Use <code>-t chrony</code> or a service tag to push fluentd/cron changes."
 ---
 
 # Ten things to know before a production run

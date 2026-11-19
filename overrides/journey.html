@@ -56,6 +56,8 @@
     <h2 id="your-progress">Your progress</h2>
     <div class="oz-progress__bar" role="progressbar" aria-valuemin="0" aria-valuemax="{{ total.n }}" aria-valuenow="0" aria-labelledby="your-progress"><span data-oz-progress-fill></span></div>
     <p class="oz-progress__text"><strong data-oz-progress-count>0</strong> of {{ total.n }} pages read. <span data-oz-progress-message>Start with stage 1 below.</span></p>
+    <p class="oz-progress__quiz" data-oz-quiz-summary hidden></p>
+    {% include "partials/resume.html" %}
     <ul class="oz-seals" aria-label="Seals of the stages">
       {% for stage in journey.stages %}
         <li class="oz-seal" data-oz-seal="{{ stage.id }}">
@@ -102,7 +104,7 @@
           <p class="oz-stage__goal">{{ stage.goal }}</p>
           <ol class="oz-stage__pages">
             {% for item in stage.pages %}
-              <li data-oz-page="{{ item[0] }}"><a href="{{ item[0] | url }}">{{ item[1] }}</a><span class="oz-read-mark" data-oz-read-mark hidden> read</span></li>
+              <li data-oz-page="{{ item[0] }}"><a href="{{ item[0] | url }}">{{ item[1] }}</a><span class="oz-read-mark" data-oz-read-mark hidden> read</span><span class="oz-quiz-mark" data-oz-quiz-mark hidden></span></li>
             {% endfor %}
           </ol>
         </div>

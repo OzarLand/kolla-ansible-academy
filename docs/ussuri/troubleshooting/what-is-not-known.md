@@ -2,6 +2,22 @@
 title: What is not known
 description: Everything the study marks NOT AVAILABLE, grouped by topic, with links to the sections that mark each point.
 tags: [unknowns, evidence, nova, libvirt, neutron, openvswitch, ovn, iscsi, glance, haproxy, keepalived, mariadb, rabbitmq, keystone, memcached, heat, upgrade, images, check-mode, scaling]
+quiz:
+  - q: "What does the study leave open about the stop of <code>nova_libvirt</code>?"
+    options: ["Nothing: dumb-init is known to forward SIGTERM to libvirtd", "Whether dumb-init forwards SIGTERM to libvirtd only, whether libvirtd is SIGKILLed if still running after 10 s, and whether the runtime kills what is left in the container's cgroup"]
+    answer: 1
+    explain: "How the stop of <code>nova_libvirt</code> plays out is <span class=\"ev ev-na\">NOT AVAILABLE</span>: the study uses source code only, with no container or VM behaviour as evidence."
+    see: "running-vms-and-compute-hosts"
+  - q: "Can a check-mode run (<code>--check --diff</code>) be relied on to predict a run?"
+    options: ["The sources do not establish whether it fails or gives partial results", "Yes: it is known to give complete results"]
+    answer: 0
+    explain: "Whether a check-mode run (<code>--check --diff</code>) fails or gives partial results (Q9) is <span class=\"ev ev-na\">NOT AVAILABLE</span>."
+    see: "predicting-a-run"
+  - q: "In a MariaDB restart wave, a node fails its WSREP wait. What is established?"
+    options: ["The run stops before any other wave", "Nothing at all", "The next wave still restarts its nodes"]
+    answer: 2
+    explain: "After a failed WSREP wait the next wave still restarts its nodes <span class=\"ev ev-code\">CODE</span>; whether the failed node is then still joining, whether that can leave a single Synced node acting as donor, and how large the quorum and availability risk is, is <span class=\"ev ev-na\">NOT AVAILABLE</span>."
+    see: "control-plane-haproxy-mariadb-rabbitmq-keystone-memcached-heat"
 ---
 
 # What is not known

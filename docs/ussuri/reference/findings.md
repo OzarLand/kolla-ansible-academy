@@ -2,6 +2,22 @@
 title: Technical findings
 description: The fifteen headline findings of the Kolla-Ansible ussuri-eol source study, F1 to F15, each with its evidence and why it matters.
 tags: [evidence, loop-notify, tags, limit, serial, images, kolla-set-configs, one-shot, reconfigure, nova, neutron, docker]
+quiz:
+  - q: "In Ussuri, how long does a container still running after SIGTERM get before it is killed on a stop?"
+    options: ["60 s, the value of <code>docker_graceful_timeout</code>", "10 s: the <code>kolla_docker</code> argument defaults override <code>common_options</code>"]
+    answer: 1
+    explain: "<code>docker_graceful_timeout</code> and <code>docker_client_timeout</code> are ignored <span class=\"ev ev-code\">CODE</span>: the argument defaults (10 s, 120 s) override <code>common_options</code>, so every stop sends SIGKILL to a container still running 10 s after SIGTERM. The release note claiming 60 s has no effect."
+    see: "f3--docker_graceful_timeout-and-docker_client_timeout-are-ignored"
+  - q: "In Ussuri, what does <code>-t common</code> do?"
+    options: ["Nothing: it is a no-op, because tags on the dynamic <code>include_tasks</code> do not propagate to the included tasks", "It renders the common configs and restarts what changed"]
+    answer: 0
+    explain: "<code>-t common</code> is a no-op <span class=\"ev ev-code\">CODE</span>. <code>common</code> changes (fluentd/cron/toolbox) are applied by whatever run first reaches the host, often unexpectedly."
+    see: "f2---t-common-is-a-no-op"
+  - q: "In Ussuri, with default flags, does <code>reconfigure</code> run Neutron's DB sync?"
+    options: ["Yes: as for most services, it re-runs the DB-sync bootstrap container", "Only when <code>neutron_enable_rolling_upgrade</code> is left at its default", "No: with the default <code>neutron_enable_rolling_upgrade: \"yes\"</code>, <code>bootstrap_neutron</code> runs on <code>deploy</code> but is skipped on <code>reconfigure</code>"]
+    answer: 2
+    explain: "Neutron is the exception to <code>reconfigure</code> = <code>deploy</code> <span class=\"ev ev-code\">CODE</span>: a reconfigure re-runs Neutron's DB create/grant tasks but not its DB sync. Only non-default flags (<code>enable_neutron_sfc</code>, or <code>neutron_enable_rolling_upgrade: \"no\"</code>) make it apply Neutron schema migrations."
+    see: "f5--reconfigure--deploy"
 ---
 
 # Technical findings

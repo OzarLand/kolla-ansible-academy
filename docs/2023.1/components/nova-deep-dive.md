@@ -2,6 +2,22 @@
 title: Nova deep dive
 description: Nova in depth, with its two roles and ten plays, its dependencies, what restarts what, the nova_libvirt restart, live migration, consoles and the upgrade path.
 tags: [nova, libvirt, dependencies, loop-notify, one-shot, upgrade, unknowns]
+quiz:
+  - q: "A change of nova-compute's <code>nova.conf</code> is applied. Which containers restart on the compute?"
+    options: ["Only <code>nova_compute</code>", "<code>nova_compute</code>, and through loop-notify <code>nova_libvirt</code> and <code>nova_ssh</code>"]
+    answer: 1
+    explain: "Any change of nova-compute's <code>nova.conf</code>, <code>config.json</code> or image restarts <code>nova_compute</code> and, through loop-notify, <code>nova_libvirt</code> and <code>nova_ssh</code> <span class=\"ev ev-code\">CODE</span>."
+    see: "24-operational-dependencies-what-restarts-what"
+  - q: "Does rotating <code>nova_keystone_password</code> restart nova containers on the computes?"
+    options: ["Yes: it is rendered in <code>[service_user]</code> of the compute <code>nova.conf</code>", "No: it appears only in the API-level template"]
+    answer: 0
+    explain: "Unlike Ussuri, <code>nova_keystone_password</code> now reaches every compute through <code>[service_user]</code>. Rotating it restarts <code>nova_compute</code>, and through loop-notify <code>nova_libvirt</code> and <code>nova_ssh</code>, on every compute."
+    see: "23-configuration-dependencies-inputs-that-change-novas-files"
+  - q: "What is the effective stop timeout of the <code>nova_libvirt</code> container?"
+    options: ["10 s", "60 s", "300 s"]
+    answer: 1
+    explain: "Effective stop timeout is 60 s <span class=\"ev ev-code\">CODE</span>: <code>docker stop</code> sends SIGTERM to dumb-init and, after 60 s, SIGKILL to dumb-init."
+    see: "5-nova-libvirt-why-its-restart-is-special"
 ---
 
 # Nova deep dive

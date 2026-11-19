@@ -2,6 +2,22 @@
 title: Component dependencies
 description: What depends on what in Kolla-Ansible 2023.1, in four kinds of dependency, from the shared substrate and infrastructure to compute hosts and deployment order.
 tags: [dependencies, haproxy, keepalived, mariadb, rabbitmq, memcached, keystone, nova, neutron, openvswitch, ovn, chrony, iscsi, fluentd, kolla-toolbox]
+quiz:
+  - q: "How do OpenStack services reach RabbitMQ?"
+    options: ["Through the internal VIP and HAProxy, like the database", "Every host of <code>groups['rabbitmq']</code> is listed directly in their configs"]
+    answer: 1
+    explain: "<code>rpc_transport_url</code> / <code>notify_transport_url</code> list every host of <code>groups['rabbitmq']</code> directly; clients use their own failover, not the VIP. Adding or removing a RabbitMQ node changes the config of every messaging service, including <code>nova-compute</code> and the neutron agents on every compute."
+    see: "1-the-shared-substrate-what-every-openstack-service-uses"
+  - q: "How is HAProxy restarted when its configuration changes?"
+    options: ["Restarted, never reloaded: on the backup hosts first, then on the host that holds the VIP", "Reloaded in place on all loadbalancer hosts at once"]
+    answer: 0
+    explain: "HAProxy is restarted, never reloaded: the handlers stop and start it on the backup hosts first, then on the host that holds the VIP."
+    see: "1-the-shared-substrate-what-every-openstack-service-uses"
+  - q: "Which statement about the deployment order in <code>site.yml</code> is true?"
+    options: ["Neutron is deployed before Nova, so the OVS agent exists when nova-compute starts", "Placement is deployed after Nova", "Nova is deployed before Open vSwitch, OVN and Neutron"]
+    answer: 2
+    explain: "Nova is deployed before Open vSwitch, OVN and Neutron <span class=\"ev ev-code\">CODE</span>: on a first deploy nova-compute starts before the OVS agent exists. Placement, Glance and Cinder are deployed before Nova."
+    see: "6-deployment-order-vs-runtime-dependency"
 ---
 
 # Component dependencies

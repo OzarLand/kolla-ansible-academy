@@ -2,6 +2,19 @@
 title: Known bugs and limitations
 description: The limitations and bugs found in Kolla-Ansible 2023.1-eol, by area, each with its evidence and status, including Ussuri ones that no longer hold.
 tags: [bugs, evidence, serial, docker, kolla-set-configs, tags, upgrade, pull, bootstrap-servers, haproxy, keepalived, loadbalancer, openvswitch, neutron, rabbitmq, mariadb, keystone, glance, cinder, heat, swift, octavia]
+quiz:
+  - q: "You run <code>reconfigure</code> with <code>-e kolla_serial=N</code>. Is <code>N</code> used as the batch size?"
+    options: ["Yes, <code>kolla_serial</code> always wins", "No: it is overridden by <code>ANSIBLE_SERIAL</code> (default 0)"]
+    answer: 1
+    explain: "<code>-e kolla_serial=N</code> is overridden by <code>ANSIBLE_SERIAL</code> (default 0) for <code>reconfigure</code>/<code>upgrade</code>; it is not passed for <code>deploy</code> <span class=\"ev ev-code\">CODE</span>."
+  - q: "Does <code>-t common</code> run the <code>common</code> role in 2023.1?"
+    options: ["Yes: <code>common</code> is its own play, tagged <code>common</code>", "No: <code>-t common</code> is a no-op"]
+    answer: 0
+    explain: "The <code>-t common</code> no-op no longer holds in 2023.1: <code>common</code> is its own play, tagged <code>common</code>, so <code>-t common</code> runs the role <span class=\"ev ev-code\">CODE</span>."
+  - q: "The Erlang cookie is changed. What happens to the RabbitMQ brokers?"
+    options: ["They are recreated and use the new cookie", "Nothing: a cookie change is not detected", "They are recreated (env compare) but keep the old cookie, while <code>kolla_toolbox</code> gets the new one"]
+    answer: 2
+    explain: "The image writes <code>.erlang.cookie</code> only in the bootstrap container (new volume); a cookie change recreates the brokers but they keep the old cookie <span class=\"ev ev-code\">CODE</span>. The consequences are <span class=\"ev ev-na\">NOT AVAILABLE</span>."
 ---
 
 # Known bugs and limitations
