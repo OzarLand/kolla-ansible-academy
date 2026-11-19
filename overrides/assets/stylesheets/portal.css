@@ -1774,3 +1774,33 @@ a.portal-cta--primary:hover {
   margin-top: 1.2rem;
   border-top: 0;
 }
+
+/* Section illustration (index page of a section, planned release, not-found
+   page): a wide band cut from the painted image. */
+.md-typeset .oz-section-art {
+  max-width: 44rem;
+  margin: 1rem 0 1.4rem;
+}
+
+.md-typeset .oz-section-art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 12 / 5;
+  object-fit: cover;
+  border: 0.15rem solid var(--oz-wood);
+  border-radius: 0.8rem;
+  box-shadow: 0 0.3rem 0.9rem rgb(21 42 80 / 15%);
+}
+
+/* Brand kit: keyboard focus ring in lantern gold. */
+.oz-hero a:focus-visible,
+a.portal-cta:focus-visible {
+  outline: 0.1rem solid var(--oz-lantern);
+  outline-offset: 0.1rem;
+}
+
+.oz-icon[src] {
+  width: 2.4rem;
+  height: 2.4rem;
+}

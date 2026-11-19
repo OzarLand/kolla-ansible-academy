@@ -1,7 +1,8 @@
 {#-
   Home page (front matter `template: home.html`).
-  The hero shows the project identity, the release of the site, the page's
-  `description` and a search trigger; everything below it is the page's Markdown.
+  The hero shows the project identity (an OzarLand project), the release of
+  the site, the page's `description`, a search trigger and the illustration
+  of the OzarLand brand kit; everything below it is the page's Markdown.
 -#}
 {% extends "main.html" %}
 
@@ -11,9 +12,13 @@
 
 {% block hero %}
   {#- A named section is a landmark: the hero sits outside <main>. -#}
-  <section class="portal-hero" aria-label="Introduction">
-    <div class="md-grid portal-hero__inner">
-      <p class="portal-hero__eyebrow">{{ config.site_author }}</p>
+  <section class="portal-hero oz-hero" aria-label="Introduction">
+    <div class="md-grid portal-hero__inner oz-hero__inner">
+      <div class="oz-hero__text">
+      <p class="oz-hero__org">
+        <a href="https://github.com/OzarLand/ozarland"><span aria-hidden="true">←</span> OzarLand home</a>
+        <span class="oz-hero__badge">An OzarLand project</span>
+      </p>
       {#- The page's H1: the one of the Markdown source is not repeated below.
           It keeps the id of that heading, so links to it still resolve. -#}
       {% set first = page.toc | first %}
@@ -35,6 +40,11 @@
         <span class="portal-search__label">Search the portal</span>
         <kbd class="portal-search__kbd" aria-hidden="true"></kbd>
       </button>
+      </div>
+      {#- OzarLand brand kit illustration, as on the portal's welcome page. -#}
+      <figure class="oz-hero__art">
+        <img src="{{ 'assets/images/ozarland/hero.webp' | url }}" width="1200" height="750" fetchpriority="high" alt="A diverse group of travellers studies a map on a wooden terrace above a bright island city and sea.">
+      </figure>
     </div>
   </section>
 {% endblock %}

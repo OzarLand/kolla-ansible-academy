@@ -6,9 +6,10 @@
   path in the default release, the list of the releases and the shared
   "Part of OzarLand" block. The main call to action carries
   data-portal-default, the default release that tools/site/check_site.py
-  checks. The illustrations (overrides/assets/images/ozarland/*.webp) are
-  painted in the style of the OzarLand banner; the banner itself is kept for
-  the organisation profile and the hub README, as its convention says.
+  checks. The illustrations and icons (overrides/assets/images/ozarland/)
+  come from the OzarLand brand kit of the project, painted in the style of
+  the OzarLand banner; the banner itself is kept for the organisation
+  profile and the hub README, as its convention says.
 -#}
 {% extends "main.html" %}
 {% set portal = config.extra.portal %}
@@ -45,7 +46,7 @@
         </p>
       </div>
       <figure class="oz-hero__art">
-        <img src="{{ img }}hero.webp" width="1200" height="751" fetchpriority="high" alt="Travellers of OzarLand gathered around a map of connected servers, on a terrace above an island city with waterfalls, an aqueduct and a sailing ship">
+        <img src="{{ img }}hero.webp" width="1200" height="750" fetchpriority="high" alt="A diverse group of travellers studies a map on a wooden terrace above a bright island city and sea.">
       </figure>
     </div>
   </section>
@@ -81,14 +82,14 @@
         answers, but to help you build your own understanding of how Kolla-Ansible works.
       </p>
     </div>
-    <img class="oz-split__art oz-split__art--map" src="{{ img }}map.webp" width="900" height="643" loading="lazy" alt="A parchment map on a wooden table: a dotted path leads from an open book, past checked steps and server towers, to a cloud emblem">
+    <img class="oz-split__art oz-split__art--map" src="{{ img }}why-map.webp" width="900" height="643" loading="lazy" alt="A parchment map on a wooden table traces a route from a book past server towers and check marks to a cloud emblem.">
   </div>
 
   <h2 id="how">How it helps you learn</h2>
   <div class="grid cards oz-cards">
     <ul>
       <li>
-        <svg class="oz-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 12 q9 -5 18 0 q9 -5 18 0 v26 q-9 -5 -18 0 q-9 -5 -18 0z" fill="var(--oz-navy)"/><path d="M24 12 v26" stroke="var(--oz-parchment)" stroke-width="2"/><path d="M11 19 h8 M11 24 h8 M29 19 h8 M29 24 h6" stroke="var(--oz-parchment)" stroke-width="2" stroke-linecap="round"/></svg>
+        <img class="oz-icon" src="{{ img }}icons/book.svg" width="48" height="48" alt="">
         <p><strong><a href="{{ start }}start/conventions/">Learn from the code itself</a></strong></p>
         <hr>
         <p>
@@ -97,7 +98,7 @@
         </p>
       </li>
       <li>
-        <svg class="oz-icon" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="26" r="16" fill="var(--oz-lantern)" opacity=".3"/><path d="M24 4 v5" stroke="var(--oz-wood-dark)" stroke-width="2.5"/><path d="M16 10 h16 l-3 4 h-10z" fill="var(--oz-wood-dark)"/><rect x="17" y="14" width="14" height="18" rx="2" fill="var(--oz-lantern)" stroke="var(--oz-wood-dark)" stroke-width="2.5"/><path d="M16 32 h16 l-4 5 h-8z" fill="var(--oz-wood-dark)"/></svg>
+        <img class="oz-icon" src="{{ img }}icons/lantern.svg" width="48" height="48" alt="">
         <p><strong><a href="{{ start }}start/conventions/">Know where knowledge stops</a></strong></p>
         <hr>
         <p>
@@ -106,7 +107,7 @@
         </p>
       </li>
       <li>
-        <svg class="oz-icon" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="18" fill="var(--oz-parchment)" stroke="var(--oz-wood-dark)" stroke-width="2.5"/><path d="M24 8 l5 16 l-5 16 l-5 -16z" fill="var(--oz-terracotta)"/><path d="M24 24 l5 0 l-5 16z" fill="var(--oz-navy)"/><circle cx="24" cy="24" r="2.5" fill="var(--oz-wood-dark)"/></svg>
+        <img class="oz-icon" src="{{ img }}icons/compass.svg" width="48" height="48" alt="">
         <p><strong><a href="{{ start }}concepts/">Understand before acting</a></strong></p>
         <hr>
         <p>
@@ -115,7 +116,7 @@
         </p>
       </li>
       <li>
-        <svg class="oz-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M10 4 v40 M30 4 v40" stroke="var(--oz-wood-dark)" stroke-width="3" stroke-linecap="round"/><path d="M12 7 h14 v22 l-7 -5 l-7 5z" fill="var(--oz-navy)"/><path d="M32 7 h12 v22 l-6 -5 l-6 5z" fill="var(--oz-sea)"/><path d="M15 16 a3 3 0 0 1 2 -5 a4 4 0 0 1 7 1 a2.5 2.5 0 0 1 0 4z" fill="var(--oz-parchment)"/></svg>
+        <img class="oz-icon" src="{{ img }}icons/pennants.svg" width="48" height="48" alt="">
         <p><strong><a href="#releases">Compare the releases</a></strong></p>
         <hr>
         <p>
@@ -143,7 +144,7 @@
         platform before you use it on production.
       </p>
     </div>
-    <img class="oz-split__art oz-split__art--post" src="{{ img }}signpost.webp" width="700" height="757" loading="lazy" alt="A wooden signpost with six arrows carved with a book, a lantern, a compass, a gear, a shield and a scroll, on a path that climbs to the island city">
+    <img class="oz-split__art oz-split__art--post" src="{{ img }}learning-path.webp" width="700" height="758" loading="lazy" alt="A wooden signpost with six carved learning symbols stands on a path toward a waterfall island city.">
   </div>
 
   <h2 id="releases">Releases</h2>

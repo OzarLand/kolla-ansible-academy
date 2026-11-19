@@ -1,0 +1,19 @@
+/* OzarLand / Kolla Ansible Day 2 color tokens */
+[data-md-color-scheme="default"] {
+  --oz-navy: #1F3A6B; --oz-navy-strong: #152A50;
+  --oz-parchment: #F3E3C3; --oz-parchment-soft: #FBF4E4;
+  --oz-wood: #C4904F; --oz-wood-dark: #6B4220; --oz-lantern: #F0B440;
+  --oz-sea: #1E9FB5; --oz-terracotta: #B55A3A; --oz-sky: #2F6FD0;
+  --oz-background: #FBF4E4; --oz-surface: #F3E3C3;
+  --oz-text: #1F3A6B; --oz-text-muted: #6B4220;
+  --oz-hero-start: #1F3A6B; --oz-hero-end: #2F6FD0;
+}
+[data-md-color-scheme="slate"] {
+  --oz-navy: #8FB0E6; --oz-navy-strong: #8FB0E6;
+  --oz-parchment: #F3E3C3; --oz-parchment-soft: #1C2433;
+  --oz-wood: #D9A865; --oz-wood-dark: #D9A865; --oz-lantern: #F0B440;
+  --oz-sea: #4CC3D6; --oz-terracotta: #E0825F; --oz-sky: #2F6FD0;
+  --oz-background: #11151A; --oz-surface: #1C2433;
+  --oz-text: #F3E3C3; --oz-text-muted: #D9A865;
+  --oz-hero-start: #142038; --oz-hero-end: #1D3550;
+}

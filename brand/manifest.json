@@ -1,0 +1,212 @@
+[
+  {
+    "path": "illustrations/hero.webp",
+    "width": 1600,
+    "height": 1000,
+    "purpose": "hero website illustration",
+    "alt": "A diverse group of travellers studies a map on a wooden terrace above a bright island city and sea."
+  },
+  {
+    "path": "illustrations/why-map.webp",
+    "width": 1400,
+    "height": 1000,
+    "purpose": "why map website illustration",
+    "alt": "A parchment map on a wooden table traces a route from a book past server towers and check marks to a cloud emblem."
+  },
+  {
+    "path": "illustrations/learning-path.webp",
+    "width": 1200,
+    "height": 1300,
+    "purpose": "learning path website illustration",
+    "alt": "A wooden signpost with six carved learning symbols stands on a path toward a waterfall island city."
+  },
+  {
+    "path": "illustrations/operations.webp",
+    "width": 1200,
+    "height": 750,
+    "purpose": "operations website illustration",
+    "alt": "An engineer adjusts brass server machinery at a workbench beside a parchment checklist."
+  },
+  {
+    "path": "illustrations/troubleshooting.webp",
+    "width": 1200,
+    "height": 750,
+    "purpose": "troubleshooting website illustration",
+    "alt": "Travellers use lanterns to inspect a glowing crack in a stone bridge at dusk."
+  },
+  {
+    "path": "illustrations/components.webp",
+    "width": 1200,
+    "height": 750,
+    "purpose": "components website illustration",
+    "alt": "A white stone castle with distinct towers is connected by aqueducts carrying glowing messages."
+  },
+  {
+    "path": "illustrations/risk.webp",
+    "width": 1200,
+    "height": 750,
+    "purpose": "risk website illustration",
+    "alt": "A lighthouse overlooks sailing ships navigating around coastal rocks beneath a bright sky."
+  },
+  {
+    "path": "illustrations/concepts.webp",
+    "width": 1200,
+    "height": 750,
+    "purpose": "concepts website illustration",
+    "alt": "A brass orrery made of server racks and cloud forms fills an island library observatory."
+  },
+  {
+    "path": "illustrations/reference.webp",
+    "width": 1200,
+    "height": 750,
+    "purpose": "reference website illustration",
+    "alt": "Scrolls and blank drawers fill a warmly lit wooden archive room overlooking the sea."
+  },
+  {
+    "path": "illustrations/coming-soon.webp",
+    "width": 1200,
+    "height": 750,
+    "purpose": "coming soon website illustration",
+    "alt": "A wooden sailing ship is under construction on scaffolding in a sunny island harbour."
+  },
+  {
+    "path": "illustrations/not-found.webp",
+    "width": 1200,
+    "height": 750,
+    "purpose": "not found website illustration",
+    "alt": "A lantern bearer points a traveller toward a path at a foggy crossroads."
+  },
+  {
+    "path": "illustrations/social-preview.png",
+    "width": 1200,
+    "height": 630,
+    "purpose": "social preview website illustration",
+    "alt": "An island city with towers, aqueducts and waterfalls overlooks the sea at golden hour, with open sky on the left."
+  },
+  {
+    "path": "logo/favicon-48.png",
+    "width": 48,
+    "height": 48,
+    "purpose": "Raster browser favicon",
+    "alt": "A white cloud on a navy pennant."
+  },
+  {
+    "path": "logo/apple-touch-icon.png",
+    "width": 180,
+    "height": 180,
+    "purpose": "iOS home screen icon",
+    "alt": "A white cloud on a navy pennant against parchment."
+  },
+  {
+    "path": "icons/book.svg",
+    "width": 48,
+    "height": 48,
+    "purpose": "Vector brand or interface mark",
+    "alt": "A flat book symbol in the OzarLand palette."
+  },
+  {
+    "path": "icons/bridge.svg",
+    "width": 48,
+    "height": 48,
+    "purpose": "Vector brand or interface mark",
+    "alt": "A flat bridge symbol in the OzarLand palette."
+  },
+  {
+    "path": "icons/compass.svg",
+    "width": 48,
+    "height": 48,
+    "purpose": "Vector brand or interface mark",
+    "alt": "A flat compass symbol in the OzarLand palette."
+  },
+  {
+    "path": "icons/gear.svg",
+    "width": 48,
+    "height": 48,
+    "purpose": "Vector brand or interface mark",
+    "alt": "A flat gear symbol in the OzarLand palette."
+  },
+  {
+    "path": "icons/lantern.svg",
+    "width": 48,
+    "height": 48,
+    "purpose": "Vector brand or interface mark",
+    "alt": "A flat lantern symbol in the OzarLand palette."
+  },
+  {
+    "path": "icons/map.svg",
+    "width": 48,
+    "height": 48,
+    "purpose": "Vector brand or interface mark",
+    "alt": "A flat map symbol in the OzarLand palette."
+  },
+  {
+    "path": "icons/pennants.svg",
+    "width": 48,
+    "height": 48,
+    "purpose": "Vector brand or interface mark",
+    "alt": "A flat pennants symbol in the OzarLand palette."
+  },
+  {
+    "path": "icons/scroll.svg",
+    "width": 48,
+    "height": 48,
+    "purpose": "Vector brand or interface mark",
+    "alt": "A flat scroll symbol in the OzarLand palette."
+  },
+  {
+    "path": "icons/shield.svg",
+    "width": 48,
+    "height": 48,
+    "purpose": "Vector brand or interface mark",
+    "alt": "A flat shield symbol in the OzarLand palette."
+  },
+  {
+    "path": "icons/signpost.svg",
+    "width": 48,
+    "height": 48,
+    "purpose": "Vector brand or interface mark",
+    "alt": "A flat signpost symbol in the OzarLand palette."
+  },
+  {
+    "path": "icons/telescope.svg",
+    "width": 48,
+    "height": 48,
+    "purpose": "Vector brand or interface mark",
+    "alt": "A flat telescope symbol in the OzarLand palette."
+  },
+  {
+    "path": "icons/toolbox.svg",
+    "width": 48,
+    "height": 48,
+    "purpose": "Vector brand or interface mark",
+    "alt": "A flat toolbox symbol in the OzarLand palette."
+  },
+  {
+    "path": "logo/favicon.svg",
+    "width": 32,
+    "height": 32,
+    "purpose": "Vector brand or interface mark",
+    "alt": "A flat favicon symbol in the OzarLand palette."
+  },
+  {
+    "path": "logo/logo-mark-mono.svg",
+    "width": 24,
+    "height": 24,
+    "purpose": "Vector brand or interface mark",
+    "alt": "A flat logo mark mono symbol in the OzarLand palette."
+  },
+  {
+    "path": "logo/logo-mark.svg",
+    "width": 24,
+    "height": 24,
+    "purpose": "Vector brand or interface mark",
+    "alt": "A flat logo mark symbol in the OzarLand palette."
+  },
+  {
+    "path": "previews/contact-sheet.png",
+    "width": 960,
+    "height": 940,
+    "purpose": "Brand kit preview or icon asset",
+    "alt": "A contact sheet graphic for the OzarLand brand kit."
+  }
+]
