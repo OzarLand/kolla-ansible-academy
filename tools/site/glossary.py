@@ -22,7 +22,8 @@ are the ones of the glossary, with their evidence labels.
   (``kolla_action``, ``COPY_ONCE``). ``words``, the keys in lower-case
   letters, spaces and hyphens outside parentheses ("drift", "one-shot
   container"), are also matched in the text, case-insensitively, plural
-  included.
+  included, except EVERYDAY_WORDS ("restart"), too common in its plain
+  sense.
 * rows whose term is a notation rather than a word (``R*n*``, the scope
   legend, the evidence labels) are left out.
 * ``more`` is the first link of the "Defined in" column, as a URL relative to
@@ -46,6 +47,10 @@ _LINK = re.compile(r"\[([^\]]+)\]\(([^)\s]+)\)")
 _CODE = re.compile(r"`([^`]+)`")
 _STRONG = re.compile(r"\*\*([^*]+)\*\*")
 _WORD_KEY = re.compile(r"^[a-z][a-z -]*[a-z]$")
+#: Keys that are also everyday words of the pages ("restart the service"):
+#: matched as code only, never in the text, so that their first occurrence on
+#: a page is not underlined in a sense the glossary does not define.
+EVERYDAY_WORDS = {"restart"}
 
 
 def split_row(line: str) -> list[str]:
@@ -147,7 +152,7 @@ def extract(text: str) -> list[dict]:
             {
                 "term": term.replace("`", ""),
                 "keys": keys,
-                "words": [key for key in main_keys if _WORD_KEY.match(key)],
+                "words": [key for key in main_keys if _WORD_KEY.match(key) and key not in EVERYDAY_WORDS],
                 "html": to_html(meaning),
                 "more": more,
                 "more_text": more_text,

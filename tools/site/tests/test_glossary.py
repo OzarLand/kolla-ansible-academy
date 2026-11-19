@@ -48,7 +48,9 @@ class ExtractTest(unittest.TestCase):
         self.assertEqual(serial["keys"], ["serial", "batch", "kolla_serial", "ANSIBLE_SERIAL"])
         # The keys in parentheses are matched only as code.
         self.assertEqual(serial["words"], ["serial", "batch"])
-        self.assertEqual(self.terms["restart vs recreate"]["words"], ["restart", "recreate"])
+        # "restart" is an everyday word of the pages: matched as code only.
+        self.assertEqual(self.terms["restart vs recreate"]["keys"], ["restart", "recreate"])
+        self.assertEqual(self.terms["restart vs recreate"]["words"], ["recreate"])
 
     def test_html_is_escaped_and_keeps_code_bold_and_evidence(self) -> None:
         self.assertEqual(

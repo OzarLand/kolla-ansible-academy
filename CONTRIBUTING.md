@@ -316,7 +316,8 @@ their evidence labels.
 see its meaning and the section that defines it. The data is generated at build time from the table of
 `docs/<id>/reference/glossary.md` (`tools/site/glossary.py`, written to `docs/<id>/assets/data/glossary.json`, which
 is git-ignored): to add or fix a definition, edit the glossary row. A term in lower-case words ("drift", "one-shot
-container") is matched in the text; any other term, and the parts in parentheses, only as a whole code span.
+container") is matched in the text; any other term, the parts in parentheses and the everyday words listed in
+`EVERYDAY_WORDS` of `glossary.py` ("restart"), only as a whole code span.
 
 **Quizzes.** A page can end with a "Check yourself" block: a `quiz` list in its front matter.
 
