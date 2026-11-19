@@ -339,6 +339,9 @@ browser (`kolla-ansible-academy:quiz:<release>`); the journey page shows it next
 left off" link (`overrides/partials/resume.html`, also on the release home) to the first page not yet marked as read.
 "Reset my progress" forgets both.
 
+`make docs-check` runs `tools/site/check_learning.py`, which checks the shape of all these blocks (answers, one `best`
+choice, allowed inline HTML, `see` targets): see [tools/site/README.md](tools/site/README.md#learning-blocks-check_learningpy).
+
 **To remember.** A page of the journey can end with a `remember` list in its front matter: 3 to 5 short sentences, the
 takeaways a reader would note before a production run, each restating the page with its evidence label. They are
 rendered after the page, before the scenarios and the quiz, with a button that copies them as plain text.

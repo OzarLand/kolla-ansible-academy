@@ -10,6 +10,7 @@ Nothing here holds content.
 | [releases.py](releases.py) | Reads `versions.toml`, writes the configuration Zensical builds for each release and for the root of the portal, and assembles the root (`versions.json`, landing page, not-found page, pages of the planned releases). Standard library only. |
 | [build.py](build.py) | Runs the whole build: `prebuild.py`, Zensical for each available release, Zensical for the root, then the assembly. Also starts the live preview of one release. |
 | [check_docs.py](check_docs.py) | Checks on the registry and on the Markdown sources of every available release. No build needed, standard library only. |
+| [check_learning.py](check_learning.py) | Checks the learning blocks of the front matter (`remember`, `scenarios`, `quiz`, `challenges`): shape, answers, one "best" choice, allowed inline HTML, `see` targets. Needs PyYAML, a pinned dependency. |
 | [check_site.py](check_site.py) | Checks on the built portal. Standard library only. |
 | [prebuild.py](prebuild.py) | Writes `docs/<id>/assets/data/updates.json` for each available release (date of the last change of each page) and makes sure the vendored Mermaid bundle is in place. |
 | [fetch_vendor.py](fetch_vendor.py) | Downloads the pinned Mermaid bundle to `overrides/assets/vendor/mermaid/mermaid.min.js` and verifies its checksums. The file is not committed. |
@@ -107,7 +108,7 @@ forces another interpreter.
 | Target | What it runs |
 |---|---|
 | `docs-deps` | `pip install -r requirements-docs.txt`, then `fetch_vendor.py`. |
-| `docs-check` | `check_docs.py`: the registry and every available release. |
+| `docs-check` | `check_docs.py`: the registry and every available release; then `check_learning.py`: the learning blocks of the front matter. |
 | `docs-build` | The unit tests of `tests/`, then `build.py --strict` (`prebuild.py`; `zensical build --clean --strict` for each available release into `site/<id>/`; the same for the root site; the assembly of the root into `site/`), then `check_site.py site`. |
 | `docs-test` | The unit tests of `tests/` only (`python3 -m unittest discover -s tools/site/tests`). |
 | `docs-serve` | `build.py --serve`: `prebuild.py`, then `zensical serve` for one release (rebuilds on change). The preview holds that release only: the links of the release selector to other releases do not work there. `DEV_ADDR=127.0.0.1:8001` moves it. |
@@ -166,6 +167,22 @@ python3 tools/site/check_docs.py              # warnings do not fail the run
 python3 tools/site/check_docs.py --strict     # warnings are errors
 python3 tools/site/check_docs.py --release ussuri
 python3 tools/site/check_docs.py --list-rules
+```
+
+## Learning blocks: check_learning.py
+
+The quizzes, scenarios, "To remember" cards and final challenges live in the front matter of the pages (format:
+[CONTRIBUTING.md](../../CONTRIBUTING.md#definitions-on-hover-and-quizzes)). `check_learning.py` parses them with PyYAML
+and fails on: an unknown key or a wrong type; an `answer` that is not an index of `options`; a scenario without
+exactly one `best` choice among three, or with another verdict than `best`, `risky`, `avoid`; a `remember` list
+outside 3 to 5 items; a text with Markdown backticks, a bracketed `[CODE]`/`[NOT AVAILABLE]` label, a tag other than
+`<code>`, `<strong>`, `<em>` and the evidence chips, or an unbalanced tag; a quiz or scenario `see` that is not a bare
+anchor (check_site then checks that the anchor exists); `challenges` outside `start/learning-journey.md`, a stage id
+missing or unknown, or a challenge `see` whose page has no Markdown source in the release.
+
+```bash
+python3 tools/site/check_learning.py
+python3 tools/site/check_learning.py --release 2023.1
 ```
 
 ## Built-portal checks: check_site.py
