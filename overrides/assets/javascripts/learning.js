@@ -62,12 +62,13 @@
     return "Good start: one page at a time.";
   }
 
-  function setSeal(id, complete) {
+  function setSeal(id, complete, started) {
     var seal = document.querySelector('[data-oz-seal="' + id + '"]');
     if (!seal) return;
     seal.classList.toggle("is-complete", complete);
+    seal.classList.toggle("is-progress", !complete && !!started);
     var state = seal.querySelector("[data-oz-seal-state]");
-    if (state) state.textContent = complete ? "completed" : "not completed";
+    if (state) state.textContent = complete ? "completed" : started ? "in progress" : "not started";
   }
 
   function setupProgress(block) {
@@ -92,10 +93,10 @@
         stage.classList.toggle("is-complete", complete);
         var label = stage.querySelector("[data-oz-stage-done]");
         if (label) label.hidden = !complete;
-        setSeal(stage.id.replace(/^stage-/, ""), complete);
+        setSeal(stage.id.replace(/^stage-/, ""), complete, doneItems.length > 0);
       });
       var finished = total > 0 && read >= total;
-      setSeal("journey", finished);
+      setSeal("journey", finished, read > 0);
       var done = block.querySelector("[data-oz-complete]");
       if (done) done.hidden = !finished;
       var bar = block.querySelector("[role=progressbar]");

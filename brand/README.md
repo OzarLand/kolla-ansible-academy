@@ -74,10 +74,11 @@ The site files live in `overrides/assets/images/` (resized and compressed for th
 | `logo/favicon.svg`, `logo/apple-touch-icon.png` | `favicon.svg`, `apple-touch-icon.png` | browser tab, home screen |
 | `illustrations/hero.webp` | `ozarland/hero.webp` | welcome page and home page of each release (`overrides/landing.html`, `overrides/home.html`) |
 | `illustrations/why-map.webp`, `learning-path.webp` | `ozarland/why-map.webp`, `ozarland/learning-path.webp` | welcome page |
-| `illustrations/operations.webp` … `reference.webp` | `ozarland/<section>.webp` | index page of each section of a release (`overrides/main.html`, `oz_sections`) |
-| `illustrations/coming-soon.webp`, `not-found.webp` | `ozarland/coming-soon.webp`, `ozarland/not-found.webp` | planned release pages, not-found page |
 | `illustrations/social-preview.png` | `ozarland/social-preview.jpg` | link previews (`og:image`) |
 | `icons/book.svg`, `lantern.svg`, `compass.svg`, `pennants.svg` | `ozarland/icons/` | cards of the welcome page |
 
 The colour tokens (`--oz-*`) are in `overrides/assets/stylesheets/portal.css`, section 14. The text alternatives of the
 images come from `manifest.json`.
+
+The section illustrations (`operations` … `reference`), `coming-soon` and `not-found` of this kit were replaced by the
+district banners and page scenes of the Academy charter (`brand/charter/`).

@@ -59,15 +59,17 @@
     <ul class="oz-seals" aria-label="Seals of the stages">
       {% for stage in journey.stages %}
         <li class="oz-seal" data-oz-seal="{{ stage.id }}">
-          <img src="{{ (img ~ 'badges/stage-' ~ loop.index ~ '.svg') | url }}" width="96" height="96" alt="">
+          <img class="oz-seal__locked" src="{{ (img ~ 'ui/seal-locked.svg') | url }}" width="96" height="96" alt="">
+          <img class="oz-seal__done" src="{{ (img ~ 'badges/stage-' ~ loop.index ~ '.svg') | url }}" width="96" height="96" alt="">
           <span>{{ stage.name }}</span>
-          <span class="oz-visually-hidden" data-oz-seal-state>not completed</span>
+          <span class="oz-visually-hidden" data-oz-seal-state>not started</span>
         </li>
       {% endfor %}
       <li class="oz-seal oz-seal--journey" data-oz-seal="journey">
-        <img src="{{ (img ~ 'badges/journey-complete.svg') | url }}" width="96" height="96" alt="">
+        <img class="oz-seal__locked" src="{{ (img ~ 'ui/seal-locked.svg') | url }}" width="96" height="96" alt="">
+        <img class="oz-seal__done" src="{{ (img ~ 'badges/journey-complete.svg') | url }}" width="96" height="96" alt="">
         <span>Journey</span>
-        <span class="oz-visually-hidden" data-oz-seal-state>not completed</span>
+        <span class="oz-visually-hidden" data-oz-seal-state>not started</span>
       </li>
     </ul>
     <div class="oz-lumo oz-lumo--done" data-oz-complete hidden>

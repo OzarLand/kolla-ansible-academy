@@ -2581,3 +2581,396 @@ a.portal-cta:focus-visible {
   width: 3.4rem;
   height: auto;
 }
+
+/* ===================================== 18. OzarLand Academy charter
+   brand/charter/README.md: the island districts, the palette applied to
+   the whole site (parchment canvas, navy header), Lora for headings, the
+   path stones of numbered steps, the path divider, the skyline footer and
+   the seal states. Sizes are the charter's, in this theme's rem (20 px). */
+
+@font-face {
+  font-family: "Lora";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/Lora-Bold.woff2") format("woff2");
+}
+
+:root {
+  --oz-font-heading: "Lora", Georgia, serif;
+}
+
+[data-md-color-scheme="default"] {
+  --portal-bg: #fbf4e4;
+  --portal-surface: #fffdf8;
+  --portal-surface-strong: #f3e3c3;
+  --portal-border: #e3d4b4;
+  --portal-border-strong: #c9b894;
+  --portal-text: #152a50;
+  --portal-text-muted: #4e5a6d;
+  --portal-accent: #1f3a6b;
+  --portal-accent-strong: #152a50;
+  --portal-accent-soft: #e2effb;
+  --oz-header-bg: #152a50;
+  --oz-header-raised: #1f3a6b;
+  --oz-header-border: #2c4a7c;
+  --oz-header-text: #fbf4e4;
+  --oz-header-muted: #d6dfed;
+  --oz-link-visited: #6b4220;
+  --oz-district-harbour: #1e9fb5;
+  --oz-district-map: #2f6fd0;
+  --oz-district-library: #1f3a6b;
+  --oz-district-workshop: #c4904f;
+  --oz-district-bridge: #2c7a43;
+  --oz-district-lighthouse: #b55a3a;
+  --oz-district-citadel: #1f3a6b;
+  --oz-district-archives: #6b4220;
+  --md-footer-bg-color: #152a50;
+  --md-footer-bg-color--dark: #0f1f3d;
+}
+
+[data-md-color-scheme="slate"] {
+  --portal-bg: #11151a;
+  --portal-surface: #1c2433;
+  --portal-surface-strong: #202b3a;
+  --portal-border: #2e3a4d;
+  --portal-border-strong: #46566d;
+  --portal-text: #f3e3c3;
+  --portal-text-muted: #b2bdca;
+  --portal-accent: #a9c7f2;
+  --portal-accent-strong: #d6dfed;
+  --portal-accent-soft: #1d3147;
+  --oz-header-bg: #152038;
+  --oz-header-raised: #1d2c4a;
+  --oz-header-border: #2c3d5e;
+  --oz-header-text: #fbf4e4;
+  --oz-header-muted: #d6dfed;
+  --oz-link-visited: #f2a28b;
+  --oz-district-harbour: #4cc3d6;
+  --oz-district-map: #8fb0e6;
+  --oz-district-library: #a9c7f2;
+  --oz-district-workshop: #d9a865;
+  --oz-district-bridge: #85c693;
+  --oz-district-lighthouse: #e58b7a;
+  --oz-district-citadel: #a9c7f2;
+  --oz-district-archives: #d9a865;
+  --md-footer-bg-color: #152038;
+  --md-footer-bg-color--dark: #0e1626;
+}
+
+/* Header and tabs: navy, with parchment text. The components inside them
+   (search, release selector) read the same variables, set here. */
+.md-header,
+.md-tabs {
+  --portal-bg: var(--oz-header-raised);
+  --portal-surface: var(--oz-header-raised);
+  --portal-surface-strong: var(--oz-header-border);
+  --portal-border: var(--oz-header-border);
+  --portal-border-strong: #48669a;
+  --portal-text: var(--oz-header-text);
+  --portal-text-muted: var(--oz-header-muted);
+  --portal-accent: var(--oz-color-lantern, #f0b440);
+  --md-default-fg-color: var(--oz-header-text);
+  --md-default-fg-color--light: var(--oz-header-muted);
+
+  color: var(--oz-header-text);
+  background-color: var(--oz-header-bg);
+}
+
+.md-header--shadow {
+  box-shadow: 0 0.05rem 0 var(--oz-header-border);
+}
+
+.md-header__title {
+  font-family: var(--oz-font-heading);
+}
+
+.md-tabs {
+  border-bottom: 0.05rem solid var(--oz-header-border);
+}
+
+.md-tabs__link {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  color: var(--oz-header-muted);
+  opacity: 1;
+}
+
+.md-tabs__link:hover,
+.md-tabs__item--active .md-tabs__link {
+  color: var(--oz-header-text);
+}
+
+.md-tabs__item--active {
+  box-shadow: inset 0 -0.16rem 0 #f0b440;
+}
+
+/* District icon before each tab label (the order of the nav of a release). */
+.md-tabs__link::before {
+  flex: none;
+  width: 0.9rem;
+  height: 0.9rem;
+  content: "";
+  background-color: currentcolor;
+  -webkit-mask: var(--oz-tab-icon) center / contain no-repeat;
+  mask: var(--oz-tab-icon) center / contain no-repeat;
+}
+
+.md-tabs__item:nth-child(1) { --oz-tab-icon: url("../images/ozarland/districts/tab-harbour.svg"); }
+.md-tabs__item:nth-child(2) { --oz-tab-icon: url("../images/ozarland/districts/tab-workshop.svg"); }
+.md-tabs__item:nth-child(3) { --oz-tab-icon: url("../images/ozarland/districts/tab-bridge.svg"); }
+.md-tabs__item:nth-child(4) { --oz-tab-icon: url("../images/ozarland/districts/tab-citadel.svg"); }
+.md-tabs__item:nth-child(5) { --oz-tab-icon: url("../images/ozarland/districts/tab-lighthouse.svg"); }
+.md-tabs__item:nth-child(6) { --oz-tab-icon: url("../images/ozarland/districts/tab-library.svg"); }
+.md-tabs__item:nth-child(7) { --oz-tab-icon: url("../images/ozarland/districts/tab-archives.svg"); }
+
+/* Headings in Lora; H2 opens with the emblem of the page's district. */
+.md-typeset :is(h1, h2, h3),
+.portal-hero__title {
+  font-family: var(--oz-font-heading);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.md-typeset h1 {
+  font-size: 1.9rem;
+  line-height: 1.18;
+}
+
+.md-typeset h2 {
+  font-size: 1.4rem;
+  border-top: 0.1rem solid var(--portal-border);
+}
+
+.md-typeset h3 {
+  font-size: 1.05rem;
+}
+
+@media screen and (max-width: 44.9375em) {
+  .md-typeset h1 {
+    font-size: 1.5rem;
+  }
+
+  .md-typeset h2 {
+    font-size: 1.2rem;
+  }
+}
+
+.md-main:has([data-oz-district]) .md-content .md-typeset > h2::before {
+  display: inline-block;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-right: 0.45rem;
+  vertical-align: -0.12rem;
+  content: "";
+  background: var(--oz-emblem) center / contain no-repeat;
+}
+
+.md-main:has([data-oz-district="harbour"]) { --oz-accent: var(--oz-district-harbour); --oz-emblem: url("../images/ozarland/districts/harbour-emblem.svg"); }
+.md-main:has([data-oz-district="map"]) { --oz-accent: var(--oz-district-map); --oz-emblem: url("../images/ozarland/districts/map-emblem.svg"); }
+.md-main:has([data-oz-district="library"]) { --oz-accent: var(--oz-district-library); --oz-emblem: url("../images/ozarland/districts/library-emblem.svg"); }
+.md-main:has([data-oz-district="workshop"]) { --oz-accent: var(--oz-district-workshop); --oz-emblem: url("../images/ozarland/districts/workshop-emblem.svg"); }
+.md-main:has([data-oz-district="bridge"]) { --oz-accent: var(--oz-district-bridge); --oz-emblem: url("../images/ozarland/districts/bridge-emblem.svg"); }
+.md-main:has([data-oz-district="lighthouse"]) { --oz-accent: var(--oz-district-lighthouse); --oz-emblem: url("../images/ozarland/districts/lighthouse-emblem.svg"); }
+.md-main:has([data-oz-district="citadel"]) { --oz-accent: var(--oz-district-citadel); --oz-emblem: url("../images/ozarland/districts/citadel-emblem.svg"); }
+.md-main:has([data-oz-district="archives"]) { --oz-accent: var(--oz-district-archives); --oz-emblem: url("../images/ozarland/districts/archives-emblem.svg"); }
+
+/* The accent of the district marks the current page in the sidebar. */
+.md-main:has([data-oz-district]) .md-nav__link--active {
+  box-shadow: inset 0.15rem 0 0 var(--oz-accent);
+}
+
+/* Banner of a section index page; thin strip on its other pages. */
+.md-typeset .oz-banner {
+  max-width: 56rem;
+  margin: 0 0 1.2rem;
+}
+
+.md-typeset .oz-banner img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 0.1rem solid var(--portal-border-strong);
+  border-bottom: 0.2rem solid var(--oz-accent, #c4904f);
+  border-radius: 1rem;
+}
+
+.md-typeset img.oz-strip {
+  display: block;
+  width: 100%;
+  max-width: 56rem;
+  height: 3.6rem;
+  margin: -0.4rem 0 1rem;
+  object-fit: cover;
+  object-position: center 60%;
+  border-bottom: 0.15rem solid var(--oz-accent, #c4904f);
+  border-radius: 0.6rem;
+}
+
+/* Links: visited links in wood, a double focus ring (navy and lantern). */
+.md-content .md-typeset a:visited:not(.portal-cta, .oz-step, .oz-level, .md-content__button) {
+  color: var(--oz-link-visited);
+}
+
+.md-typeset a:focus-visible,
+.md-nav__link:focus-visible,
+.md-tabs__link:focus-visible {
+  outline: 0.1rem solid var(--portal-accent);
+  outline-offset: 0.1rem;
+  box-shadow: 0 0 0 0.25rem rgb(240 180 64 / 45%);
+}
+
+/* Numbered steps as path stones: top-level ordered lists of the content. */
+.md-typeset > ol:not([class]) {
+  margin-left: 0;
+  padding-left: 0;
+  list-style: none;
+  counter-reset: oz-stone;
+}
+
+[dir] .md-typeset > ol:not([class]) > li {
+  position: relative;
+  padding-left: 2.1rem;
+  margin-left: 0;
+  counter-increment: oz-stone;
+}
+
+.md-typeset > ol:not([class]) > li::before {
+  position: absolute;
+  top: -0.1rem;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #152a50;
+  content: counter(oz-stone);
+  background: url("../images/ozarland/ui/step-stone-1.svg") center / contain no-repeat;
+}
+
+/* Section breaks: the dotted path. */
+.md-typeset hr {
+  height: 1.2rem;
+  border: 0;
+  background: url("../images/ozarland/ui/divider-path.svg") center / auto 100% no-repeat;
+}
+
+/* Footer: navy, with the island skyline rising from it. */
+.md-footer {
+  position: relative;
+  margin-top: 3rem;
+  color: var(--oz-header-text);
+  background-color: var(--oz-header-bg);
+}
+
+.md-footer::before {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  left: 0;
+  height: 2.4rem;
+  content: "";
+  background-color: var(--oz-header-bg);
+  -webkit-mask: url("../images/ozarland/ui/footer-skyline.svg") bottom left / auto 100% repeat-x;
+  mask: url("../images/ozarland/ui/footer-skyline.svg") bottom left / auto 100% repeat-x;
+  pointer-events: none;
+}
+
+.md-footer__link,
+.md-footer__title,
+.md-footer__direction,
+.md-footer__button {
+  color: var(--oz-header-text);
+}
+
+.md-footer__direction {
+  color: var(--oz-header-muted);
+  opacity: 1;
+}
+
+.md-footer-meta {
+  color: var(--oz-header-muted);
+  background-color: rgb(0 0 0 / 22%);
+}
+
+.md-footer-meta a,
+.md-footer-copyright a {
+  color: var(--oz-header-text);
+}
+
+/* Seal states of the journey page: not started (locked), in progress (the
+   stage's seal, dimmed), done (the stage's seal, stamped). */
+.oz-seal img,
+.oz-stage__seal {
+  opacity: 1;
+  filter: none;
+}
+
+.oz-seal .oz-seal__progress,
+.oz-seal .oz-seal__done,
+.oz-seal:is(.is-progress, .is-complete) .oz-seal__locked {
+  display: none;
+}
+
+.oz-seal:is(.is-progress, .is-complete) .oz-seal__done {
+  display: block;
+}
+
+.oz-seal .oz-seal__locked {
+  opacity: 0.55;
+}
+
+.oz-seal.is-progress .oz-seal__done {
+  opacity: 0.5;
+}
+
+.oz-seal.is-progress {
+  color: var(--portal-text);
+}
+
+.oz-seal.is-complete .oz-seal__done {
+  animation: oz-stamp 420ms ease-out;
+}
+
+.oz-stage:not(.is-complete) .oz-stage__seal {
+  opacity: 0.3;
+  filter: grayscale(1);
+}
+
+@keyframes oz-stamp {
+  0% { transform: scale(1.35) rotate(-4deg); opacity: 0; }
+  70% { transform: scale(0.96) rotate(1deg); opacity: 1; }
+  100% { transform: scale(1.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oz-seal.is-complete .oz-seal__done {
+    animation: none;
+  }
+
+  .oz-progress__bar > span {
+    transition: none;
+  }
+}
+
+.md-footer-meta .md-copyright,
+.md-footer-meta .md-copyright__highlight {
+  color: var(--oz-header-muted);
+}
+
+.md-footer .md-footer-meta .md-copyright a,
+.md-footer .md-footer-meta .md-copyright a:visited {
+  color: var(--oz-header-text);
+}
+
+/* The copyright line is .md-typeset: its link takes the typeset link colour. */
+.md-footer {
+  --portal-accent: var(--oz-header-text);
+  --md-typeset-a-color: var(--oz-header-text);
+  --oz-link-visited: var(--oz-header-text);
+  --md-default-fg-color: var(--oz-header-text);
+  --md-default-fg-color--light: var(--oz-header-muted);
+}

@@ -12,15 +12,29 @@
 -#}
 {% extends "base.html" %}
 
-{#- OzarLand brand kit: the illustration of each section of a release, shown
-    under the H1 of the section's index page, with its text alternative. -#}
-{% set oz_sections = {
-  "operations/": ("operations", "An engineer adjusts brass server machinery at a workbench beside a parchment checklist."),
-  "troubleshooting/": ("troubleshooting", "Travellers use lanterns to inspect a glowing crack in a stone bridge at dusk."),
-  "components/": ("components", "A white stone castle with distinct towers is connected by aqueducts carrying glowing messages."),
-  "risk/": ("risk", "A lighthouse overlooks sailing ships navigating around coastal rocks beneath a bright sky."),
-  "concepts/": ("concepts", "A brass orrery made of server racks and cloud forms fills an island library observatory."),
-  "reference/": ("reference", "Scrolls and blank drawers fill a warmly lit wooden archive room overlooking the sea."),
+{#- Districts of the OzarLand Academy charter (brand/charter): each section of
+    a release is a district of the island, with a banner, an emblem, a tab
+    icon and an accent colour (portal.css, section 18). The first matching
+    URL prefix wins; the home page of a release is the Harbour. -#}
+{% set oz_districts = [
+  ["start/learning-journey/", "map"],
+  ["start/", "harbour"],
+  ["operations/", "workshop"],
+  ["troubleshooting/", "bridge"],
+  ["components/", "citadel"],
+  ["risk/", "lighthouse"],
+  ["concepts/", "library"],
+  ["reference/", "archives"],
+] %}
+{% set oz_banners = {
+  "harbour": "A bright island harbour with a white stone welcome gate, a sailing ship, turquoise water and the island city beyond.",
+  "map": "A parchment island map showing a winding dotted learning route, waterfalls, towers and a compass.",
+  "library": "A white stone library and observatory with an open book, brass orrery and telescope.",
+  "workshop": "An open wooden workshop with brass server machinery, tools and an unmarked parchment plan.",
+  "bridge": "A white stone aqueduct bridge spans turquoise water between green island cliffs.",
+  "lighthouse": "A white stone lighthouse stands on a green sea cliff above distant ships and terracotta roofs.",
+  "citadel": "White stone citadel towers connect through arches and aqueducts above the turquoise sea.",
+  "archives": "Open parchment scrolls, brass details and an archive room look out through white stone arches.",
 } %}
 
 {% block extrahead %}
@@ -157,10 +171,19 @@
     {% endset %}
   {% endif %}
 
-  {#- Illustration of a section index page of a release (oz_sections). -#}
-  {% set art = oz_sections[page.url] if (config.extra.portal.kind == "release" and page.url in oz_sections) else none %}
-  {% if art %}
-    {% set chips %}{{ chips }}<figure class="oz-section-art"><img src="{{ ('assets/images/ozarland/' ~ art[0] ~ '.webp') | url }}" width="1200" height="750" alt="{{ art[1] }}"></figure>{% endset %}
+  {#- District of the page: its banner under the title. A section index
+      page shows the whole banner; another page a thin decorative strip.
+      The home page and the journey page have their own art. -#}
+  {% set dz = namespace(id=none) %}
+  {% if config.extra.portal.kind == "release" %}
+    {% for prefix, district in oz_districts %}
+      {% if not dz.id and page.url[:prefix | length] == prefix %}{% set dz.id = district %}{% endif %}
+    {% endfor %}
+    {% if not dz.id %}{% set dz.id = "harbour" %}{% endif %}
+  {% endif %}
+  {% if dz.id %}
+    {% set banner %}<span class="oz-district" data-oz-district="{{ dz.id }}" hidden></span>{% if page.url and page.url != config.extra.journey.page %}{% if (page.url | split("/") | list | length) == 2 %}<figure class="oz-banner"><img src="{{ ('assets/images/ozarland/districts/' ~ dz.id ~ '-banner.webp') | url }}" width="1400" height="350" alt="{{ oz_banners[dz.id] }}"></figure>{% else %}<img class="oz-strip" src="{{ ('assets/images/ozarland/districts/' ~ dz.id ~ '-banner.webp') | url }}" width="1400" height="350" alt="">{% endif %}{% endif %}{% endset %}
+    {% set chips %}{{ banner }}{{ chips }}{% endset %}
   {% endif %}
 
   {#- The chips go right under the page's H1, which is part of the Markdown. -#}
