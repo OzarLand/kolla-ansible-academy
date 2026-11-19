@@ -2,6 +2,12 @@
 title: Write config first, apply in controlled batches
 description: Write the configuration with genconfig, then apply it batch by batch with deploy-containers --limit, or roll a reconfigure with ANSIBLE_SERIAL.
 tags: [nova, genconfig, deploy-containers, reconfigure, serial, limit, loop-notify, kolla-set-configs]
+remember:
+  - "<code>genconfig</code> (zero restarts), a review of the diff, then <code>deploy-containers --limit &lt;batch&gt;</code>: each batch restarts only its hosts. <span class=\"ev ev-code\">CODE</span>"
+  - "Until all batches are applied, any untagged, <code>-t nova</code> or <code>-t nova-cell</code> run, a Docker restart or a reboot applies the pending drift: keep the window short. <span class=\"ev ev-code\">CODE</span>"
+  - "<code>genconfig -t nova-cell</code> also renders the conductor and console config on controllers: include them in a batch too, or the drift stays pending there."
+  - "Drift confined to <code>config.json</code>'s <code>command</code> or <code>permissions</code> is never detected; it takes effect only at the next restart for another reason. <span class=\"ev ev-code\">CODE</span>"
+  - "<code>ANSIBLE_SERIAL</code> reaches only <code>reconfigure</code> and <code>upgrade</code>; mariadb and rabbitmq use a fixed <code>serial: \"33%\"</code>, and cyborg ignores it."
 impact: [writes-config, restarts-on-drift]
 scenarios:
   - title: "Half-way through the batches"

@@ -2,6 +2,12 @@
 title: Why a small change creates a large workload
 description: Six small changes that become a large workload in Kolla-Ansible Ussuri, each with the reason and the source.
 tags: [risk, scaling, loop-notify, nova, neutron, rabbitmq, images, reconfigure]
+remember:
+  - "One option for nova-compute is not small: it targets every compute, and loop-notify adds the libvirt and ssh restarts."
+  - "A rebuilt image of one service restarts its sibling containers on the same host too."
+  - "One extra controller changes the transport URL in every messaging service everywhere."
+  - "Every run pays the per-host work: every full <code>deploy</code> or <code>reconfigure</code> makes 11 <code>compare_container</code> calls per compute, independently of restarts. <span class=\"ev ev-code\">CODE</span>"
+  - "Write config first, apply in controlled batches: <code>genconfig</code>, then <code>deploy-containers --limit</code> batch by batch."
 scenarios:
   - title: "A one-line nova-compute change"
     situation: "Your cloud has 40 computes. A ticket asks you to change one option for nova-compute. Your colleague says: \"It's a one-line change, just run a full <code>reconfigure</code> now and close the ticket.\""

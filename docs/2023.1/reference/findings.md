@@ -2,6 +2,12 @@
 title: Technical findings
 description: The fifteen headline findings of the source study, F1 to F15, re-checked against 2023.1-eol, each with its evidence, status and why it matters.
 tags: [evidence, loop-notify, tags, limit, serial, images, kolla-set-configs, one-shot, reconfigure, nova, neutron, docker]
+remember:
+  - "Restart blast radius is per role-on-host, not per container: a nova-compute-only change restarts <code>nova_libvirt</code> and <code>nova_ssh</code>. <span class=\"ev ev-code\">CODE</span>"
+  - "Same-tag image rebuilds are not picked up by <code>deploy</code>/<code>reconfigure</code>/<code>upgrade</code>: only absent images are pulled; an explicit <code>pull</code> is required. <span class=\"ev ev-code\">CODE</span>"
+  - "A <code>reconfigure</code> is a <code>deploy</code>: it applies schema migrations if the image tag moved, for Neutron too. <span class=\"ev ev-code\">CODE</span>"
+  - "<code>--limit</code> does not confine actions: \"only the new compute\" still executes DB-sync containers on a controller. <span class=\"ev ev-code\">CODE</span>"
+  - "A service still running 60 s after SIGTERM is killed with its in-flight work; raising <code>docker_graceful_timeout</code> now has an effect. <span class=\"ev ev-code\">CODE</span>"
 quiz:
   - q: "In 2023.1, a config change touches one nova-compute container only. Which containers of that host can restart?"
     options: ["Every container of that role on that host: a nova-compute-only change restarts <code>nova_libvirt</code> and <code>nova_ssh</code>", "Only the container whose config changed"]

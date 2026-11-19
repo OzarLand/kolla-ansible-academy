@@ -2,6 +2,12 @@
 title: What is not known
 description: Everything the study marks NOT AVAILABLE, grouped by topic, with links to the sections that mark each point.
 tags: [unknowns, evidence, nova, libvirt, neutron, openvswitch, ovn, iscsi, glance, haproxy, keepalived, mariadb, rabbitmq, keystone, memcached, heat, upgrade, images, check-mode, scaling]
+remember:
+  - "This page lists what the sources do not establish; nothing here is an answer."
+  - "Whether running VMs survive a <code>nova_libvirt</code> restart or recreate is <span class=\"ev ev-na\">NOT AVAILABLE</span>"
+  - "Whether an <code>openvswitch_vswitchd</code> restart interrupts all VM traffic on the host, and for how long, is <span class=\"ev ev-na\">NOT AVAILABLE</span>"
+  - "Whether a check-mode run (<code>--check --diff</code>) fails or gives partial results is <span class=\"ev ev-na\">NOT AVAILABLE</span>"
+  - "Play and run durations, and real timing at scale, are <span class=\"ev ev-na\">NOT AVAILABLE</span>"
 quiz:
   - q: "What does the study leave open about the stop of <code>nova_libvirt</code>?"
     options: ["Nothing: dumb-init is known to forward SIGTERM to libvirtd", "Whether dumb-init forwards SIGTERM to libvirtd only, whether libvirtd is SIGKILLed if still running after 10 s, and whether the runtime kills what is left in the container's cgroup"]

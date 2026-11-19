@@ -2,6 +2,12 @@
 title: Nova deep dive
 description: Nova in depth, with its two roles and ten plays, its dependencies, what restarts what, the nova_libvirt restart, live migration, consoles and the upgrade path.
 tags: [nova, libvirt, dependencies, loop-notify, one-shot, upgrade, unknowns]
+remember:
+  - "Any change of nova-compute's <code>nova.conf</code>, <code>config.json</code> or image restarts <code>nova_compute</code> and, through loop-notify, <code>nova_libvirt</code> and <code>nova_ssh</code>. <span class=\"ev ev-code\">CODE</span>"
+  - "Whether running VMs survive a <code>nova_libvirt</code> restart is not established by these sources. <span class=\"ev ev-na\">NOT AVAILABLE</span>"
+  - "A run that restarts <code>nova_libvirt</code> does so on every affected compute; with <code>serial: 0</code>, that is every compute at once."
+  - "Rotating <code>nova_keystone_password</code> restarts no nova container on the computes."
+  - "The image pull is not part of <code>upgrade</code>: run <code>kolla-ansible pull</code> first."
 scenarios:
   - title: "Upgrading Nova on 40 computes"
     situation: "You are about to run <code>kolla-ansible upgrade</code> for Nova on a cloud with 40 computes. To save time, a colleague suggests skipping <code>kolla-ansible pull</code>: \"the hosts will fetch the new images during the upgrade anyway\"."

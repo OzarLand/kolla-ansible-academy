@@ -2,6 +2,12 @@
 title: Compute scaling and performance
 description: Which Kolla-Ansible Ussuri operations grow with the number of compute nodes, why, and how to bound them.
 tags: [scaling, nova, limit, serial, facts, loop-notify, pull, images]
+remember:
+  - "With the default linear strategy, the next task starts only when every host has finished the current one: the slowest host sets the pace. <span class=\"ev ev-code\">CODE</span>"
+  - "Adding computes adds waves, not tasks: a task on H hosts needs ⌈H/F⌉ waves, F being <code>forks</code>."
+  - "<code>--limit</code> bounds the restarts, but fact gathering stays O(inventory). <span class=\"ev ev-code\">CODE</span>"
+  - "Every run that includes the <code>compute</code> group executes the full per-host chain on every compute, even with no change."
+  - "<code>serial</code> bounds simultaneous restarts per play, but adds time."
 quiz:
   - q: "Does this study give how long a run takes?"
     options: ["Yes, measured on a lab", "No: work is counted as operations read from the source"]

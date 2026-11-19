@@ -2,6 +2,12 @@
 title: Repository architecture
 description: "How Kolla-Ansible 2023.1 is built: entry points, from CLI command to ansible-playbook, site.yml, role anatomy, custom modules, the collection."
 tags: [deploy, reconfigure, genconfig, handlers, kolla-set-configs, serial, images, inventory, docker]
+remember:
+  - "<code>reconfigure</code> is <code>deploy</code>: it re-runs Keystone registration, DB creation and the bootstrap (DB sync) container of most services. <span class=\"ev ev-code\">CODE</span>"
+  - "A config change is applied by a full stop/start, never a reload: the restart handler recreates or restarts the container. <span class=\"ev ev-code\">CODE</span>"
+  - "The stop timeout is the 60 s of <code>docker_graceful_timeout</code>, written into each container's systemd unit (<code>docker stop -t 60</code>). <span class=\"ev ev-code\">CODE</span>"
+  - "<code>deploy</code> and <code>reconfigure</code> pull an image only if it is absent locally; a rebuilt image pushed under the same tag takes an explicit <code>pull</code>. <span class=\"ev ev-code\">CODE</span>"
+  - "Batching is off by default: <code>ANSIBLE_SERIAL</code> defaults to 0, which means all hosts of a play in one batch. <span class=\"ev ev-code\">CODE</span>"
 quiz:
   - q: "How is a configuration change applied to a running container?"
     options: ["The service reloads its configuration inside the container", "By a full stop and start: the container is recreated or restarted", "At the next reboot of the host"]

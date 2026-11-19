@@ -2,6 +2,12 @@
 title: Pre-execution checklist
 description: The eight checks to make before every production run of kolla-ansible, from knowing the diff to keeping rollback material.
 tags: [genconfig, kolla-set-configs, loop-notify, serial, pull, limit, mariadb-backup, risk]
+remember:
+  - "Before every production run: know the diff, the restart set and the batch size; pull first; health gates and workload gates; scope; rollback material."
+  - "Run <code>kolla-ansible genconfig</code> with the same tags and <code>--limit</code>: it writes config but does not restart any Docker container. Then diff <code>/etc/kolla/&lt;service&gt;/</code> against the previous version."
+  - "Loop-notify: if one container of a role changes on a host, every container of that role on that host restarts."
+  - "<code>ANSIBLE_SERIAL</code> covers <code>reconfigure</code>/<code>upgrade</code>; mariadb and rabbitmq ignore it: their restart plays use a fixed <code>serial: \"33%\"</code>."
+  - "Check Galera, RabbitMQ, compute services, network agents and HAProxy backends before the run and after each batch, with no migrations, resizes or uploads in flight."
 impact: [writes-config]
 scenarios:
   - title: "Live migrations still running on the target hosts"

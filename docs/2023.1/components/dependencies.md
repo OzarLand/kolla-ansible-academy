@@ -2,6 +2,12 @@
 title: Component dependencies
 description: What depends on what in Kolla-Ansible 2023.1, in four kinds of dependency, from the shared substrate and infrastructure to compute hosts and deployment order.
 tags: [dependencies, haproxy, keepalived, mariadb, rabbitmq, memcached, keystone, nova, neutron, openvswitch, ovn, chrony, iscsi, fluentd, kolla-toolbox]
+remember:
+  - "The database is reached through the internal VIP and HAProxy; RabbitMQ and memcached hosts are listed one by one in the configs of the services that use them."
+  - "Adding or removing a RabbitMQ node changes the config of every messaging service, including <code>nova-compute</code> and the neutron agents on every compute."
+  - "A compute host's configuration depends on global state, not only on the host itself: that is why changes that look small trigger fleet-wide restarts. <span class=\"ev ev-code\">CODE</span>"
+  - "HAProxy is restarted, never reloaded: on the backup hosts first, then on the host that holds the VIP."
+  - "Nova is deployed before Open vSwitch, OVN and Neutron, and nothing enforces a dependency when you use tags. <span class=\"ev ev-code\">CODE</span>"
 quiz:
   - q: "How do OpenStack services reach RabbitMQ?"
     options: ["Through the internal VIP and HAProxy, like the database", "Every host of <code>groups['rabbitmq']</code> is listed directly in their configs"]

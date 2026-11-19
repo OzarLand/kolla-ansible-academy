@@ -2,6 +2,12 @@
 title: What a tag really executes
 description: "How tags select work in Kolla-Ansible Ussuri and what each important tag executes: target hosts, containers that can restart, per-tag answers."
 tags: [tags, handlers, loop-notify, serial, limit, nova, neutron, openvswitch, ovn, haproxy, keystone, chrony, iscsi, reconfigure]
+remember:
+  - "A tag name does not describe the work a run performs: handlers are never filtered by tags, which is why <code>-t keystone</code> can restart HAProxy. <span class=\"ev ev-code\">CODE</span>"
+  - "Loop-notify: with the default Nova settings, a nova-compute-only override restarts <code>nova_compute</code>, <code>nova_libvirt</code> and <code>nova_ssh</code> on every compute host. <span class=\"ev ev-code\">CODE</span>"
+  - "A tag never restricts which hosts a play targets; use <code>--limit</code> for that."
+  - "<code>-t common</code> is a no-op; to push fluentd, cron or kolla_toolbox changes, use <code>-t chrony</code>, which reaches every host by default, or a service tag. <span class=\"ev ev-code\">CODE</span>"
+  - "<code>--list-tasks</code> is not usable for Kolla; to predict restarts, use <code>genconfig</code> plus <code>kolla_set_configs --check</code>. <span class=\"ev ev-code\">CODE</span>"
 scenarios:
   - title: "Try a nova-compute change on a few computes first"
     situation: "Your cloud has 40 computes. You changed an override in <code>/etc/kolla/config/nova/nova-compute.conf</code> and want it applied to 4 computes only, as a first step. A colleague says: \"Just run <code>reconfigure -t nova-cell</code>: the tag only picks the hosts that need it.\""

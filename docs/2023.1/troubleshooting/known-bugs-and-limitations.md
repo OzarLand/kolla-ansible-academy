@@ -2,6 +2,12 @@
 title: Known bugs and limitations
 description: The limitations and bugs found in Kolla-Ansible 2023.1-eol, by area, each with its evidence and status, including Ussuri ones that no longer hold.
 tags: [bugs, evidence, serial, docker, kolla-set-configs, tags, upgrade, pull, bootstrap-servers, haproxy, keepalived, loadbalancer, openvswitch, neutron, rabbitmq, mariadb, keystone, glance, cinder, heat, swift, octavia]
+remember:
+  - "<code>-e kolla_serial=N</code> is overridden by <code>ANSIBLE_SERIAL</code> (default 0) for <code>reconfigure</code>/<code>upgrade</code>; it is not passed for <code>deploy</code>. <span class=\"ev ev-code\">CODE</span>"
+  - "<code>kolla_set_configs --check</code> compares only <code>config_files</code> entries: changes confined to <code>config.json</code> are not applied until the container restarts for another reason. <span class=\"ev ev-code\">CODE</span>"
+  - "A changed <code>heat_domain_admin_password</code> reaches <code>heat.conf</code> but never Keystone. <span class=\"ev ev-code\">CODE</span>"
+  - "Certificates are never renewed (every key, CSR and certificate task has <code>creates:</code>), the CA is a test CA only, and new backend hosts are not added. <span class=\"ev ev-code\">CODE</span>"
+  - "No longer holding in 2023.1: <code>graceful_timeout</code> and <code>client_timeout</code> from <code>docker_common_options</code> are now used, and <code>-t common</code> runs the role. <span class=\"ev ev-code\">CODE</span>"
 quiz:
   - q: "You run <code>reconfigure</code> with <code>-e kolla_serial=N</code>. Is <code>N</code> used as the batch size?"
     options: ["Yes, <code>kolla_serial</code> always wins", "No: it is overridden by <code>ANSIBLE_SERIAL</code> (default 0)"]

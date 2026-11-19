@@ -2,6 +2,12 @@
 title: Risk register
 description: 25 potentially dangerous operations on a running Kolla-Ansible Ussuri platform, with impact, likelihood, severity, precautions and evidence.
 tags: [risk, nova, libvirt, neutron, openvswitch, haproxy, mariadb, rabbitmq, memcached, keystone, glance, swift, deploy, reconfigure, upgrade, pull, stop, destroy, bootstrap-servers, mariadb-recovery, loop-notify, limit, images, inventory]
+remember:
+  - "Rated Critical: <code>openvswitch_vswitchd</code> restart or recreate (R7), image tag change run with <code>deploy</code> instead of <code>upgrade</code> (R12), <code>bootstrap-servers</code> re-run (R14), <code>stop</code> (R15), <code>destroy</code> (R16)."
+  - "A config change touching nova-compute, then <code>deploy</code>/<code>reconfigure</code>, restarts <code>nova_compute</code>, <code>nova_libvirt</code> and <code>nova_ssh</code> on every affected compute, all at once with the default serial 0."
+  - "Whether running VMs keep running, and whether live migrations in flight fail, during that restart is <span class=\"ev ev-na\">NOT AVAILABLE</span>"
+  - "Before a nova-compute change: <code>genconfig</code> + <code>diff</code>, then <code>deploy-containers --limit</code> in batches; drain live migrations first; validate libvirt restart behaviour in staging."
+  - "Changing the image tag and running <code>deploy</code> instead of <code>upgrade</code> recreates every container fleet-wide and skips the upgrade-specific steps; use <code>pull</code> then <code>upgrade</code> (Ussuri docs)."
 scenarios:
   - title: "A new image tag on a running cloud"
     situation: "You must move your production cloud to a new <code>openstack_tag</code>. A colleague has already changed the tag in <code>globals.yml</code> and proposes to run <code>kolla-ansible deploy</code>, \"since deploy is idempotent anyway\"."

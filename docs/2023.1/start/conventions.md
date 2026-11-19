@@ -2,6 +2,12 @@
 title: Conventions and evidence labels
 description: The two evidence labels, the impact classes shown on operation pages with the sections that support them, and how the pages are built.
 tags: [evidence, risk]
+remember:
+  - "The study rests only on reading source code; nothing was run against a host, and no run is used as evidence."
+  - "<strong>CODE</strong> means shown by the sources, with a <code>path:line</code> citation nearby."
+  - "<strong>NOT AVAILABLE</strong> means the sources do not establish it."
+  - "An impact class says that at least one command of the page has that impact, not that all do."
+  - "<code>pull</code> downloads images and never changes running containers. <span class=\"ev ev-code\">CODE</span>"
 quiz:
   - q: "What does the evidence label <span class=\"ev ev-code\">CODE</span> mean?"
     options: ["It was observed during a test run on a host", "It is shown by the sources, with a <code>path:line</code> citation nearby"]

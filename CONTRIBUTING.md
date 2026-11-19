@@ -339,6 +339,15 @@ browser (`kolla-ansible-academy:quiz:<release>`); the journey page shows it next
 left off" link (`overrides/partials/resume.html`, also on the release home) to the first page not yet marked as read.
 "Reset my progress" forgets both.
 
+**To remember.** A page of the journey can end with a `remember` list in its front matter: 3 to 5 short sentences, the
+takeaways a reader would note before a production run, each restating the page with its evidence label. They are
+rendered after the page, before the scenarios and the quiz, with a button that copies them as plain text.
+
+```yaml
+remember:
+  - "A tag never restricts which hosts a play targets: use <code>--limit</code> for that."
+```
+
 **Scenarios.** Before the quiz, a page can hold "What would you do?": a `scenarios` list in its front matter, each a
 situation from a real platform with three possible actions.
 

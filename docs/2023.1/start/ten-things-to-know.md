@@ -2,6 +2,12 @@
 title: Ten things to know before a production run
 description: Ten things to know before running Kolla-Ansible 2023.1 on production, most of them with the section that gives the evidence.
 tags: [reconfigure, deploy, loop-notify, serial, tags, limit, images, kolla-set-configs, genconfig, handlers, risk]
+remember:
+  - "<code>reconfigure</code> is <code>deploy</code> for 57 of the 59 roles that have a <code>reconfigure.yml</code>; the only lightweight path is <code>genconfig</code> followed by <code>deploy-containers</code>."
+  - "Config is applied by a full stop/start, never a reload, and the stop timeout is 60 s."
+  - "One changed container restarts all containers of its role on that host."
+  - "Without batching, handlers restart a service on every host of the play at once; <code>deploy</code> ignores <code>ANSIBLE_SERIAL</code> and needs <code>-e kolla_serial=N</code>."
+  - "<code>deploy</code> never pulls an image that is already present: rebuilt images under the same tag need <code>pull</code>."
 quiz:
   - q: "What is the only lightweight path to apply config?"
     options: ["<code>reconfigure</code>", "<code>deploy</code> with a service tag", "<code>genconfig</code> followed by <code>deploy-containers</code>"]

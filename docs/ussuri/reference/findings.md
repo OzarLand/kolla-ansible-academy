@@ -2,6 +2,12 @@
 title: Technical findings
 description: The fifteen headline findings of the Kolla-Ansible ussuri-eol source study, F1 to F15, each with its evidence and why it matters.
 tags: [evidence, loop-notify, tags, limit, serial, images, kolla-set-configs, one-shot, reconfigure, nova, neutron, docker]
+remember:
+  - "Restart blast radius is per role-on-host, not per container: a nova-compute-only change restarts <code>nova_libvirt</code> and <code>nova_ssh</code>. <span class=\"ev ev-code\">CODE</span>"
+  - "<code>-t common</code> is a no-op: <code>common</code> changes (fluentd/cron/toolbox) are applied by whatever run first reaches the host, often unexpectedly. <span class=\"ev ev-code\">CODE</span>"
+  - "<code>docker_graceful_timeout</code> is ignored: every stop sends SIGKILL to a container still running 10 s after SIGTERM. <span class=\"ev ev-code\">CODE</span>"
+  - "Same-tag image rebuilds are not picked up by <code>deploy</code>/<code>reconfigure</code>/<code>upgrade</code>: only absent images are pulled; an explicit <code>pull</code> is required. <span class=\"ev ev-code\">CODE</span>"
+  - "<code>--limit</code> does not confine actions: \"only the new compute\" still executes DB-sync containers on a controller. <span class=\"ev ev-code\">CODE</span>"
 quiz:
   - q: "In Ussuri, how long does a container still running after SIGTERM get before it is killed on a stop?"
     options: ["60 s, the value of <code>docker_graceful_timeout</code>", "10 s: the <code>kolla_docker</code> argument defaults override <code>common_options</code>"]

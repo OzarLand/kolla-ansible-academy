@@ -2,6 +2,12 @@
 title: Known bugs and limitations
 description: The implementation limitations and bugs found in Kolla-Ansible ussuri-eol, by area, each with its evidence and its status.
 tags: [bugs, evidence, serial, docker, kolla-set-configs, tags, upgrade, pull, bootstrap-servers, haproxy, keepalived, openvswitch, neutron, rabbitmq, mariadb, keystone, glance, cinder, heat, swift, octavia]
+remember:
+  - "<code>-e kolla_serial=N</code> is overridden by <code>ANSIBLE_SERIAL</code> (default 0) for <code>reconfigure</code>/<code>upgrade</code>; it is not passed for <code>deploy</code>. <span class=\"ev ev-code\">CODE</span>"
+  - "<code>kolla_set_configs --check</code> compares only <code>config_files</code> entries: changes confined to <code>config.json</code> are not applied until the container restarts for another reason. <span class=\"ev ev-code\">CODE</span>"
+  - "<code>graceful_timeout</code>/<code>client_timeout</code> from <code>docker_common_options</code> are ignored, and <code>restart_policy</code> is never compared. <span class=\"ev ev-code\">CODE</span>"
+  - "A changed <code>heat_domain_admin_password</code> reaches <code>heat.conf</code> but never Keystone. <span class=\"ev ev-code\">CODE</span>"
+  - "Certificates: test CA only, certs never renewed, new backend hosts not added. <span class=\"ev ev-code\">CODE</span>"
 quiz:
   - q: "Does <code>kolla_docker</code> use <code>graceful_timeout</code> and <code>client_timeout</code> from <code>docker_common_options</code>?"
     options: ["Yes, both are applied to every container", "No: both are ignored"]

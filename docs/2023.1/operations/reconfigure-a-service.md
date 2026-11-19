@@ -2,6 +2,12 @@
 title: Reconfigure a single service
 description: What a single-service reconfigure such as -t keystone runs, what the tag also touches, what restarts on drift, the risks and the verification.
 tags: [keystone, glance, placement, cinder, heat, haproxy, reconfigure, tags, loop-notify, one-shot, limit]
+remember:
+  - "A changed <code>services.d/&lt;svc&gt;*.cfg</code> restarts HAProxy on all loadbalancer hosts at once; add <code>--skip-tags haproxy</code> when frontends are not meant to change."
+  - "On each drifted host all the service's containers restart, all such hosts in parallel: a change common to all hosts restarts the service on all its hosts at once."
+  - "Even a narrow tag also touches the service's HAProxy frontends, Keystone registration and DB sync; in 2023.1 it no longer runs <code>common</code>."
+  - "The service API is unavailable while its containers restart, with up to <code>docker_graceful_timeout</code> (60 s by default) before SIGKILL."
+  - "Before: <code>-t &lt;svc&gt; genconfig</code>, then <code>kolla_set_configs --check</code> with <code>-u root</code> in each container and a diff of the <code>services.d</code> file."
 impact: [restarts-on-drift]
 scenarios:
   - title: "A glance change during business hours"

@@ -203,7 +203,7 @@
    * from the glossary, with a link to the section that defines it. */
 
   var SKIP = "a, h1, h2, h3, h4, h5, h6, pre, button, label, legend, summary, script, style, " +
-    ".admonition-title, .portal-impact, .oz-pagebar, .oz-step-end, .oz-lumo, .oz-quiz, .oz-scenarios, .md-source-file, " +
+    ".admonition-title, .portal-impact, .oz-pagebar, .oz-step-end, .oz-lumo, .oz-quiz, .oz-scenarios, .oz-remember, .md-source-file, " +
     ".md-content__button, .oz-term, .oz-term-pop, .ev, .md-tags, .portal-updated";
 
   function escapeRegExp(text) {
@@ -463,6 +463,33 @@
     showBest();
   }
 
+  /* ------------------------------------------------------------ to remember
+   * "Copy these notes": the takeaways of the page as plain text, with the
+   * title and address of the page, for the reader's own notes. */
+
+  function setupRemember(section) {
+    var button = section.querySelector("[data-oz-remember-copy]");
+    var status = section.querySelector("[data-oz-remember-status]");
+    if (!button || !navigator.clipboard || !window.isSecureContext) return;
+    button.parentNode.hidden = false;
+    button.addEventListener("click", function () {
+      var title = document.querySelector(".md-content h1");
+      var name = title ? title.textContent.replace(/\u00b6/g, "").trim() : document.title;
+      var lines = [name + " (" + location.href.split("#")[0] + ")"];
+      section.querySelectorAll(".oz-remember__list li").forEach(function (item) {
+        /* The evidence chips keep their label in brackets, as in the sources. */
+        var copy = item.cloneNode(true);
+        copy.querySelectorAll(".ev").forEach(function (chip) { chip.textContent = "[" + chip.textContent.trim() + "]"; });
+        lines.push("- " + copy.textContent.replace(/\s+/g, " ").trim());
+      });
+      navigator.clipboard.writeText(lines.join("\n") + "\n").then(function () {
+        status.textContent = "Copied.";
+      }, function () {
+        status.textContent = "Copy failed: select the list instead.";
+      });
+    });
+  }
+
   /* ---------------------------------------------------- what would you do?
    * A scenario of a page (front matter `scenarios`, overrides/main.html):
    * choosing an action shows its verdict and why, under that action. */
@@ -509,6 +536,7 @@
     document.querySelectorAll("[data-oz-quiz]").forEach(setupQuiz);
     document.querySelectorAll("[data-oz-resume]").forEach(setupResume);
     document.querySelectorAll("[data-oz-scenario]").forEach(setupScenario);
+    document.querySelectorAll("[data-oz-remember]").forEach(setupRemember);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

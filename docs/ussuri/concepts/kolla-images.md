@@ -2,6 +2,12 @@
 title: "Kolla images: start path and one-shot containers"
 description: What the kolla images do when a container starts, what kolla_set_configs --check compares, and what the one-shot containers run.
 tags: [images, kolla-set-configs, one-shot, libvirt, neutron, horizon, placement, heat]
+remember:
+  - "<code>kolla_set_configs --check</code> compares only the <code>config_files</code> entries of <code>config.json</code> (content, mode, owner). <span class=\"ev ev-code\">CODE</span>"
+  - "The check never compares <code>command</code>, <code>permissions</code> or removed entries."
+  - "A <code>COPY_ALWAYS</code> restart applies changed or added files, mode and owner changes and a changed command; removals do not apply. <span class=\"ev ev-code\">CODE</span>"
+  - "A newly rendered optional file whose destination is not yet in the container makes the check exit 2: the check task fails instead of restarting the container."
+  - "Run by hand, <code>kolla_set_configs --check</code> needs <code>docker exec -u root</code>."
 quiz:
   - q: "What does every container start run before the service command?"
     options: ["<code>kolla_set_configs</code>, <code>kolla_copy_cacerts</code> and the image's <code>kolla_extend_start</code>", "Nothing: the service command starts at once", "A pull of the image"]

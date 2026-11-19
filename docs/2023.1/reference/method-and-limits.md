@@ -2,6 +2,12 @@
 title: Method and limits of the study
 description: How the Kolla-Ansible 2023.1-eol sources were read, starting from the Ussuri study and re-checking every statement, and the limits of the study.
 tags: [evidence, unknowns, images]
+remember:
+  - "The study rests only on reading source code: no runtime or lab result is used, from Ussuri or from 2023.1."
+  - "Every statement was re-checked against the 2023.1 sources; nothing is carried over from Ussuri, from newer releases or from documentation the code does not confirm."
+  - "There are no timings: no run is used, so no wall time is known; work can only be counted from the code."
+  - "No container or VM behaviour is used as evidence: every statement about data-plane or VM impact is not available. <span class=\"ev ev-na\">NOT AVAILABLE</span>"
+  - "The kolla image sources were read, not built or run: what the scripts do against real services and data is not available. <span class=\"ev ev-na\">NOT AVAILABLE</span>"
 quiz:
   - q: "Was any run against a host used as evidence for the 2023.1 pages?"
     options: ["Yes: real-Docker lab experiments confirmed the restart behaviour", "No: the study rests only on reading source code"]

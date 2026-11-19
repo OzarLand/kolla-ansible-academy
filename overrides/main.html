@@ -201,6 +201,27 @@
   {#- What a page template adds after the Markdown (overrides/journey.html). -#}
   {% block page_extra %}{% endblock %}
 
+  {#- "Remember": the `remember` of the front matter, 3 to 5 short
+      takeaways that restate the page with its evidence labels. learning.js
+      adds a button that copies them as plain text. -#}
+  {% if page.meta and page.meta.remember %}
+    <section class="admonition remember oz-remember" aria-labelledby="to-remember" data-oz-remember>
+      <p class="admonition-title" id="to-remember">To remember</p>
+      <div class="oz-remember__body">
+        <img src="{{ 'assets/images/ozarland/lumo/reading.webp' | url }}" width="400" height="400" alt="">
+        <div>
+          <p class="oz-remember__lead"><strong>Lumo:</strong> if you keep only {{ page.meta.remember | length }} things from this page, keep these.</p>
+          <ul class="oz-remember__list">
+            {% for item in page.meta.remember %}
+              <li>{{ item | safe }}</li>
+            {% endfor %}
+          </ul>
+          <p class="oz-remember__actions" hidden><button type="button" class="portal-cta" data-oz-remember-copy>Copy these notes</button> <span role="status" data-oz-remember-status></span></p>
+        </div>
+      </div>
+    </section>
+  {% endif %}
+
   {#- "What would you do?": the `scenarios` of the front matter, a list of
       {title, situation, ask (optional), choices: [{text, verdict (best,
       risky or avoid), why}], see (anchor of a section of the page,

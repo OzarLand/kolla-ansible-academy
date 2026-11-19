@@ -2,6 +2,12 @@
 title: Deployment execution flow
 description: "How Kolla-Ansible 2023.1 decides what runs when: play order, steps inside a role, handler flush points, batching, and how the actions differ."
 tags: [deploy, reconfigure, upgrade, deploy-containers, genconfig, pull, stop, handlers, serial, one-shot, nova]
+remember:
+  - "There is no dependency resolution: order comes from play order, task order inside a role, handler flush points, <code>serial</code> and the MariaDB and RabbitMQ restart plays. <span class=\"ev ev-code\">CODE</span>"
+  - "<code>genconfig</code>, then <code>deploy-containers --limit &lt;batch&gt;</code>, is the only built-in way to separate \"write the config\" from \"apply it\"."
+  - "A batch runs the complete play, handler restarts included, before the next batch starts, but each play is traversed batch by batch for the whole fleet first."
+  - "<code>reconfigure</code> on a running cloud still runs the DB sync containers of keystone, glance, cinder, placement, nova, neutron, heat and others. <span class=\"ev ev-code\">CODE</span>"
+  - "Restart order is handler definition order, not notification order. <span class=\"ev ev-code\">CODE</span>"
 quiz:
   - q: "In which order do the restart handlers of a play run?"
     options: ["In the order the tasks notified them", "In the order the handlers are defined", "In alphabetical order of the containers"]

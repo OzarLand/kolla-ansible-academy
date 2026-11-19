@@ -2,6 +2,12 @@
 title: Predict and inspect a run
 description: The commands that show what a kolla-ansible run would target, render and restart, from the Ansible listings to kolla_set_configs --check and prechecks.
 tags: [genconfig, kolla-set-configs, check-mode, prechecks, tags]
+remember:
+  - "Predict a run with <code>genconfig</code>, then <code>kolla_set_configs --check</code> in each container; <code>--list-tasks</code> is not useful. <span class=\"ev ev-code\">CODE</span>"
+  - "<code>genconfig</code> writes <code>/etc/kolla/&lt;svc&gt;/</code> on the targets and skips all handlers, but also re-renders haproxy <code>services.d</code> for the tagged services."
+  - "Exit 1 (or 137) means drift: a restart on the next <code>deploy</code>/<code>reconfigure</code>/<code>deploy-containers</code>; on 2 or any other code, <code>kolla_docker</code> fails the check task instead of restarting. <span class=\"ev ev-code\">CODE</span>"
+  - "Keep <code>-u root</code> on the check: containers that run as a service user cannot read the root-owned files in <code>/var/lib/kolla/config_files</code>."
+  - "Whether a <code>--check --diff</code> run fails or gives partial results is unknown: staging only. <span class=\"ev ev-na\">NOT AVAILABLE</span>"
 impact: [read-only, writes-config]
 scenarios:
   - title: "The check returns 2"

@@ -2,6 +2,12 @@
 title: What is not known
 description: Everything the 2023.1 study marks NOT AVAILABLE, grouped by topic, with links to the sections that mark each point.
 tags: [unknowns, evidence, nova, libvirt, neutron, openvswitch, ovn, iscsi, glance, haproxy, keepalived, mariadb, rabbitmq, keystone, memcached, heat, upgrade, images, check-mode, scaling]
+remember:
+  - "This page lists what the sources do not establish; nothing here is an answer."
+  - "Whether running VMs survive a <code>nova_libvirt</code> restart or recreate is <span class=\"ev ev-na\">NOT AVAILABLE</span>"
+  - "Whether an <code>openvswitch_vswitchd</code> restart interrupts all VM traffic on the host, and for how long, is <span class=\"ev ev-na\">NOT AVAILABLE</span>"
+  - "Whether a check-mode run (<code>--check --diff</code>) fails or gives partial results is <span class=\"ev ev-na\">NOT AVAILABLE</span>"
+  - "Any duration of an initial deploy or of a reconfigure (image pulls, first container starts, per-task overhead) is <span class=\"ev ev-na\">NOT AVAILABLE</span>"
 quiz:
   - q: "Do running VMs survive a <code>nova_libvirt</code> restart or recreate?"
     options: ["Yes: QEMU keeps running and libvirtd re-attaches", "No: every VM on the host stops", "The sources do not establish it"]
