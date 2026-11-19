@@ -7,10 +7,6 @@ tags: [reconfigure, deploy, tags, risk, evidence, unknowns]
 
 # Kolla-Ansible Academy
 
-> [!TIP]
-> New to Kolla-Ansible Day-2 operations? Follow the [learning journey](start/learning-journey.md): five stages, from
-> the conventions of the pages to the detailed findings, with your progress kept in your browser.
-
 ## Start from what you need
 
 <div class="grid cards" markdown>

@@ -148,6 +148,10 @@
   {#- End of a journey page: mark as read (learning.js) and the next step. -#}
   {% if oz.found %}
     <nav class="oz-step-end" aria-label="Learning journey">
+      <p class="oz-step-end__lumo">
+        <img src="{{ 'assets/images/ozarland/lumo/avatar.webp' | url }}" width="160" height="160" alt="">
+        <span><strong>Lumo:</strong> {% if oz.next %}ready for the next step? Take your time: you can come back to this page whenever you need it.{% else %}this is the last page of the journey. Well done for coming this far!{% endif %}</span>
+      </p>
       <label class="oz-step-end__read" data-oz-read hidden>
         <input type="checkbox" data-oz-read-toggle data-oz-release="{{ config.extra.portal.current }}" data-oz-page="{{ page.url }}">
         Mark this page as read

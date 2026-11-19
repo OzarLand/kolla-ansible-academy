@@ -3,15 +3,34 @@
   docs/<id>/start/learning-journey.md). The Markdown gives the introduction;
   the stages, their pages and the levels come from `extra.journey` of
   zensical.base.toml. assets/javascripts/learning.js fills the progress
-  (pages marked as read, kept in the reader's browser); without JavaScript the
-  page is a plain list of the stages and their pages.
+  (pages marked as read, kept in the reader's browser): the seal of a stage
+  lights up when all its pages are read, and Lumo celebrates the end of the
+  journey. Without JavaScript the page is a plain list of the stages and
+  their pages. Images: the OzarLand learning kit (assets/images/ozarland/).
 -#}
 {% extends "main.html" %}
 {% set journey = config.extra.journey %}
+{% set img = 'assets/images/ozarland/' %}
 {% set total = namespace(n=0) %}
 {% for stage in journey.stages %}{% set total.n = total.n + stage.pages | length %}{% endfor %}
 
 {% block page_extra %}
+  <div class="oz-lumo">
+    <img class="oz-lumo__pose" src="{{ (img ~ 'lumo/map.webp') | url }}" width="400" height="400" alt="Lumo, the guide, holds open a parchment map.">
+    <div class="oz-lumo__bubble">
+      <p class="oz-lumo__name">Lumo, your guide</p>
+      <p>Here is the map of the island: five stages, from the harbour to the observatory. Go at your own pace. When the
+      source code does not establish something, the page says <strong>NOT AVAILABLE</strong>: we never guess.</p>
+    </div>
+  </div>
+
+  <figure class="oz-journey-map">
+    <img src="{{ (img ~ 'journey/journey-map.webp') | url }}" width="1400" height="700" alt="A winding dotted path connects a harbour gate, library, workshop, lighthouse and cliffside observatory across an island.">
+    <figcaption>
+      {% for stage in journey.stages %}<a href="#stage-{{ stage.id }}"><span class="oz-journey-map__n">{{ loop.index }}</span> {{ stage.name }}</a>{% endfor %}
+    </figcaption>
+  </figure>
+
   {#- Teaching callouts (styles: portal.css, section 15). -#}
   <div class="admonition guide">
     <p class="admonition-title">How to use the journey</p>
@@ -34,6 +53,28 @@
     <h2 id="your-progress">Your progress</h2>
     <div class="oz-progress__bar" role="progressbar" aria-valuemin="0" aria-valuemax="{{ total.n }}" aria-valuenow="0" aria-labelledby="your-progress"><span data-oz-progress-fill></span></div>
     <p class="oz-progress__text"><strong data-oz-progress-count>0</strong> of {{ total.n }} pages read. <span data-oz-progress-message>Start with stage 1 below.</span></p>
+    <ul class="oz-seals" aria-label="Seals of the stages">
+      {% for stage in journey.stages %}
+        <li class="oz-seal" data-oz-seal="{{ stage.id }}">
+          <img src="{{ (img ~ 'badges/stage-' ~ loop.index ~ '.svg') | url }}" width="96" height="96" alt="">
+          <span>{{ stage.name }}</span>
+          <span class="oz-visually-hidden" data-oz-seal-state>not completed</span>
+        </li>
+      {% endfor %}
+      <li class="oz-seal oz-seal--journey" data-oz-seal="journey">
+        <img src="{{ (img ~ 'badges/journey-complete.svg') | url }}" width="96" height="96" alt="">
+        <span>Journey</span>
+        <span class="oz-visually-hidden" data-oz-seal-state>not completed</span>
+      </li>
+    </ul>
+    <div class="oz-lumo oz-lumo--done" data-oz-complete hidden>
+      <img class="oz-lumo__pose" src="{{ (img ~ 'lumo/well-done.webp') | url }}" width="600" height="400" alt="Lumo plants a navy cloud pennant on a green hilltop.">
+      <div class="oz-lumo__bubble">
+        <p class="oz-lumo__name">Lumo</p>
+        <p>You walked the whole journey: well done! Keep the reference pages close when you prepare a change, and
+        always try it on a test platform first.</p>
+      </div>
+    </div>
     <button type="button" class="oz-progress__reset" data-oz-reset>Reset my progress</button>
   </section>
 
@@ -49,7 +90,7 @@
   <ol class="oz-stages">
     {% for stage in journey.stages %}
       <li class="oz-stage" id="stage-{{ stage.id }}" data-oz-stage>
-        <img class="oz-stage__art" src="{{ ('assets/images/ozarland/' ~ stage.art ~ '.webp') | url }}" width="1200" height="750" loading="lazy" alt="{{ stage.alt }}">
+        <img class="oz-stage__art" src="{{ (img ~ stage.art ~ '.webp') | url }}" width="800" height="500" loading="lazy" alt="{{ stage.alt }}">
         <div class="oz-stage__body">
           <p class="oz-stage__eyebrow">Stage {{ loop.index }} of {{ journey.stages | length }}<span class="oz-stage__done" data-oz-stage-done hidden> · completed</span></p>
           <h3 class="oz-stage__name">{{ stage.name }}</h3>
@@ -60,6 +101,7 @@
             {% endfor %}
           </ol>
         </div>
+        <img class="oz-stage__seal" src="{{ (img ~ 'badges/stage-' ~ loop.index ~ '.svg') | url }}" width="96" height="96" alt="">
       </li>
     {% endfor %}
   </ol>

@@ -5,8 +5,9 @@
  * - [data-oz-read-toggle]: the "Mark this page as read" box at the end of a
  *   page of the journey (overrides/main.html).
  * - [data-oz-progress]: the progress block of the journey page
- *   (overrides/journey.html), with [data-oz-page] items and [data-oz-stage]
- *   stages.
+ *   (overrides/journey.html), with [data-oz-page] items, [data-oz-stage]
+ *   stages, [data-oz-seal] seals (lit when a stage is complete) and
+ *   [data-oz-complete], Lumo's message at the end of the journey.
  *
  * Without JavaScript or without storage, the boxes and the progress stay
  * hidden and the pages read as before.
@@ -57,6 +58,14 @@
     return "Good start: one page at a time.";
   }
 
+  function setSeal(id, complete) {
+    var seal = document.querySelector('[data-oz-seal="' + id + '"]');
+    if (!seal) return;
+    seal.classList.toggle("is-complete", complete);
+    var state = seal.querySelector("[data-oz-seal-state]");
+    if (state) state.textContent = complete ? "completed" : "not completed";
+  }
+
   function setupProgress(block) {
     var release = block.getAttribute("data-oz-release");
     var total = parseInt(block.getAttribute("data-oz-total"), 10) || 0;
@@ -79,13 +88,18 @@
         stage.classList.toggle("is-complete", complete);
         var label = stage.querySelector("[data-oz-stage-done]");
         if (label) label.hidden = !complete;
+        setSeal(stage.id.replace(/^stage-/, ""), complete);
       });
+      var finished = total > 0 && read >= total;
+      setSeal("journey", finished);
+      var done = block.querySelector("[data-oz-complete]");
+      if (done) done.hidden = !finished;
       var bar = block.querySelector("[role=progressbar]");
       bar.setAttribute("aria-valuenow", String(read));
       block.querySelector("[data-oz-progress-fill]").style.width = (total ? (100 * read) / total : 0) + "%";
       block.querySelector("[data-oz-progress-count]").textContent = String(read);
       block.querySelector("[data-oz-progress-message]").textContent = message(read, total);
-      block.classList.toggle("is-complete", total > 0 && read >= total);
+      block.classList.toggle("is-complete", finished);
     }
 
     block.querySelector("[data-oz-reset]").addEventListener("click", function () {

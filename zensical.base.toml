@@ -168,7 +168,8 @@ portal_mdx = {}
 # assets/javascripts/learning.js keeps the reader's progress in the browser).
 # `pages` are page URLs relative to the release, `art` an image of
 # assets/images/ozarland/. Every release must have these pages (check_site
-# checks the links of the journey page). `level` of a page: its section's
+# checks the links of the journey page); stage N has the seal
+# badges/stage-N.svg. `level` of a page: its section's
 # level (`levels`), unless its front matter sets `level`.
 [project.extra.journey]
 page = "start/learning-journey/"
@@ -187,8 +188,8 @@ page = "start/learning-journey/"
 id = "discover"
 name = "Discover"
 goal = "Get your bearings: how the pages are written, the essentials, and the words used everywhere."
-art = "why-map"
-alt = "A parchment map on a wooden table traces a route from a book past server towers and check marks to a cloud emblem."
+art = "journey/stage-1"
+alt = "A stone harbour gate stands beside a docked boat, wooden crates and turquoise water."
 pages = [
   ["start/conventions/", "Conventions and evidence labels"],
   ["start/ten-things-to-know/", "Ten things to know before a production run"],
@@ -200,8 +201,8 @@ pages = [
 id = "understand"
 name = "Understand"
 goal = "See how Kolla-Ansible is built and what happens, step by step, when a command runs."
-art = "concepts"
-alt = "A brass orrery made of server racks and cloud forms fills an island library observatory."
+art = "journey/stage-2"
+alt = "A white stone library tower opens its arched windows above the island sea."
 pages = [
   ["concepts/repository-architecture/", "Repository architecture"],
   ["concepts/deployment-execution-flow/", "Deployment execution flow"],
@@ -213,8 +214,8 @@ pages = [
 id = "practise"
 name = "Practise"
 goal = "Prepare a command before running it: check, predict, then apply one service or one batch at a time."
-art = "operations"
-alt = "An engineer adjusts brass server machinery at a workbench beside a parchment checklist."
+art = "journey/stage-3"
+alt = "Brass machinery and server devices sit on a workbench in a bright island workshop."
 pages = [
   ["operations/pre-execution-checklist/", "Pre-execution checklist"],
   ["operations/predict-a-run/", "Predict and inspect a run"],
@@ -227,8 +228,8 @@ pages = [
 id = "judge"
 name = "Judge the risks"
 goal = "Learn what a tag really touches, why small changes can grow, and which risks and bugs are known."
-art = "risk"
-alt = "A lighthouse overlooks sailing ships navigating around coastal rocks beneath a bright sky."
+art = "journey/stage-4"
+alt = "A white stone lighthouse watches over a calm rocky coast and a small sailing ship."
 pages = [
   ["risk/tags/", "What a tag really executes"],
   ["risk/small-change-large-workload/", "Why a small change creates a large workload"],
@@ -240,8 +241,8 @@ pages = [
 id = "master"
 name = "Master"
 goal = "Go deeper: how the components depend on each other, the detailed findings, and the limits of what is known."
-art = "components"
-alt = "A white stone castle with distinct towers is connected by aqueducts carrying glowing messages."
+art = "journey/stage-5"
+alt = "A domed observatory with a brass telescope overlooks the sea from a high cliff."
 pages = [
   ["components/dependencies/", "Component dependencies"],
   ["components/nova-deep-dive/", "Nova deep dive"],

@@ -70,6 +70,18 @@
       {% include ".icons/" ~ (config.theme.icon.view or "material/file-eye-outline") ~ ".svg" %}
     </a>
   {% endif %}
+  {#- Lumo, the guide of the OzarLand learning kit, leads to the journey. -#}
+  {% if config.extra.journey %}
+    <div class="oz-lumo">
+      <img class="oz-lumo__pose" src="{{ 'assets/images/ozarland/lumo/welcome.webp' | url }}" width="400" height="400" alt="Lumo, the guide, waves hello while raising a glowing brass lantern.">
+      <div class="oz-lumo__bubble">
+        <p class="oz-lumo__name">Hi, I'm Lumo, your guide</p>
+        <p>New to Kolla-Ansible Day-2 operations? We'll take this one step at a time. The learning journey walks you
+        through five stages, and every page tells you where you are and what to read next.</p>
+        <p><a class="portal-cta portal-cta--primary" href="{{ config.extra.journey.page | url }}">Start the learning journey</a></p>
+      </div>
+    </div>
+  {% endif %}
   {% if "</h1>" in page.content %}
     {{ (page.content | split("</h1>", 1))[1] | safe }}
   {% else %}

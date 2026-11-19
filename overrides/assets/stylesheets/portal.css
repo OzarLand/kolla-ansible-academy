@@ -1832,11 +1832,22 @@ a.portal-cta:focus-visible {
 }
 
 .md-typeset .oz-level::before {
-  width: 0.55rem;
-  height: 0.55rem;
+  width: 0.95rem;
+  height: 0.95rem;
   content: "";
-  background-color: currentcolor;
-  border-radius: 50%;
+  background: center / contain no-repeat;
+}
+
+.md-typeset .oz-level--discover::before {
+  background-image: url("../images/ozarland/badges/level-discover.svg");
+}
+
+.md-typeset .oz-level--practise::before {
+  background-image: url("../images/ozarland/badges/level-practise.svg");
+}
+
+.md-typeset .oz-level--master::before {
+  background-image: url("../images/ozarland/badges/level-master.svg");
 }
 
 .md-typeset .oz-level--discover {
@@ -2104,22 +2115,287 @@ a.portal-cta:focus-visible {
   background-color: var(--portal-adm-bg);
 }
 
+
+
+
+
+/* ------------------------------------------- 16. Lumo and the learning kit
+   Lumo, the guide (assets/images/ozarland/lumo/), the island map, the seals
+   of the stages and the callout icons of the OzarLand learning kit. */
+
+.md-typeset .oz-lumo {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  max-width: 44rem;
+  margin: 1.2rem 0 1.6rem;
+}
+
+.md-typeset .oz-lumo__pose {
+  flex: none;
+  width: 8rem;
+  height: auto;
+}
+
+.md-typeset .oz-lumo--done .oz-lumo__pose {
+  width: 11rem;
+}
+
+.md-typeset .oz-lumo__bubble {
+  position: relative;
+  flex: 1;
+  padding: 0.6rem 1rem;
+  background-color: var(--oz-parchment-soft);
+  border: 0.1rem solid var(--oz-wood);
+  border-radius: 0.8rem;
+}
+
+/* The tail of the speech bubble points to Lumo. */
+.md-typeset .oz-lumo__bubble::before {
+  position: absolute;
+  top: 50%;
+  left: -0.5rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  content: "";
+  background-color: var(--oz-parchment-soft);
+  border-bottom: 0.1rem solid var(--oz-wood);
+  border-left: 0.1rem solid var(--oz-wood);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.md-typeset .oz-lumo__bubble > p {
+  margin: 0.4rem 0;
+}
+
+.md-typeset .oz-lumo__name {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--oz-wood-dark);
+  text-transform: uppercase;
+}
+
+@media screen and (max-width: 44.9375em) {
+  .md-typeset .oz-lumo {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .md-typeset .oz-lumo__pose {
+    width: 6.5rem;
+  }
+
+  .md-typeset .oz-lumo__bubble::before {
+    top: -0.5rem;
+    left: 2.5rem;
+    transform: rotate(135deg);
+  }
+}
+
+/* Island map of the journey page. */
+.md-typeset .oz-journey-map {
+  max-width: 56rem;
+  margin: 1rem 0 1.6rem;
+}
+
+.md-typeset .oz-journey-map img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 0.15rem solid var(--oz-wood);
+  border-radius: 0.8rem;
+  box-shadow: 0 0.3rem 0.9rem rgb(21 42 80 / 15%);
+}
+
+.md-typeset .oz-journey-map figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  justify-content: center;
+  max-width: none;
+  margin-top: 0.6rem;
+  font-size: 0.72rem;
+}
+
+.md-typeset .oz-journey-map figcaption a {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  color: var(--oz-ink);
+  text-decoration: none;
+}
+
+.md-typeset .oz-journey-map figcaption a:hover {
+  text-decoration: underline;
+}
+
+.oz-journey-map__n {
+  display: inline-grid;
+  place-items: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: #ffffff;
+  background-color: #1f3a6b;
+  border: 0.1rem solid var(--oz-lantern);
+  border-radius: 50%;
+}
+
+/* Seals: grey until the stage is complete. */
+.md-typeset ul.oz-seals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  padding: 0;
+  margin: 0.8rem 0;
+  list-style: none;
+}
+
+[dir] .md-typeset ul.oz-seals > li.oz-seal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  align-items: center;
+  width: 4.6rem;
+  margin: 0;
+  font-size: 0.6rem;
+  color: var(--portal-text-muted);
+  text-align: center;
+}
+
+.oz-seal img {
+  width: 3.4rem;
+  height: 3.4rem;
+  opacity: 0.35;
+  filter: grayscale(1);
+  transition: opacity 0.3s ease, filter 0.3s ease, transform 0.3s ease;
+}
+
+.oz-seal.is-complete {
+  font-weight: 700;
+  color: var(--oz-ink);
+}
+
+.oz-seal.is-complete img {
+  opacity: 1;
+  filter: none;
+  transform: scale(1.08);
+}
+
+.oz-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Seal next to each stage of the list. */
+[dir] .md-typeset ol.oz-stages > li.oz-stage {
+  grid-template-columns: 14rem minmax(0, 1fr) 4rem;
+}
+
+.oz-stage__seal {
+  width: 4rem;
+  height: 4rem;
+  opacity: 0.3;
+  filter: grayscale(1);
+}
+
+.oz-stage.is-complete .oz-stage__seal {
+  opacity: 1;
+  filter: none;
+}
+
+@media screen and (max-width: 44.9375em) {
+  [dir] .md-typeset ol.oz-stages > li.oz-stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oz-stage__seal {
+    display: none;
+  }
+}
+
+/* Lumo at the end of a page of the journey. */
+.md-typeset .oz-step-end__lumo {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin: 0 0 0.8rem;
+  font-size: 0.75rem;
+}
+
+.md-typeset .oz-step-end__lumo img {
+  flex: none;
+  width: 2.6rem;
+  height: 2.6rem;
+}
+
+/* Callout icons of the kit (colour drawings, not masks). */
+.md-typeset :is(.guide, .why, .lab, .checkpoint, .careful, .remember, .quiz) > :is(.admonition-title, summary)::before {
+  width: 1.1rem;
+  height: 1.1rem;
+  background: center / contain no-repeat;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
 .md-typeset .guide > :is(.admonition-title, summary)::before {
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 1h4v2h-4zM7 4h10l-2 3H9zM8 8h8v9H8zM7 18h10l-2 3H9z'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 1h4v2h-4zM7 4h10l-2 3H9zM8 8h8v9H8zM7 18h10l-2 3H9z'/%3E%3C/svg%3E");
+  background-image: url("../images/ozarland/callouts/guide-tip.svg");
 }
 
 .md-typeset .why > :is(.admonition-title, summary)::before {
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm4 6-6 2-2 6 6-2z'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm4 6-6 2-2 6 6-2z'/%3E%3C/svg%3E");
+  background-image: url("../images/ozarland/callouts/why-it-matters.svg");
 }
 
 .md-typeset .lab > :is(.admonition-title, summary)::before {
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 2h6v2h-1v5l6 10a2 2 0 0 1-2 3H6a2 2 0 0 1-2-3l6-10V4H9z'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 2h6v2h-1v5l6 10a2 2 0 0 1-2 3H6a2 2 0 0 1-2-3l6-10V4H9z'/%3E%3C/svg%3E");
+  background-image: url("../images/ozarland/callouts/try-in-lab.svg");
 }
 
 .md-typeset .checkpoint > :is(.admonition-title, summary)::before {
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 2h2v1h11l-3 4 3 4H7v11H5z'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 2h2v1h11l-3 4 3 4H7v11H5z'/%3E%3C/svg%3E");
+  background-image: url("../images/ozarland/callouts/checkpoint.svg");
+}
+
+.md-typeset .careful > :is(.admonition-title, summary)::before {
+  background-image: url("../images/ozarland/callouts/careful.svg");
+}
+
+.md-typeset .remember > :is(.admonition-title, summary)::before {
+  background-image: url("../images/ozarland/callouts/remember.svg");
+}
+
+.md-typeset .quiz > :is(.admonition-title, summary)::before {
+  background-image: url("../images/ozarland/callouts/quiz.svg");
+}
+
+.md-typeset :is(.admonition, details).careful {
+  --portal-adm-fg: var(--portal-orange-fg);
+  --portal-adm-bg: var(--portal-orange-bg);
+  --portal-adm-border: var(--portal-orange-border);
+
+  background-color: var(--portal-adm-bg);
+}
+
+.md-typeset :is(.admonition, details).remember {
+  --portal-adm-fg: var(--oz-ink);
+  --portal-adm-bg: var(--oz-parchment-soft);
+  --portal-adm-border: var(--oz-wood);
+
+  background-color: var(--portal-adm-bg);
+}
+
+.md-typeset :is(.admonition, details).quiz {
+  --portal-adm-fg: var(--portal-violet-fg);
+  --portal-adm-bg: var(--portal-violet-bg);
+  --portal-adm-border: var(--portal-violet-border);
+
+  background-color: var(--portal-adm-bg);
+}
+
+.md-typeset .oz-lumo[hidden] {
+  display: none;
 }
