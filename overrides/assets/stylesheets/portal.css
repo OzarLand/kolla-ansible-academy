@@ -2399,3 +2399,154 @@ a.portal-cta:focus-visible {
 .md-typeset .oz-lumo[hidden] {
   display: none;
 }
+
+/* ------------------------------------- 17. Definitions on hover and quizzes */
+
+.md-typeset button.oz-term {
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: help;
+  background: none;
+  border: 0;
+  border-bottom: 0.1rem dotted var(--oz-wood);
+}
+
+.md-typeset button.oz-term:hover,
+.md-typeset button.oz-term[aria-expanded="true"] {
+  border-bottom-style: solid;
+  border-bottom-color: var(--oz-wood-dark);
+}
+
+.md-typeset button.oz-term:focus-visible {
+  outline: 0.1rem solid var(--oz-lantern);
+  outline-offset: 0.1rem;
+}
+
+.oz-term-pop {
+  position: absolute;
+  z-index: 5;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: var(--portal-text);
+  background-color: var(--oz-parchment-soft);
+  border: 0.1rem solid var(--oz-wood);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.4rem 1.2rem rgb(21 42 80 / 22%);
+}
+
+.oz-term-pop[hidden] {
+  display: none;
+}
+
+.oz-term-pop p {
+  margin: 0 0 0.4rem;
+}
+
+.oz-term-pop__term {
+  font-weight: 700;
+  color: var(--oz-ink);
+}
+
+.oz-term-pop__more {
+  font-size: 0.64rem;
+  color: var(--portal-text-muted);
+}
+
+.oz-term-pop a {
+  color: var(--portal-accent);
+}
+
+.oz-term-pop code {
+  padding: 0 0.2em;
+  font-size: 0.9em;
+  background-color: var(--portal-surface-strong);
+  border-radius: 0.15rem;
+}
+
+/* Quiz: "Check yourself". */
+.md-typeset .oz-quiz {
+  max-width: 44rem;
+  margin-top: 2rem;
+}
+
+.md-typeset .oz-quiz__intro {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+}
+
+.md-typeset .oz-quiz__intro img {
+  flex: none;
+  width: 4.5rem;
+  height: auto;
+}
+
+.md-typeset fieldset.oz-quiz__q {
+  padding: 0.5rem 0.8rem 0.6rem;
+  margin: 0 0 0.8rem;
+  background-color: var(--portal-bg);
+  border: 0.05rem solid var(--portal-violet-border);
+  border-radius: 0.4rem;
+}
+
+.md-typeset .oz-quiz__q.is-right {
+  border-color: var(--portal-green-fg);
+}
+
+.md-typeset .oz-quiz__q.is-wrong {
+  border-color: var(--portal-amber-fg);
+}
+
+.md-typeset .oz-quiz__q legend {
+  padding: 0 0.3rem;
+  font-weight: 700;
+}
+
+.md-typeset label.oz-quiz__option {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.25rem 0.3rem;
+  cursor: pointer;
+  border-radius: 0.3rem;
+}
+
+.md-typeset label.oz-quiz__option:hover {
+  background-color: var(--portal-violet-bg);
+}
+
+.md-typeset .oz-quiz__option input {
+  accent-color: var(--portal-violet-fg);
+}
+
+.md-typeset details.oz-quiz__answer {
+  padding: 0 0.6rem;
+  margin: 0.4rem 0 0;
+  font-size: inherit;
+  background-color: var(--portal-surface);
+  border: 0;
+  border-radius: 0.3rem;
+}
+
+.md-typeset details.oz-quiz__answer > summary {
+  font-size: 0.64rem;
+  color: var(--portal-text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.md-typeset details.oz-quiz__answer > summary::before {
+  background-color: var(--portal-text-muted);
+}
+
+.oz-quiz__q.is-right [data-oz-feedback] {
+  color: var(--portal-green-fg);
+}
+
+.oz-quiz__q.is-wrong [data-oz-feedback] {
+  color: var(--portal-amber-fg);
+}

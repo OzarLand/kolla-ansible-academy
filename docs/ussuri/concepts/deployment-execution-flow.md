@@ -2,6 +2,22 @@
 title: Deployment execution flow
 description: "How Kolla-Ansible Ussuri decides what runs when: play order, steps inside a role, handler flush points, batching, and how the actions differ."
 tags: [deploy, reconfigure, upgrade, deploy-containers, genconfig, pull, stop, handlers, serial, one-shot, nova]
+quiz:
+  - q: "In which order do the restart handlers of a play run?"
+    options: ["In the order the tasks notified them", "In the order the handlers are defined", "In alphabetical order of the containers"]
+    answer: 1
+    explain: "Restart order is handler definition order, not notification order <span class=\"ev ev-code\">CODE</span>, and the handlers of a play run on all notified hosts in parallel."
+    see: "7-dependencies-introduced-by-handlers"
+  - q: "Which built-in sequence separates \"write the config\" from \"apply it\"?"
+    options: ["<code>pull</code>, then <code>deploy</code>", "<code>genconfig</code>, then <code>deploy-containers --limit &lt;batch&gt;</code>", "<code>precheck</code>, then <code>reconfigure</code>"]
+    answer: 1
+    explain: "It is the only built-in way to separate the two steps; the action matrix says what each action does."
+    see: "4-action-matrix-what-each-kolla_action-does"
+  - q: "Does <code>reconfigure</code> on a running cloud run the DB sync containers?"
+    options: ["No, only <code>deploy</code> runs them", "Yes, of keystone, glance, cinder, placement, nova, heat and others", "Only for Neutron"]
+    answer: 1
+    explain: "<code>reconfigure</code> still runs the DB sync containers <span class=\"ev ev-code\">CODE</span>; Neutron's DB sync is skipped by default."
+    see: "6-initial-deployment-vs-reconfiguration-what-actually-differs"
 ---
 
 # Deployment execution flow

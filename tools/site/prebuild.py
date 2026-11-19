@@ -39,7 +39,11 @@ Properties of updates.json:
   CI, for exact dates);
 * standard library only.
 
-Both outputs are generated: they are git-ignored and must not be edited.
+3. ``docs/<id>/assets/data/glossary.json``, one per available release: the
+   terms of the release's glossary, for the definitions shown on hover
+   (tools/site/glossary.py describes the file).
+
+These outputs are generated: they are git-ignored and must not be edited.
 
 Usage (from anywhere):
 
@@ -62,6 +66,7 @@ from pathlib import Path
 # The registry of releases lives next to this file.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import releases  # noqa: E402
+import glossary  # noqa: E402
 from releases import INDEX_NAMES, SKIPPED_TOP_DIRS, page_url  # noqa: E402,F401
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -301,6 +306,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     for docs_dir in docs_dirs:
         write_updates(root, docs_dir)
+        glossary.write_glossary(root, docs_dir)
     return 0
 
 

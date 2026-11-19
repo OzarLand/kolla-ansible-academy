@@ -40,6 +40,10 @@
   <meta name="twitter:card" content="summary_large_image">
   {% if config.extra.portal.kind == "release" %}
     <meta name="portal-updates" content="{{ 'assets/data/updates.json' | url }}">
+    {#- Definitions on hover (learning.js), except on the glossary itself. -#}
+    {% if page and page.url != "reference/glossary/" %}
+      <meta name="portal-glossary" content="{{ 'assets/data/glossary.json' | url }}">
+    {% endif %}
   {% endif %}
   {#-
     Mermaid is vendored and loaded only on pages that contain a diagram.
@@ -144,6 +148,35 @@
 
   {#- What a page template adds after the Markdown (overrides/journey.html). -#}
   {% block page_extra %}{% endblock %}
+
+  {#- "Check yourself": the `quiz` of the front matter, a list of
+      {q, options, answer (index from 0), explain, see (anchor of the page)}.
+      The texts may hold inline HTML (<code>). Every answer restates what the
+      section `see` establishes; learning.js gives the feedback. -#}
+  {% if page.meta and page.meta.quiz %}
+    <section class="admonition quiz oz-quiz" aria-labelledby="check-yourself">
+      <p class="admonition-title" id="check-yourself">Check yourself</p>
+      <div class="oz-quiz__intro">
+        <img src="{{ 'assets/images/ozarland/lumo/thinking.webp' | url }}" width="400" height="400" alt="">
+        <p><strong>Lumo:</strong> {{ page.meta.quiz | length }} quick questions to check the main ideas of this page.
+        Nothing is recorded: choose an answer to see the explanation and the section that gives the evidence.</p>
+      </div>
+      {% for item in page.meta.quiz %}
+        {% set qn = loop.index %}
+        <fieldset class="oz-quiz__q" data-oz-quiz-answer="{{ item.answer }}">
+          <legend>{{ qn }}. {{ item.q | safe }}</legend>
+          {% for option in item.options %}
+            <label class="oz-quiz__option"><input type="radio" name="oz-quiz-{{ qn }}" value="{{ loop.index0 }}"> <span>{{ option | safe }}</span></label>
+          {% endfor %}
+          <details class="oz-quiz__answer">
+            <summary>Show the answer</summary>
+            <p><strong data-oz-feedback hidden></strong><strong>Answer:</strong> {{ item.options[item.answer] | safe }}. {{ item.explain | safe }}
+            <a href="#{{ item.see }}">Read the section</a>.</p>
+          </details>
+        </fieldset>
+      {% endfor %}
+    </section>
+  {% endif %}
 
   {#- End of a journey page: mark as read (learning.js) and the next step. -#}
   {% if oz.found %}

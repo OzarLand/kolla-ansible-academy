@@ -309,3 +309,26 @@ A page can set another one in its front matter: `level: discover`, `practise` or
 
 The journey adds no technical statement: its texts only say what each stage covers and link to the pages, which keep
 their evidence labels.
+
+## Definitions on hover and quizzes
+
+**Definitions.** The first time a term of the glossary appears on a page, the reader can hover, focus or click it to
+see its meaning and the section that defines it. The data is generated at build time from the table of
+`docs/<id>/reference/glossary.md` (`tools/site/glossary.py`, written to `docs/<id>/assets/data/glossary.json`, which
+is git-ignored): to add or fix a definition, edit the glossary row. A term in lower-case words ("drift", "one-shot
+container") is matched in the text; any other term, and the parts in parentheses, only as a whole code span.
+
+**Quizzes.** A page can end with a "Check yourself" block: a `quiz` list in its front matter.
+
+```yaml
+quiz:
+  - q: "How is a configuration change applied to a running container?"
+    options: ["The service reloads its configuration", "By a full stop and start"]
+    answer: 1                    # index of the right option, from 0
+    explain: "Restates what the section establishes; inline HTML such as <code> is allowed."
+    see: "43-the-config--check--handler-pattern"   # anchor of the section on this page
+```
+
+A quiz only restates what the page already establishes, with the same evidence, and `see` points to the section
+that gives it (check_site checks the anchor). The answers differ between releases when the code does: write each
+release's quiz from its own page.

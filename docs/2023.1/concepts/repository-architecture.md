@@ -2,6 +2,22 @@
 title: Repository architecture
 description: "How Kolla-Ansible 2023.1 is built: entry points, from CLI command to ansible-playbook, site.yml, role anatomy, custom modules, the collection."
 tags: [deploy, reconfigure, genconfig, handlers, kolla-set-configs, serial, images, inventory, docker]
+quiz:
+  - q: "How is a configuration change applied to a running container?"
+    options: ["The service reloads its configuration inside the container", "By a full stop and start: the container is recreated or restarted", "At the next reboot of the host"]
+    answer: 1
+    explain: "A config change is applied by a full stop/start, never a reload: the restart handler recreates the container when the image or parameters differ and otherwise restarts it <span class=\"ev ev-code\">CODE</span>."
+    see: "43-the-config--check--handler-pattern"
+  - q: "A rebuilt image is pushed under the same tag. Does <code>reconfigure</code> use it?"
+    options: ["Yes, <code>reconfigure</code> always pulls the images", "No: <code>deploy</code> and <code>reconfigure</code> pull an image only if it is absent locally"]
+    answer: 1
+    explain: "Using the rebuilt image takes an explicit <code>pull</code> <span class=\"ev ev-code\">CODE</span>."
+    see: "6-custom-modules--container-lifecycle-via-kolla_docker"
+  - q: "How long does Kolla-Ansible wait when it stops a container?"
+    options: ["10 s", "60 s, the value of <code>docker_graceful_timeout</code>", "It does not wait"]
+    answer: 1
+    explain: "The 60 s of <code>docker_graceful_timeout</code> reaches the module and is written into each container's systemd unit (<code>docker stop -t 60</code>) <span class=\"ev ev-code\">CODE</span>. The Ussuri bug that forced 10 s is fixed."
+    see: "6-custom-modules--container-lifecycle-via-kolla_docker"
 ---
 
 # Repository architecture

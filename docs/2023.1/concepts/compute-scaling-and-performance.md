@@ -2,6 +2,22 @@
 title: Compute scaling and performance
 description: Which Kolla-Ansible 2023.1 operations grow with the number of compute nodes, why, and how to bound them.
 tags: [scaling, nova, limit, serial, facts, loop-notify, pull, images]
+quiz:
+  - q: "Does this study give how long a run takes?"
+    options: ["Yes, measured on a lab", "No: work is counted as operations read from the source"]
+    answer: 1
+    explain: "Task-result totals and wall times are NOT AVAILABLE: nothing was run against a host."
+    see: "2-work-per-compute-host-read-from-the-task-files"
+  - q: "What do more computes add to a play?"
+    options: ["More tasks on each host", "More waves: ⌈H/F⌉, with H hosts and F forks"]
+    answer: 1
+    explain: "The critical path of a play is the number of executed task-items on the slowest host × ⌈H/F⌉ waves."
+    see: "41-model"
+  - q: "Does <code>--limit</code> reduce fact gathering?"
+    options: ["Yes, facts are gathered only on the limited hosts", "No: <code>--limit</code> bounds the restarts, but fact gathering stays O(inventory)"]
+    answer: 1
+    explain: "Read from the code <span class=\"ev ev-code\">CODE</span>."
+    see: "6-scaling-at-3-10-and-30-computes-read-from-the-code"
 ---
 
 # Compute scaling and performance

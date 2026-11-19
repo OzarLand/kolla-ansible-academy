@@ -2,6 +2,22 @@
 title: "Kolla images: start path and one-shot containers"
 description: What the kolla images do when a container starts, what kolla_set_configs --check compares, and what the one-shot containers run.
 tags: [images, kolla-set-configs, one-shot, libvirt, neutron, horizon, placement, heat]
+quiz:
+  - q: "What does every container start run before the service command?"
+    options: ["<code>kolla_set_configs</code>, <code>kolla_copy_cacerts</code> and the image's <code>kolla_extend_start</code>", "Nothing: the service command starts at once", "A pull of the image"]
+    answer: 0
+    explain: "<code>kolla_start</code> runs these three steps, then execs the service command."
+    see: "22-kolla_start-step-by-step"
+  - q: "What does <code>kolla_set_configs --check</code> compare?"
+    options: ["Every key of <code>config.json</code>, <code>command</code> included", "Only the <code>config_files</code> entries of <code>config.json</code> (content, mode, owner)"]
+    answer: 1
+    explain: "It never compares <code>command</code>, <code>permissions</code> or removed entries <span class=\"ev ev-code\">CODE</span>."
+    see: "31-what-is-compared"
+  - q: "A file is removed from the configuration of a <code>COPY_ALWAYS</code> container. Does a restart remove it?"
+    options: ["No: removals do not apply", "Yes, every removal applies"]
+    answer: 0
+    explain: "A <code>COPY_ALWAYS</code> restart applies changed or added files, mode and owner changes and a changed command <span class=\"ev ev-code\">CODE</span>; removals do not apply."
+    see: "35-what-a-restart-applies"
 ---
 
 # Kolla images: start path and one-shot containers
