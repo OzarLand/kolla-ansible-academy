@@ -225,7 +225,7 @@ class CheckSiteTest(Repo):
     def test_landing_page_opens_the_default_release(self) -> None:
         text = (self.root / "site/index.html").read_text(encoding="utf-8")
         write(self.root, "site/index.html", text.replace('data-portal-default="ussuri"', 'data-portal-default="2023.1"'))
-        self.expect("the landing page opens `2023.1`, the default release is `ussuri`")
+        self.expect("the landing page links to `2023.1`, the default release is `ussuri`")
 
     def test_redirections_of_the_not_found_page(self) -> None:
         path = self.root / "site/404.html"

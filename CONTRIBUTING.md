@@ -236,7 +236,7 @@ directory, the URL segment and the key of the registry.
    ```
 
    The order of the blocks is the order of the release selector. Leave `default` and `unprefixed` as they are:
-   `default` is the release the root address opens, and changing it is a separate decision; `unprefixed` is the release
+   `default` is the release the welcome page at the root address leads to, and changing it is a separate decision; `unprefixed` is the release
    whose pages were published without a release prefix (`ussuri`), and it does not change.
 4. **Add the release to the table** of [README.md](README.md#releases), which lists the available releases. A unit
    test compares the table with `versions.toml`.

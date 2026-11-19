@@ -4,7 +4,7 @@
 The portal is one self-contained site per release, published under its own
 URL prefix, plus a small root site:
 
-    site/index.html          landing page; opens the default release
+    site/index.html          welcome page; links to the default release
     site/404.html            not-found page of the whole portal; redirects the
                              addresses published before the portal had releases
     site/versions.json       the registry, for scripts and other tools

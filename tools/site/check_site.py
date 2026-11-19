@@ -40,7 +40,7 @@ On the site of each available release:
 On the root of the portal:
 
     portal-root        versions.json is valid and says what versions.toml
-                       says; the landing page opens the default release, which
+                       says; the landing page links to the default release, which
                        is built; the not-found page knows the same releases
                        and its list of addresses to redirect is exactly the
                        pages of the release that was published without a
@@ -667,7 +667,7 @@ class Site:
                         f"{list(registry.ids)}): build the portal again",
                     )
 
-        # Landing page: opens the default release, which must be there.
+        # Landing page: links to the default release, which must be there.
         if "index.html" not in self.files:
             error("index.html", "the landing page is missing")
         else:
@@ -678,7 +678,7 @@ class Site:
             elif match.group(1) != registry.default:
                 error(
                     "index.html",
-                    f"the landing page opens `{match.group(1)}`, the default release is `{registry.default}`",
+                    f"the landing page links to `{match.group(1)}`, the default release is `{registry.default}`",
                 )
             if f"{registry.default}/index.html" not in self.files and registry.default not in self.not_built:
                 error("index.html", f"the default release is not built: {registry.default}/index.html is missing")

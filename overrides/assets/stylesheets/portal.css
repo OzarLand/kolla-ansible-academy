@@ -1489,3 +1489,45 @@ body {
   font-size: 0.9em;
   color: var(--portal-text-muted);
 }
+
+/* Landing page of the portal: the calls to action of the hero. */
+.portal-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1.4rem 0 0;
+}
+
+.portal-cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.2rem;
+  padding: 0 1rem;
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--portal-text);
+  text-decoration: none;
+  background-color: var(--portal-bg);
+  border: 0.05rem solid var(--portal-border-strong);
+  border-radius: 0.3rem;
+}
+
+.portal-cta:hover {
+  border-color: var(--portal-accent);
+}
+
+.portal-cta:focus-visible {
+  outline: 0.1rem solid var(--portal-accent);
+  outline-offset: 0.1rem;
+}
+
+.portal-cta--primary {
+  color: var(--portal-bg);
+  background-color: var(--portal-accent);
+  border-color: var(--portal-accent);
+}
+
+.portal-cta--primary:hover {
+  color: var(--portal-bg);
+  filter: brightness(1.1);
+}

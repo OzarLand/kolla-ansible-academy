@@ -1,14 +1,16 @@
 {#-
   The releases of versions.toml as two lists, available then planned. Used by
   the pages of the root site: landing page, not-found page, planned releases.
+  `release_heading` sets the level of the two headings (default 2).
 -#}
+{% set h = "h" ~ (release_heading | d(2)) %}
 {% set portal = config.extra.portal %}
 {% set root = base_url ~ "/" ~ portal.up %}
 {% set counts = namespace(planned=0) %}
 {% for release in portal.releases if release.status == "planned" %}
   {% set counts.planned = counts.planned + 1 %}
 {% endfor %}
-<h2 id="available">Available</h2>
+<{{ h }} id="available">Available</{{ h }}>
 <ul class="portal-releases">
   {% for release in portal.releases if release.status != "planned" %}
     <li>
@@ -18,7 +20,7 @@
   {% endfor %}
 </ul>
 {% if counts.planned %}
-  <h2 id="coming-soon">Coming soon</h2>
+  <{{ h }} id="coming-soon">Coming soon</{{ h }}>
   <p>The study of these releases is not available yet.</p>
   <ul class="portal-releases portal-releases--planned">
     {% for release in portal.releases if release.status == "planned" %}

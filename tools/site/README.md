@@ -30,7 +30,7 @@ moves an existing address. How to add a release is in [CONTRIBUTING.md](../../CO
 
 | Source | What it is |
 |---|---|
-| `versions.toml` | The registry: one `[[release]]` block per release (`id`, `status`, `openstack`, `kolla_ansible`, `tag`, optional `title`), plus `default` (the release the root address opens) and `unprefixed` (the release whose pages were published without a prefix). Every tool reads it; nothing else lists the releases. |
+| `versions.toml` | The registry: one `[[release]]` block per release (`id`, `status`, `openstack`, `kolla_ansible`, `tag`, optional `title`), plus `default` (the release the welcome page leads to) and `unprefixed` (the release whose pages were published without a prefix). Every tool reads it; nothing else lists the releases. |
 | `zensical.base.toml` | The site configuration shared by all releases: theme, palette, Markdown extensions, validation, the address of the portal root. It is not given to Zensical as it is. |
 | `docs/<id>/` | The Markdown of an available release. |
 | `docs/<id>.toml` | The settings of that release: `site_description` and `nav`. Its `[project]` table is merged over the one of `zensical.base.toml`: tables are merged, lists and plain values replace those of the base. |
@@ -47,7 +47,7 @@ What the build writes (all git-ignored):
 | `docs/<id>/assets/data/updates.json` | Written by `prebuild.py`. |
 | `site/<id>/` | Site of an available release. |
 | `site/<id>/index.html` | The only page of a planned release ("coming soon"). |
-| `site/index.html` | Landing page. With JavaScript it opens the default release at once, query and fragment kept; without, it lists the releases. |
+| `site/index.html` | Welcome page (overrides/landing.html): why the project exists (to make learning easier), a suggested learning path in the default release, and the list of the releases. |
 | `site/404.html` | Not-found page of the whole portal (GitHub Pages serves it for every unknown address). See below. |
 | `site/versions.json` | The registry as JSON, in the form the tool `mike` writes (`version`, `title`, `aliases`), with `status`, `default`, `openstack`, `kolla_ansible` and `tag` under `properties`. No page of the portal needs it; it is there for scripts and other tools. |
 | `site/sitemap.xml` | Index of the sitemaps of the available releases (`site/<id>/sitemap.xml`). |
@@ -61,7 +61,7 @@ directory of its configuration file, and its TOML format has no include.
 - A page of a release: `<portal address><id>/<path>/`, for example
   `https://ozarland.github.io/kolla-ansible-day2/ussuri/operations/reconfigure-nova/`. The canonical link, the sitemap
   and "View source" (`blob/main/docs/<id>/<path>.md`) follow.
-- The root address opens the default release.
+- The root address is the welcome page; its main button opens the default release.
 - An address without a release, such as `/kolla-ansible-day2/operations/reconfigure-nova/`, was published before the
   portal had releases. The not-found page redirects it to the same path under the release named by `unprefixed`
   (`/kolla-ansible-day2/ussuri/operations/reconfigure-nova/`), query and fragment kept, when that path is a page of
@@ -200,7 +200,7 @@ On the root of the portal:
 
 | Rule | Level | What is checked |
 |---|---|---|
-| `portal-root` | error | `versions.json` is valid JSON and says what `versions.toml` says. The landing page opens the default release, and that release is built. The not-found page knows the same releases with the same statuses, sends the addresses without a release to the release named by `unprefixed`, and its list of addresses to redirect is exactly the pages of that release. Every available release is built. Every planned release has its page, which names the release and says that it is not available yet, and has no other file. No directory of `site/` belongs to no release. |
+| `portal-root` | error | `versions.json` is valid JSON and says what `versions.toml` says. The landing page links to the default release (`data-portal-default`), and that release is built. The not-found page knows the same releases with the same statuses, sends the addresses without a release to the release named by `unprefixed`, and its list of addresses to redirect is exactly the pages of that release. Every available release is built. Every planned release has its page, which names the release and says that it is not available yet, and has no other file. No directory of `site/` belongs to no release. |
 
 The summary gives, for each release, the number of pages built and of search entries, then the number of pages,
 internal links, links with an anchor and element ids of the portal, and the hosts of the external links.

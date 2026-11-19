@@ -1,26 +1,124 @@
 {#-
   Root of the portal (/index.html), built from a stub that
-  tools/site/releases.py generates. With JavaScript the page opens the default
-  release at once, query and fragment kept; without it, the page lists the
-  releases.
+  tools/site/releases.py generates. The welcome page: why the project exists
+  (to make learning Kolla-Ansible Day-2 operations easier), a suggested
+  learning path in the default release, and the list of the releases. The
+  main call to action carries data-portal-default, the default release that
+  tools/site/check_site.py checks.
 -#}
 {% extends "main.html" %}
 {% set portal = config.extra.portal %}
+{% set root = base_url ~ "/" ~ portal.up %}
+{% set start = root ~ portal.default ~ "/" %}
+{% set default = namespace(title=portal.default) %}
+{% for release in portal.releases if release.id == portal.default %}
+  {% set default.title = release.title %}
+{% endfor %}
 
 {% block htmltitle %}
   <title>{{ config.site_name }}</title>
 {% endblock %}
 
-{% block extrahead %}
-  {{ super() }}
-  <script data-portal-default="{{ portal.default }}">
-    location.replace(document.currentScript.getAttribute("data-portal-default") + "/" + location.search + location.hash);
-  </script>
+{% block hero %}
+  <section class="portal-hero" aria-label="Introduction">
+    <div class="md-grid portal-hero__inner">
+      <p class="portal-hero__eyebrow">{{ config.site_author }}</p>
+      <h1 class="portal-hero__title" id="welcome">{{ config.site_name }}</h1>
+      <p class="portal-hero__lead">
+        A learning resource for Kolla-Ansible Day-2 operations. It explains, from the source code of each release,
+        what a command really does to a running OpenStack platform, so that you understand it before you run it.
+      </p>
+      <p class="portal-hero__actions">
+        <a class="portal-cta portal-cta--primary" href="{{ start }}" data-portal-default="{{ portal.default }}">Start learning with {{ default.title }}</a>
+        <a class="portal-cta" href="#releases">Choose a release</a>
+      </p>
+    </div>
+  </section>
+{% endblock %}
+
+{#- No sidebars, as on the home page of a release. The primary one stays in
+    the DOM because it is the navigation drawer on small screens. -#}
+{% block site_nav %}
+  {% if nav %}
+    <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
+      <div class="md-sidebar__scrollwrap">
+        <div class="md-sidebar__inner">
+          {% include "partials/nav.html" %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
 {% endblock %}
 
 {% block content %}
-  <h1>{{ config.site_name }}</h1>
-  <p>{{ config.site_description }}</p>
+  <h2 id="why">Why this project exists</h2>
+  <p>
+    The Kolla-Ansible documentation tells you which command to run. Operating a platform also requires knowing what
+    that command executes: which plays and tasks run, which containers can restart, and what can go wrong. That
+    knowledge is spread across playbooks, roles, handlers and container images, and it is hard to learn from them
+    directly.
+  </p>
+  <p>
+    The purpose of this project is to make that learning easier. Each release is studied from its source code and
+    explained in operator terms, page by page, from the concepts to the procedures. The goal is not only to give
+    answers, but to help you build your own understanding of how Kolla-Ansible works.
+  </p>
+
+  <h2 id="how">How it helps you learn</h2>
+  <div class="grid cards">
+    <ul>
+      <li>
+        <p><strong><a href="{{ start }}start/conventions/">Learn from the code itself</a></strong></p>
+        <hr>
+        <p>
+          A statement labelled <strong>[CODE]</strong> cites the <code>path:line</code> of the source it comes
+          from. Open the file next to the page and you learn to read the playbooks yourself.
+        </p>
+      </li>
+      <li>
+        <p><strong><a href="{{ start }}start/conventions/">Know where knowledge stops</a></strong></p>
+        <hr>
+        <p>
+          What the sources do not establish is labelled <strong>[NOT AVAILABLE]</strong> instead of being
+          guessed. You know exactly what is proven and what remains to be checked.
+        </p>
+      </li>
+      <li>
+        <p><strong><a href="{{ start }}concepts/">Understand before acting</a></strong></p>
+        <hr>
+        <p>
+          The concept pages explain the repository, the execution flow of a run and the kolla images, so that
+          the operation pages make sense rather than being recipes to copy.
+        </p>
+      </li>
+      <li>
+        <p><strong><a href="#releases">Compare the releases</a></strong></p>
+        <hr>
+        <p>
+          Each OpenStack release is a separate study with its own pages. Reading two of them shows how the
+          behaviour of Kolla-Ansible changed from one release to the next.
+        </p>
+      </li>
+    </ul>
+  </div>
+
+  <h2 id="learning-path">A suggested learning path</h2>
+  <p>In {{ default.title }}, read the pages in this order:</p>
+  <ol>
+    <li><a href="{{ start }}start/conventions/">Conventions and evidence labels</a>: how to read a page and its evidence.</li>
+    <li><a href="{{ start }}start/ten-things-to-know/">Ten things to know before a production run</a>: the essentials, each with the section that gives the evidence.</li>
+    <li><a href="{{ start }}concepts/">Architecture and concepts</a>: the repository, the execution flow of a run, compute scaling, the kolla images.</li>
+    <li><a href="{{ start }}operations/">Operations</a>: one page per Day-2 operation, with its commands, its impact and its risks.</li>
+    <li><a href="{{ start }}risk/">Risk and impact</a>: what a tag really executes and how to judge the risk of a change.</li>
+    <li><a href="{{ start }}reference/">Reference</a>: the glossary, the fact sheets and the Ansible listings, to go deeper.</li>
+  </ol>
+  <p>
+    The study is a reading of the source code: nothing in it was run against a host. Try a procedure on a test
+    platform before you use it on production.
+  </p>
+
+  <h2 id="releases">Releases</h2>
   <p>Each release is a separate study, with its own pages, navigation and search.</p>
+  {% set release_heading = 3 %}
   {% include "partials/release-lists.html" %}
 {% endblock %}
