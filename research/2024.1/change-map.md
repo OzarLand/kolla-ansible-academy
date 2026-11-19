@@ -230,7 +230,7 @@ Short IDs (X1…X18) are used in the impact table (§2).
 - **Default flipped:** `om_enable_rabbitmq_quorum_queues: true` (2024.1 `ansible/group_vars/all.yml:268`; 2023.1
   `false`, `:231`). New `om_enable_queue_manager: false` (`:269`), `om_enable_rabbitmq_transient_quorum_queue`
   (`:274`), `om_enable_rabbitmq_stream_fanout` (`:279`), `om_rabbitmq_qos_prefetch_count: "1"` (`:264`).
-  `rabbit_quorum_queue = true` is rendered in the `[oslo_messaging_rabbit]` section of 28 role templates (e.g.
+  `rabbit_quorum_queue = true` is rendered in the `[oslo_messaging_rabbit]` section of 26 templates in 24 roles (e.g.
   `ansible/roles/nova/templates/nova.conf.j2:156-165`, `ansible/roles/nova-cell/templates/nova.conf.j2:207-216`). A
   cloud that kept the 2023.1 default therefore gets a changed service config on its first 2024.1 run. What
   oslo.messaging does with existing classic queues: [NOT AVAILABLE].
