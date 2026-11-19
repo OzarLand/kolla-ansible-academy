@@ -13,6 +13,7 @@ pages under `docs/<release>/` and its own site in the portal. One release is stu
 | Release | OpenStack | Kolla-Ansible | Sources | Portal |
 |---|---|---|---|---|
 | `ussuri` | Ussuri | 10.x, tag `ussuri-eol` | [docs/ussuri/](docs/ussuri/index.md) | <https://ozarland.github.io/kolla-ansible-day2/ussuri/> |
+| `2023.1` | 2023.1 Antelope | 16.x, tag `2023.1-eol` | [docs/2023.1/](docs/2023.1/index.md) | <https://ozarland.github.io/kolla-ansible-day2/2023.1/> |
 
 These are the available releases of [versions.toml](versions.toml), the registry that every tool reads. The registry
 also lists the planned releases, from Victoria (Kolla-Ansible 11.x) onwards. A planned release has no content: the
@@ -30,6 +31,20 @@ available.
 | Ansible | 2.9.27 |
 
 All conclusions come from the Ussuri implementation, not from newer releases.
+
+## Versions studied: 2023.1
+
+| Component | Version |
+|---|---|
+| OpenStack release | 2023.1 Antelope (`openstack_release: "2023.1"`, `ansible/group_vars/all.yml:578`) |
+| Kolla-Ansible | 16.x series: tag `2023.1-eol`, commit `4891a21` |
+| Kolla (images) | tag `2023.1-eol` of `openstack/kolla`, commit `de82941` |
+| ansible-collection-kolla | tag `2023.1-eol` (`requirements.yml` pins `unmaintained/2023.1`); it holds the `bootstrap-servers` roles |
+| Ansible | ansible-core 2.14.18 (`tools/kolla-ansible:10-11` accepts 2.13 to 2.14) |
+
+The 2023.1 pages were re-studied from the Ussuri study: every Ussuri citation was looked up in the 2023.1 sources and
+every statement re-checked against them; [Method and limits](docs/2023.1/reference/method-and-limits.md) says what
+does not carry over.
 
 ## Portal
 

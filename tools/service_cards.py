@@ -16,7 +16,7 @@ release. Each page holds its card(s) between two markers:
 Only the text between the markers is rewritten. A page that lists several roles
 gets one "### <title> — role `<role>`" sub-section per role.
 
-Node types are resolved against the Ussuri example `multinode` inventory
+Node types are resolved against the example `multinode` inventory of the release
 (control / network / compute / storage / monitoring).
 """
 import glob, json, os, re, sys
@@ -134,8 +134,23 @@ CORE = [
 # Card rows: "Node types in play" = every host matched by the play's host patterns (before `enable_*` filtering);
 # "Node types running its containers" = hosts where at least one container of the role is placed (group-based
 # placement; `host_in_groups` expressions are summarised by their groups).
-cards = {}
+# Roles renamed or split in later releases; a role absent from the checkout gets
+# no card (its page then has no marker).
+RENAMED = {'haproxy': [('HAProxy + Keepalived', 'loadbalancer')],
+           'ovn': [('OVN controller', 'ovn-controller'), ('OVN databases', 'ovn-db')]}
+core = []
 for title, role, keyvars in CORE:
+    if os.path.isdir(os.path.join(A, 'roles', role)):
+        core.append((title, role, keyvars))
+    else:
+        core += [(t, r, keyvars) for t, r in RENAMED.get(role, [])
+                 if os.path.isdir(os.path.join(A, 'roles', r))]
+nova_line = next((i for i, l in enumerate(site, 1) if re.match(r'\s*-?\s*import_playbook:\s*nova\.yml', l)), '?')
+lb_includes = sum(1 for l in site if re.match(r'\s*tasks_from:\s*loadbalancer\s*$', l))
+common_deps = sum(1 for m in glob.glob(os.path.join(A, 'roles', '*', 'meta', 'main.yml'))
+                  if re.search(r'role:\s*common\b', open(m).read()))
+cards = {}
+for title, role, keyvars in core:
     rd = os.path.join(A, 'roles', role)
     d = yaml.safe_load(open(os.path.join(rd, 'defaults', 'main.yml'))) or {}
     sv = {}
@@ -182,18 +197,33 @@ for title, role, keyvars in CORE:
     pl = play_line(role)
     phosts = set()
     if role in ('nova', 'nova-cell'):
-        pl_txt = 'nova.yml (`import_playbook` at site.yml:710)'
+        pl_txt = 'nova.yml (`import_playbook` at site.yml:%s)' % nova_line
         pats = ['nova-api', 'nova-scheduler', 'nova-super-conductor'] if role == 'nova' else ['compute', 'nova-compute-ironic', 'nova-conductor', 'nova-novncproxy', 'nova-serialproxy', 'nova-spicehtml5proxy']
         tags = 'nova, nova-api(-*)' if role == 'nova' else 'nova, nova-cell(-*)'
-    elif role == 'common':
-        ndeps = sum(1 for m in glob.glob(os.path.join(A, 'roles', '*', 'meta', 'main.yml'))
-                    if re.search(r'role:\s*common\b', open(m).read()))
+    elif role == 'common' and common_deps:
+        ndeps = common_deps
         pl_txt = ('meta dependency of %d roles (not `memcached`, `multipathd` or the helper roles); runs in the first '
                   'play that reaches each host' % ndeps)
         pats = ['first play reaching each host (chrony by default)']
         tags = 'inherits the tag of the first play reaching the host (`-t common` alone is a no-op)'
         phosts = {h for h in hosts_of('all') if h != 'localhost'}
         chosts = set(phosts)
+    elif not rplays and os.path.isfile(os.path.join(A, role + '.yml')):
+        # Later releases move some services into a playbook of their own,
+        # imported by site.yml (mariadb.yml, rabbitmq.yml).
+        line = next((i for i, l in enumerate(site, 1)
+                     if re.match(r'\s*-?\s*import_playbook:\s*%s\.yml\s*$' % re.escape(role), l)), '?')
+        own = yaml.safe_load(open(os.path.join(A, role + '.yml'))) or []
+        pl_txt = '%s.yml (`import_playbook` at site.yml:%s; %d plays)' % (role, line, len(own))
+        pats, tagl = [], []
+        for p in own:
+            for h in as_list(p.get('hosts')):
+                if not str(h).startswith('&') and h not in pats:
+                    pats.append(h)
+            for t in as_list(p.get('tags')):
+                if t not in tagl:
+                    tagl.append(t)
+        tags = ', '.join(tagl)
     else:
         pl_txt = ', '.join('site.yml:%d' % i for i, l in enumerate(site, 1)
                            if l.strip() in ['- name: %s' % p['name'] for p, _ in rplays]) or '?'
@@ -206,9 +236,9 @@ for title, role, keyvars in CORE:
                 if t not in tagl:
                     tagl.append(t)
         tags = ', '.join(tagl)
-        if role == 'haproxy':
-            tags += ('; each of the 49 per-service `include_role … tasks_from: loadbalancer` tasks in this play also '
-                     'carries its service tag')
+        if role in ('haproxy', 'loadbalancer'):
+            tags += ('; each of the %d per-service `include_role … tasks_from: loadbalancer` tasks in this play also '
+                     'carries its service tag' % lb_includes)
     for p in pats:
         phosts |= hosts_of(p)
     tfiles = sorted(os.path.basename(f) for f in glob.glob(os.path.join(rd, 'tasks', '*.yml')))

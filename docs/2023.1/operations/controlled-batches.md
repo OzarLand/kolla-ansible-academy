@@ -1,0 +1,132 @@
+---
+title: Write config first, apply in controlled batches
+description: Write the configuration with genconfig, then apply it batch by batch with deploy-containers --limit, or roll a reconfigure with ANSIBLE_SERIAL.
+tags: [nova, genconfig, deploy-containers, reconfigure, serial, limit, loop-notify, kolla-set-configs]
+impact: [writes-config, restarts-on-drift]
+---
+
+# Write config first, apply in controlled batches
+
+How to write the configuration first and apply it batch by batch, with Nova as the example. `genconfig`, a review of the
+diff, then `deploy-containers --limit <batch>` is the only built-in way to separate "write the config" from "apply it"
+([Execution flow §4](../concepts/deployment-execution-flow.md#4-action-matrix-what-each-kolla_action-does)). The page
+also covers a rolling `reconfigure` with `ANSIBLE_SERIAL`.
+
+The page uses the definition of [drift](index.md#drift) of the Operations hub.
+
+> [!NOTE]
+> **Key answers**
+>
+> - **Compute changes in controlled batches:** `-t nova-cell genconfig`, then `deploy-containers --limit` batch by batch
+>   ([§1.1](#11-compute-changes-in-controlled-batches-recommended-pattern)). Rolling runs with `ANSIBLE_SERIAL`:
+>   [§1.2](#12-rolling-reconfigure-with-ansible_serial).
+
+## 1. Commands
+
+### 1.1 Compute changes in controlled batches (recommended pattern)
+
+```bash
+# 1. write the config everywhere, restart nothing
+kolla-ansible -i multinode -t nova-cell genconfig
+# 2. review: diff /etc/kolla/nova-compute/nova.conf on a sample of hosts
+# 3. apply batch by batch (only check-containers + handlers run)
+kolla-ansible -i multinode -t nova-cell deploy-containers --limit 'compute[0:9]'
+kolla-ansible -i multinode -t nova-cell deploy-containers --limit 'compute[10:19]'
+```
+
+- `deploy-containers` runs only `check-containers.yml` and the handlers it notifies. These restart each container with
+  drift written by `genconfig` and, by loop-notify, the other containers of that role on the same host [CODE
+  `roles/nova-cell/tasks/deploy-containers.yml:2`; [Tags
+  §2.4](../risk/tags.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code)].
+
+  Through `kolla_set_configs --check` it sees only drift in the files listed in `config.json`'s `config_files` (content,
+  owner, perm) [CODE kolla `docker/base/set_configs.py:165-198, :220-242, :556-559`]. It does not see changes to `config.json`'s own
+  `command`/`permissions` (e.g. memcached: empty `config_files`), and no later `deploy`/`reconfigure` restarts for those
+  either, because the `config.json` template task is then unchanged; they take effect at the next restart for another
+  reason.
+
+  A newly rendered `optional` file whose destination is not yet in the container (e.g. nova-compute's `release`) counts
+  as drift: `--check` exits 1 and the restart copies the new file (kolla `docker/base/set_configs.py:165-171`,
+  `roles/nova-cell/templates/nova-compute.json.j2:52-58`). In Ussuri the same case made `--check` exit 2 and the task
+  fail; 2023.1 no longer exempts `optional` files from the destination check ([Kolla images
+  §3](../concepts/kolla-images.md#3-kolla_set_configs---check-what-it-compares-and-its-exit-codes)).
+- Each batch restarts only its hosts. No bootstrap containers and no Keystone registration run, and the service
+  includes of the `loadbalancer` play are skipped (`nova.yml:49-51`, `site.yml:339-341`).
+- **Caveat:** `genconfig -t nova-cell` also renders the conductor and console config on controllers. Include them
+  in a batch too, or the drift stays pending there.
+- The `compute[0:9]` slice syntax is standard Ansible host-pattern slicing.
+
+### 1.2 Rolling reconfigure with `ANSIBLE_SERIAL`
+
+```bash
+ANSIBLE_SERIAL=10 kolla-ansible -i multinode -t nova reconfigure
+```
+
+- `ANSIBLE_SERIAL` reaches the plays only for `reconfigure` and `upgrade`, as `kolla_serial` (`tools/kolla-ansible:508,
+  :517`). Plays that set `serial: kolla_serial` run in batches of 10 hosts: gather-facts, common, the `loadbalancer`
+  play, all nova plays and almost every service play (`gather-facts.yml:7, :32`; `site.yml`; `nova.yml`). Not
+  batched by it: mariadb, rabbitmq and outward rabbitmq, now separate playbooks whose role plays have no `serial` and
+  whose restart plays use a fixed `serial: "33%"` (`mariadb.yml:20, :34`; `rabbitmq.yml:32, :88`; imported at
+  `site.yml:385, :438`); cyborg, which uses `serial` instead of `kolla_serial` and so ignores `ANSIBLE_SERIAL` (bug,
+  `site.yml:784`); and the helper plays (group-by, prechecks), which change nothing.
+- A `run_once` task runs once per batch of its own play. For `-t nova`, the API DB sync (`nova_api_bootstrap`,
+  `map_cell0`) and the Keystone registration are `run_once` in plays that target only controller groups (nova-api,
+  nova-scheduler, nova-super-conductor), so they repeat only if those groups are larger than the batch. The cell DB sync
+  (`nova_cell_bootstrap`) is not `run_once`: it is gated on the first nova-conductor and runs once at any serial value.
+  Compute discovery runs on the first compute of each nova-cell batch, so it repeats once per batch that contains
+  computes [CODE, [Tags §2.5](../risk/tags.md#25-run_once-with-serial-code) and
+  `nova.yml:29-39, :56-67`, `roles/nova-cell/tasks/bootstrap_service.yml:21`: with `kolla_serial=1` and the three `multinode` controllers,
+  `nova_api_bootstrap` ×3, `nova_cell_bootstrap` ×1, discovery once per compute].
+- Batches apply per play: the whole fleet passes the nova-cell play before the next play starts [CODE ansible-core 2.14.18
+  `lib/ansible/executor/playbook_executor.py:126, :181-190`].
+
+## 2. Separate "write config" from "apply" (recommended pattern)
+
+[CODE]
+
+1. `kolla-ansible -t nova genconfig` writes the new `nova.conf` on all hosts. **Zero restarts**: every container restart
+   handler has `when: kolla_action != "config"` (e.g. `roles/nova-cell/handlers/main.yml:89-90, :114-115, :167-168`).
+   The handlers without that condition are waits, checks and bootstrap steps chained from other handlers, plus swift's
+   no-op `debug` handler (`roles/swift/handlers/main.yml:2-4`). The Ussuri exception, the unguarded nova-hyperv
+   Windows-service handlers, is gone: there is no `nova-hyperv` role in 2023.1 ([Pre-execution
+   checklist](pre-execution-checklist.md)).
+2. `kolla-ansible -t nova deploy-containers --limit compute001` restarts only compute001's nova containers. Drift is
+   detected by `kolla_set_configs --check` inside `compare_container`. On compute001 its tasks make 4 remote module
+   invocations (`setup` and 3 `compare_container`: nova-libvirt, nova-ssh, nova-compute) plus the delegated fact loop
+   (`gather-facts.yml:15-22, :41-54`; `roles/nova-cell/tasks/check-containers.yml:2-22`). Ussuri made 7, because common
+   ran too through the roles' `meta` dependency; 2023.1 roles have no `meta` and common runs only in its own play,
+   tagged `common` (`site.yml:86-97`) ([Compute scaling
+   §2](../concepts/compute-scaling-and-performance.md#2-work-per-compute-host-read-from-the-task-files)), with no
+   bootstrap, no Keystone registration and no haproxy play (`roles/nova-cell/tasks/deploy-containers.yml:2`,
+   `nova.yml:49-51`, `site.yml:339-341`).
+3. Repeat per batch. Controllers (API, scheduler, conductor) are applied with their own `--limit` batch.
+
+Caveats:
+
+- Between steps 1 and 3, **any other Kolla run that reaches the nova-cell check on those hosts applies the pending
+  drift in files listed in `config_files`**: an untagged run, `-t nova` or `-t nova-cell`. Unrelated tags no longer do
+  it through common: in Ussuri every role pulled common in through `meta`, so even `-t chrony` checked the common
+  containers; in 2023.1 common runs only for an untagged run or `-t common` (`site.yml:86-97`), and the chrony role no
+  longer exists.
+- Drift confined to `config.json`'s `command` or `permissions` (e.g. memcached's `-m`/`-c`, whose `config_files` is
+  empty) is never detected: `kolla_set_configs --check` compares only `config_files` (kolla
+  `docker/base/set_configs.py:556-559`, [Kolla images
+  §3](../concepts/kolla-images.md#3-kolla_set_configs---check-what-it-compares-and-its-exit-codes)), and the template
+  task is already unchanged. No later Kolla run restarts the container for it, step 2 included. It takes effect only at
+  the next restart for another reason.
+- Hosts restarted by Docker or reboot also pick up the new config, because `COPY_ALWAYS` copies the files and rewrites
+  `/run_command` at container start (kolla `docker/base/set_configs.py:302-316, :535-541`). Keep the window short.
+
+## Related
+
+- [Execution flow §4](../concepts/deployment-execution-flow.md#4-action-matrix-what-each-kolla_action-does) — the action
+  matrix: what `genconfig` and `deploy-containers` run and skip
+- [Execution flow §5](../concepts/deployment-execution-flow.md#5-batching-serial-and-its-interaction-with-order) —
+  batching with `serial`: a batch runs the complete play before the next batch starts
+- [Tags §2.5](../risk/tags.md#25-run_once-with-serial-code) — what `run_once` tasks repeat when `serial` is set
+- [Kolla images §3](../concepts/kolla-images.md#3-kolla_set_configs---check-what-it-compares-and-its-exit-codes) — what
+  `kolla_set_configs --check` compares and what it never compares
+- [Predict and inspect a run](predict-a-run.md) — the `kolla_set_configs --check` command, to see what will restart
+  after `genconfig`
+- [Reconfigure Nova](reconfigure-nova.md) — what `-t nova reconfigure` runs and restarts
+- [R1](../risk/risk-register.md#r1) — the risk whose precautions name this pattern and `ANSIBLE_SERIAL`
