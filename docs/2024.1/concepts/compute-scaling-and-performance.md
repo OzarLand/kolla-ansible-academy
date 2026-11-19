@@ -136,7 +136,7 @@ tasks are counted at run time; the sources do not give them [NOT AVAILABLE].
 
 The 10 per compute: `fluentd`, `kolla_toolbox`, `cron` (`roles/common/defaults/main.yml:3-27`), `iscsid`
 (`roles/iscsi/defaults/main.yml:3-6`), `openvswitch_db` and `openvswitch_vswitchd`
-(`roles/openvswitch/defaults/main.yml:3-34`), `neutron_openvswitch_agent` (`roles/neutron/defaults/main.yml:26-46`;
+(`roles/openvswitch/defaults/main.yml:3-34`), `neutron_openvswitch_agent` (`roles/neutron/defaults/main.yml:26-48`;
 the other neutron agents are off on a compute by default, e.g. `neutron_enable_ovn_agent: "no"`,
 `group_vars/all.yml:1119`), `nova_libvirt`, `nova_ssh`, `nova_compute` (`roles/nova-cell/defaults/main.yml:3-63`).
 The same list drives the 10 image pulls. Still holds in 2024.1.
