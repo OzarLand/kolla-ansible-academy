@@ -1,0 +1,66 @@
+{#-
+  Learning journey of a release (front matter `template: journey.html`,
+  docs/<id>/start/learning-journey.md). The Markdown gives the introduction;
+  the stages, their pages and the levels come from `extra.journey` of
+  zensical.base.toml. assets/javascripts/learning.js fills the progress
+  (pages marked as read, kept in the reader's browser); without JavaScript the
+  page is a plain list of the stages and their pages.
+-#}
+{% extends "main.html" %}
+{% set journey = config.extra.journey %}
+{% set total = namespace(n=0) %}
+{% for stage in journey.stages %}{% set total.n = total.n + stage.pages | length %}{% endfor %}
+
+{% block page_extra %}
+  {#- Teaching callouts (styles: portal.css, section 15). -#}
+  <div class="admonition guide">
+    <p class="admonition-title">How to use the journey</p>
+    <p>Open a page of the stage you are at, read it, then tick <strong>Mark this page as read</strong> at the bottom.
+    The bar under the title of each page tells you where you are, and the buttons take you to the previous or next
+    step. Your progress is kept in this browser only: nothing is sent anywhere.</p>
+  </div>
+  <div class="admonition why">
+    <p class="admonition-title">Why this order</p>
+    <p>The first stages explain how the pages are written and what happens when a command runs. With that in mind,
+    the procedures of the later stages make sense instead of being recipes to copy.</p>
+  </div>
+  <div class="admonition lab">
+    <p class="admonition-title">Practise safely</p>
+    <p>The study is a reading of the source code: nothing in it was run against a host. Try what you learn on a
+    test platform, never first on production.</p>
+  </div>
+
+  <section class="oz-progress" data-oz-progress data-oz-release="{{ config.extra.portal.current }}" data-oz-total="{{ total.n }}" hidden aria-labelledby="your-progress">
+    <h2 id="your-progress">Your progress</h2>
+    <div class="oz-progress__bar" role="progressbar" aria-valuemin="0" aria-valuemax="{{ total.n }}" aria-valuenow="0" aria-labelledby="your-progress"><span data-oz-progress-fill></span></div>
+    <p class="oz-progress__text"><strong data-oz-progress-count>0</strong> of {{ total.n }} pages read. <span data-oz-progress-message>Start with stage 1 below.</span></p>
+    <button type="button" class="oz-progress__reset" data-oz-reset>Reset my progress</button>
+  </section>
+
+  <h2 id="levels">Three levels</h2>
+  <p>Each page of this study shows its level under its title, so that you know what to expect:</p>
+  <ul class="oz-levels">
+    <li><span class="oz-level oz-level--discover">Discover</span> the conventions, the essentials and the concepts: start here.</li>
+    <li><span class="oz-level oz-level--practise">Practise</span> the operations, the risks and troubleshooting: once the concepts are clear.</li>
+    <li><span class="oz-level oz-level--master">Master</span> the components in depth and the detailed evidence: to go further.</li>
+  </ul>
+
+  <h2 id="stages">The five stages</h2>
+  <ol class="oz-stages">
+    {% for stage in journey.stages %}
+      <li class="oz-stage" id="stage-{{ stage.id }}" data-oz-stage>
+        <img class="oz-stage__art" src="{{ ('assets/images/ozarland/' ~ stage.art ~ '.webp') | url }}" width="1200" height="750" loading="lazy" alt="{{ stage.alt }}">
+        <div class="oz-stage__body">
+          <p class="oz-stage__eyebrow">Stage {{ loop.index }} of {{ journey.stages | length }}<span class="oz-stage__done" data-oz-stage-done hidden> · completed</span></p>
+          <h3 class="oz-stage__name">{{ stage.name }}</h3>
+          <p class="oz-stage__goal">{{ stage.goal }}</p>
+          <ol class="oz-stage__pages">
+            {% for item in stage.pages %}
+              <li data-oz-page="{{ item[0] }}"><a href="{{ item[0] | url }}">{{ item[1] }}</a><span class="oz-read-mark" data-oz-read-mark hidden> read</span></li>
+            {% endfor %}
+          </ol>
+        </div>
+      </li>
+    {% endfor %}
+  </ol>
+{% endblock %}

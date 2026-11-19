@@ -294,3 +294,18 @@ The workflow [.github/workflows/docs.yml](.github/workflows/docs.yml) runs on ev
 `CONTRIBUTING.md` or the workflow itself. It runs `make docs-deps`, `make docs-check STRICT=1` and `make docs-build STRICT=1`. A pull
 request is never deployed: its built portal is uploaded as the artifact `site`, kept 7 days. On `main`, the same build is
 followed by the deployment to GitHub Pages.
+
+## Learning journey and levels
+
+The beginner path of each release ("Your learning journey", `docs/<id>/start/learning-journey.md`) is defined once, in
+`[project.extra.journey]` of `zensical.base.toml`: five stages, each with its pages (URL and title), a goal and an
+illustration. Every release must have the pages it lists. The template `overrides/journey.html` shows the stages;
+`overrides/main.html` adds, on every page it lists, the journey bar under the title, and at the end the "Mark this page
+as read" box with the previous and next steps. The progress is kept in the reader's browser only
+(`overrides/assets/javascripts/learning.js`).
+
+Every page shows a level (Discover, Practise or Master), taken from its section in `[project.extra.journey.levels]`.
+A page can set another one in its front matter: `level: discover`, `practise` or `master`.
+
+The journey adds no technical statement: its texts only say what each stage covers and link to the pages, which keep
+their evidence labels.

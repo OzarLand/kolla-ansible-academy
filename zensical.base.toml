@@ -42,7 +42,7 @@ use_directory_urls = true
 # release: they live once in overrides/assets/ and Zensical copies the static
 # files of the theme directory (custom_dir) into each built site.
 extra_css = ["assets/stylesheets/portal.css"]
-extra_javascript = ["assets/javascripts/portal.js"]
+extra_javascript = ["assets/javascripts/portal.js", "assets/javascripts/learning.js"]
 
 [project.theme]
 variant = "modern"
@@ -161,3 +161,91 @@ pymdownx.quotes.callouts = true
 # the code spans of tables, evidence chips, GitHub suffixes for repeated
 # headings, severity cell classes.
 portal_mdx = {}
+
+# Learning journey: the beginner path through the pages of a release, in five
+# stages (overrides/journey.html shows it; overrides/main.html adds the step
+# bar, the level and the "mark as read" box to the pages it lists;
+# assets/javascripts/learning.js keeps the reader's progress in the browser).
+# `pages` are page URLs relative to the release, `art` an image of
+# assets/images/ozarland/. Every release must have these pages (check_site
+# checks the links of the journey page). `level` of a page: its section's
+# level (`levels`), unless its front matter sets `level`.
+[project.extra.journey]
+page = "start/learning-journey/"
+
+[project.extra.journey.levels]
+"start/" = "discover"
+"concepts/" = "discover"
+"reference/glossary/" = "discover"
+"operations/" = "practise"
+"risk/" = "practise"
+"troubleshooting/" = "practise"
+"components/" = "master"
+"reference/" = "master"
+
+[[project.extra.journey.stages]]
+id = "discover"
+name = "Discover"
+goal = "Get your bearings: how the pages are written, the essentials, and the words used everywhere."
+art = "why-map"
+alt = "A parchment map on a wooden table traces a route from a book past server towers and check marks to a cloud emblem."
+pages = [
+  ["start/conventions/", "Conventions and evidence labels"],
+  ["start/ten-things-to-know/", "Ten things to know before a production run"],
+  ["reference/glossary/", "Glossary"],
+  ["start/find-it-fast/", "Find it fast"],
+]
+
+[[project.extra.journey.stages]]
+id = "understand"
+name = "Understand"
+goal = "See how Kolla-Ansible is built and what happens, step by step, when a command runs."
+art = "concepts"
+alt = "A brass orrery made of server racks and cloud forms fills an island library observatory."
+pages = [
+  ["concepts/repository-architecture/", "Repository architecture"],
+  ["concepts/deployment-execution-flow/", "Deployment execution flow"],
+  ["concepts/kolla-images/", "Kolla images: start path and one-shot containers"],
+  ["concepts/compute-scaling-and-performance/", "Compute scaling and performance"],
+]
+
+[[project.extra.journey.stages]]
+id = "practise"
+name = "Practise"
+goal = "Prepare a command before running it: check, predict, then apply one service or one batch at a time."
+art = "operations"
+alt = "An engineer adjusts brass server machinery at a workbench beside a parchment checklist."
+pages = [
+  ["operations/pre-execution-checklist/", "Pre-execution checklist"],
+  ["operations/predict-a-run/", "Predict and inspect a run"],
+  ["operations/reconfigure-a-service/", "Reconfigure a single service"],
+  ["operations/controlled-batches/", "Write config first, apply in controlled batches"],
+  ["operations/command-quick-lookup/", "Command quick lookup by tag"],
+]
+
+[[project.extra.journey.stages]]
+id = "judge"
+name = "Judge the risks"
+goal = "Learn what a tag really touches, why small changes can grow, and which risks and bugs are known."
+art = "risk"
+alt = "A lighthouse overlooks sailing ships navigating around coastal rocks beneath a bright sky."
+pages = [
+  ["risk/tags/", "What a tag really executes"],
+  ["risk/small-change-large-workload/", "Why a small change creates a large workload"],
+  ["risk/risk-register/", "Risk register"],
+  ["troubleshooting/known-bugs-and-limitations/", "Known bugs and limitations"],
+]
+
+[[project.extra.journey.stages]]
+id = "master"
+name = "Master"
+goal = "Go deeper: how the components depend on each other, the detailed findings, and the limits of what is known."
+art = "components"
+alt = "A white stone castle with distinct towers is connected by aqueducts carrying glowing messages."
+pages = [
+  ["components/dependencies/", "Component dependencies"],
+  ["components/nova-deep-dive/", "Nova deep dive"],
+  ["reference/findings/", "Technical findings"],
+  ["reference/method-and-limits/", "Method and limits of the study"],
+  ["troubleshooting/what-is-not-known/", "What is not known"],
+]

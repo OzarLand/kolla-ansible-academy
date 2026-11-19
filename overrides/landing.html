@@ -41,7 +41,7 @@
           what a command really does to a running OpenStack platform, so that you understand it before you run it.
         </p>
         <p class="portal-hero__actions">
-          <a class="portal-cta portal-cta--primary" href="{{ start }}" data-portal-default="{{ portal.default }}">Start learning with {{ default.title }}</a>
+          <a class="portal-cta portal-cta--primary" href="{{ start }}start/learning-journey/" data-portal-default="{{ portal.default }}">Start the learning journey</a>
           <a class="portal-cta" href="#releases">Choose a release</a>
         </p>
       </div>
@@ -129,15 +129,16 @@
 
   <div class="oz-split oz-split--reverse">
     <div>
-      <h2 id="learning-path">A suggested learning path</h2>
-      <p>In {{ default.title }}, read the pages in this order:</p>
+      <h2 id="learning-path">A learning journey in five stages</h2>
+      <p>
+        In {{ default.title }}, the <a href="{{ start }}start/learning-journey/">learning journey</a> takes you from the
+        first page to the detailed evidence. Each page tells you where you are and what to read next, and you can mark
+        the pages you have read: your progress stays in your browser.
+      </p>
       <ol class="oz-path">
-        <li><a href="{{ start }}start/conventions/">Conventions and evidence labels</a>: how to read a page and its evidence.</li>
-        <li><a href="{{ start }}start/ten-things-to-know/">Ten things to know before a production run</a>: the essentials, each with the section that gives the evidence.</li>
-        <li><a href="{{ start }}concepts/">Architecture and concepts</a>: the repository, the execution flow of a run, compute scaling, the kolla images.</li>
-        <li><a href="{{ start }}operations/">Operations</a>: one page per Day-2 operation, with its commands, its impact and its risks.</li>
-        <li><a href="{{ start }}risk/">Risk and impact</a>: what a tag really executes and how to judge the risk of a change.</li>
-        <li><a href="{{ start }}reference/">Reference</a>: the glossary, the fact sheets and the Ansible listings, to go deeper.</li>
+        {% for stage in config.extra.journey.stages %}
+          <li><a href="{{ start }}start/learning-journey/#stage-{{ stage.id }}">{{ stage.name }}</a>: {{ stage.goal }}</li>
+        {% endfor %}
       </ol>
       <p>
         The study is a reading of the source code: nothing in it was run against a host. Try a procedure on a test

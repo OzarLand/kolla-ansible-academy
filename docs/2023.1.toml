@@ -15,6 +15,7 @@ site_description = "Source-code study of Kolla-Ansible 2023.1-eol for Day-2 oper
 nav = [
   { "Home" = [
     "index.md",
+    "start/learning-journey.md",
     "start/find-it-fast.md",
     "start/ten-things-to-know.md",
     "start/conventions.md",

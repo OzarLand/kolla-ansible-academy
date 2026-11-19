@@ -85,6 +85,45 @@
     {% endif %}
   {% endset %}
 
+  {#- Learning journey (extra.journey of zensical.base.toml): the level of
+      the page, and its place in the journey when the journey lists it. -#}
+  {% set journey = config.extra.journey if config.extra.portal.kind == "release" else none %}
+  {% set oz = namespace(level=none, key="", found=false, stage=0, stage_name="", pos=0, count=0, prev=none, next=none, last=none) %}
+  {% if journey and page.url and page.url != journey.page %}
+    {% if page.meta and page.meta.level %}
+      {% set oz.level = page.meta.level %}
+    {% else %}
+      {% for key, value in journey.levels | items %}
+        {% if page.url[:key | length] == key and key | length > oz.key | length %}
+          {% set oz.key = key %}{% set oz.level = value %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+    {% for stage in journey.stages %}
+      {% set stage_index = loop.index %}
+      {% for item in stage.pages %}
+        {% if oz.found and not oz.next %}{% set oz.next = item %}{% endif %}
+        {% if item[0] == page.url %}
+          {% set oz.found = true %}{% set oz.stage = stage_index %}{% set oz.stage_name = stage.name %}
+          {% set oz.pos = loop.index %}{% set oz.count = stage.pages | length %}{% set oz.prev = oz.last %}
+        {% endif %}
+        {% set oz.last = item %}
+      {% endfor %}
+    {% endfor %}
+  {% endif %}
+  {% if oz.level or oz.found %}
+    {% set chips %}{{ chips }}
+      <div class="oz-pagebar">
+        {% if oz.level %}
+          <a class="oz-level oz-level--{{ oz.level | e }}" href="{{ journey.page | url }}#levels" title="Level of this page">{{ {"discover": "Discover", "practise": "Practise", "master": "Master"}[oz.level] | d(oz.level) }}</a>
+        {% endif %}
+        {% if oz.found %}
+          <a class="oz-step" href="{{ journey.page | url }}#stages"><span class="oz-step__label">Learning journey</span> Stage {{ oz.stage }} of {{ journey.stages | length }}: {{ oz.stage_name }} · page {{ oz.pos }} of {{ oz.count }}</a>
+        {% endif %}
+      </div>
+    {% endset %}
+  {% endif %}
+
   {#- Illustration of a section index page of a release (oz_sections). -#}
   {% set art = oz_sections[page.url] if (config.extra.portal.kind == "release" and page.url in oz_sections) else none %}
   {% if art %}
@@ -101,6 +140,27 @@
     <h1>{{ page.title | d(config.site_name, true) }}</h1>
     {{ chips }}
     {{ page.content }}
+  {% endif %}
+
+  {#- What a page template adds after the Markdown (overrides/journey.html). -#}
+  {% block page_extra %}{% endblock %}
+
+  {#- End of a journey page: mark as read (learning.js) and the next step. -#}
+  {% if oz.found %}
+    <nav class="oz-step-end" aria-label="Learning journey">
+      <label class="oz-step-end__read" data-oz-read hidden>
+        <input type="checkbox" data-oz-read-toggle data-oz-release="{{ config.extra.portal.current }}" data-oz-page="{{ page.url }}">
+        Mark this page as read
+      </label>
+      <div class="oz-step-end__links">
+        {% if oz.prev %}<a class="portal-cta" href="{{ oz.prev[0] | url }}"><span aria-hidden="true">←</span> Previous step: {{ oz.prev[1] }}</a>{% endif %}
+        {% if oz.next %}
+          <a class="portal-cta portal-cta--primary" href="{{ oz.next[0] | url }}">Next step: {{ oz.next[1] }} <span aria-hidden="true">→</span></a>
+        {% else %}
+          <a class="portal-cta portal-cta--primary" href="{{ journey.page | url }}#your-progress">You reached the end of the journey <span aria-hidden="true">→</span></a>
+        {% endif %}
+      </div>
+    </nav>
   {% endif %}
 
   {#- Filled by portal.js from assets/data/updates.json; hidden without it. -#}

@@ -1804,3 +1804,322 @@ a.portal-cta:focus-visible {
   width: 2.4rem;
   height: 2.4rem;
 }
+
+/* ------------------------------------------------- 15. Learning journey
+   Levels, the journey bar of a page, "mark as read", the journey page and
+   the teaching callouts (!!! guide, why, lab, checkpoint). */
+
+.oz-pagebar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
+  align-items: center;
+  margin: -0.4rem 0 1rem;
+}
+
+.md-typeset .oz-level {
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: center;
+  padding: 0.1rem 0.6rem 0.1rem 0.45rem;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  text-transform: uppercase;
+  border: 0.05rem solid;
+  border-radius: 1rem;
+}
+
+.md-typeset .oz-level::before {
+  width: 0.55rem;
+  height: 0.55rem;
+  content: "";
+  background-color: currentcolor;
+  border-radius: 50%;
+}
+
+.md-typeset .oz-level--discover {
+  color: var(--portal-green-fg);
+  background-color: var(--portal-green-bg);
+  border-color: var(--portal-green-border);
+}
+
+.md-typeset .oz-level--practise {
+  color: var(--portal-amber-fg);
+  background-color: var(--portal-amber-bg);
+  border-color: var(--portal-amber-border);
+}
+
+.md-typeset .oz-level--master {
+  color: var(--portal-violet-fg);
+  background-color: var(--portal-violet-bg);
+  border-color: var(--portal-violet-border);
+}
+
+.md-typeset a.oz-step {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.15rem 0.7rem;
+  font-size: 0.66rem;
+  color: var(--oz-ink);
+  text-decoration: none;
+  background-color: var(--oz-parchment-soft);
+  border: 0.05rem solid var(--oz-wood);
+  border-radius: 1rem;
+}
+
+.md-typeset a.oz-step:hover {
+  border-color: var(--oz-wood-dark);
+}
+
+.oz-step__label {
+  font-weight: 700;
+}
+
+/* End of a journey page. */
+.md-typeset .oz-step-end {
+  max-width: 44rem;
+  padding: 0.9rem 1rem;
+  margin: 2rem 0 1rem;
+  background-color: var(--oz-parchment-soft);
+  border: 0.05rem solid var(--oz-wood);
+  border-left: 0.3rem solid var(--oz-wood);
+  border-radius: 0.4rem;
+}
+
+.oz-step-end__read {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.oz-step-end__read[hidden] {
+  display: none;
+}
+
+.oz-step-end__read input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--portal-green-fg);
+}
+
+.oz-step-end__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.md-typeset .oz-step-end__links a.portal-cta {
+  gap: 0.4rem;
+  height: auto;
+  min-height: 2.2rem;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+/* Journey page: progress. */
+.md-typeset .oz-progress {
+  max-width: 44rem;
+  padding: 0.2rem 1rem 1rem;
+  margin: 1.4rem 0;
+  background-color: var(--oz-parchment-soft);
+  border: 0.05rem solid var(--oz-wood);
+  border-radius: 0.6rem;
+}
+
+.md-typeset .oz-progress > h2 {
+  padding-top: 0;
+  margin-top: 0.8rem;
+  border-top: 0;
+}
+
+.oz-progress__bar {
+  height: 0.7rem;
+  overflow: hidden;
+  background-color: var(--portal-surface-strong);
+  border-radius: 1rem;
+}
+
+.oz-progress__bar > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--oz-sea), var(--portal-green-fg));
+  border-radius: 1rem;
+  transition: width 0.3s ease;
+}
+
+.oz-progress.is-complete .oz-progress__bar > span {
+  background: linear-gradient(90deg, var(--oz-lantern), var(--portal-green-fg));
+}
+
+.oz-progress__reset {
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.66rem;
+  color: var(--portal-text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+
+.md-typeset ul.oz-levels {
+  padding: 0;
+  margin-left: 0;
+  list-style: none;
+}
+
+[dir] .md-typeset ul.oz-levels > li {
+  margin: 0 0 0.5rem;
+}
+
+/* Journey page: stages. */
+.md-typeset ol.oz-stages {
+  display: grid;
+  gap: 1.2rem;
+  max-width: 56rem;
+  padding: 0;
+  margin-left: 0;
+  list-style: none;
+}
+
+[dir] .md-typeset ol.oz-stages > li.oz-stage {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 1fr);
+  gap: 1.2rem;
+  align-items: start;
+  padding: 1rem;
+  margin: 0;
+  background-color: var(--portal-bg);
+  border: 0.05rem solid var(--portal-border);
+  border-top: 0.2rem solid var(--oz-wood);
+  border-radius: 0.6rem;
+}
+
+.md-typeset .oz-stage.is-complete {
+  border-top-color: var(--portal-green-fg);
+}
+
+.oz-stage__art {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 0.5rem;
+}
+
+@media screen and (max-width: 44.9375em) {
+  [dir] .md-typeset ol.oz-stages > li.oz-stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oz-stage__art {
+    aspect-ratio: 12 / 5;
+  }
+}
+
+.md-typeset .oz-stage__eyebrow {
+  margin: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--oz-wood-dark);
+  text-transform: uppercase;
+}
+
+.oz-stage.is-complete .oz-stage__done {
+  color: var(--portal-green-fg);
+}
+
+.md-typeset .oz-stage__name {
+  margin: 0.2rem 0 0.3rem;
+  font-size: 1rem;
+}
+
+.md-typeset .oz-stage__goal {
+  margin: 0 0 0.6rem;
+  color: var(--portal-text-muted);
+}
+
+.md-typeset ol.oz-stage__pages {
+  margin: 0 0 0 1.1rem;
+  list-style-type: decimal;
+}
+
+[dir] .md-typeset ol.oz-stage__pages > li {
+  margin: 0 0 0.25rem;
+}
+
+.md-typeset .oz-stage__pages li.is-read > a {
+  color: var(--portal-text-muted);
+}
+
+.oz-read-mark {
+  margin-left: 0.4rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--portal-green-fg);
+  text-transform: uppercase;
+}
+
+.oz-read-mark::before {
+  content: "\2713";
+}
+
+/* Teaching callouts: !!! guide, !!! why, !!! lab, !!! checkpoint. */
+.md-typeset :is(.admonition, details).guide {
+  --portal-adm-fg: var(--oz-ink);
+  --portal-adm-bg: var(--oz-parchment-soft);
+  --portal-adm-border: var(--oz-wood);
+}
+
+.md-typeset :is(.admonition, details).why {
+  --portal-adm-fg: var(--portal-blue-fg);
+  --portal-adm-bg: var(--portal-blue-bg);
+  --portal-adm-border: var(--portal-blue-border);
+}
+
+.md-typeset :is(.admonition, details).lab {
+  --portal-adm-fg: var(--portal-teal-fg);
+  --portal-adm-bg: var(--portal-teal-bg);
+  --portal-adm-border: var(--portal-teal-border);
+}
+
+.md-typeset :is(.admonition, details).checkpoint {
+  --portal-adm-fg: var(--portal-green-fg);
+  --portal-adm-bg: var(--portal-green-bg);
+  --portal-adm-border: var(--portal-green-border);
+}
+
+.md-typeset :is(.admonition, details):is(.guide, .why, .lab, .checkpoint) {
+  background-color: var(--portal-adm-bg);
+}
+
+.md-typeset .guide > :is(.admonition-title, summary)::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 1h4v2h-4zM7 4h10l-2 3H9zM8 8h8v9H8zM7 18h10l-2 3H9z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 1h4v2h-4zM7 4h10l-2 3H9zM8 8h8v9H8zM7 18h10l-2 3H9z'/%3E%3C/svg%3E");
+}
+
+.md-typeset .why > :is(.admonition-title, summary)::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm4 6-6 2-2 6 6-2z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm4 6-6 2-2 6 6-2z'/%3E%3C/svg%3E");
+}
+
+.md-typeset .lab > :is(.admonition-title, summary)::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 2h6v2h-1v5l6 10a2 2 0 0 1-2 3H6a2 2 0 0 1-2-3l6-10V4H9z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 2h6v2h-1v5l6 10a2 2 0 0 1-2 3H6a2 2 0 0 1-2-3l6-10V4H9z'/%3E%3C/svg%3E");
+}
+
+.md-typeset .checkpoint > :is(.admonition-title, summary)::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 2h2v1h11l-3 4 3 4H7v11H5z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 2h2v1h11l-3 4 3 4H7v11H5z'/%3E%3C/svg%3E");
+}
