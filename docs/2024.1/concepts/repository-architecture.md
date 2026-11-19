@@ -225,8 +225,10 @@ Facts about the structure [CODE, `ansible/site.yml`]:
    - **Exceptions:** the setup plays `Group hosts based on configuration` and `Apply role prechecks`
      (`site.yml:7-86`) have no `serial` key. **Changed in 2024.1:** the `etcd` play has no `serial` key either
      (`site.yml:470-481`). Outside `upgrade` (and `config`), etcd's handlers restart the non-leaders in four
-     index-modulo-4 waves, then the leader (`roles/etcd/handlers/main.yml:40-65`); on `upgrade` the non-leaders are
-     restarted one by one, looping over the `etcd` group (`:28-36`). MariaDB and RabbitMQ are not single plays: their *apply* and
+     index-modulo-4 waves, then the leader (`roles/etcd/handlers/main.yml:40-65`); on `upgrade` a handler loops
+     over the `etcd` group for the non-leaders without using the loop item, so each non-leader includes the restart
+     tasks once per etcd member (`:28-36`); its comment says "one by one", but whether the members really restart one
+     after another depends on how ansible-core orders those includes across hosts, which is [NOT AVAILABLE]. MariaDB and RabbitMQ are not single plays: their *apply* and
      *post-configuration* plays have no `serial` key (all members in one batch), while their *restart* plays use a
      fixed `serial: "33%"` that `ANSIBLE_SERIAL` does not change (`mariadb.yml:18-52`, `rabbitmq.yml:30-49`). The
      handlers only sort hosts into the `mariadb_restart`/`rabbitmq_restart` groups; the restart itself happens in
