@@ -2,6 +2,21 @@
 title: Nova deep dive
 description: Nova in depth, with its two roles and ten plays, its dependencies, what restarts what, the nova_libvirt restart, live migration, consoles and the upgrade path.
 tags: [nova, libvirt, dependencies, loop-notify, one-shot, upgrade, unknowns]
+scenarios:
+  - title: "Upgrading Nova on 40 computes"
+    situation: "You are about to run <code>kolla-ansible upgrade</code> for Nova on a cloud with 40 computes. To save time, a colleague suggests skipping <code>kolla-ansible pull</code>: \"the hosts will fetch the new images during the upgrade anyway\"."
+    ask: "What would you do?"
+    choices:
+      - text: "Run <code>kolla-ansible pull</code> first, then <code>upgrade</code> with <code>ANSIBLE_SERIAL</code> set."
+        verdict: "best"
+        why: "The image pull is not part of <code>upgrade</code>; the page says: run <code>kolla-ansible pull</code> first. In the rolling upgrade, restarts happen per batch only if <code>ANSIBLE_SERIAL</code> is set."
+      - text: "Run <code>kolla-ansible pull</code> first, then <code>upgrade</code> without <code>ANSIBLE_SERIAL</code>."
+        verdict: "risky"
+        why: "Pulling first is right, but restarts happen per batch only if <code>ANSIBLE_SERIAL</code> is set: the TODO in <code>rolling_upgrade.yml</code> admits they are not serialised."
+      - text: "Skip <code>pull</code> and run <code>upgrade</code> directly, as suggested."
+        verdict: "avoid"
+        why: "The image pull is not part of <code>upgrade</code>: <code>start_container</code> pulls only if the image is absent. Otherwise each host downloads lazily during the handler phase, which lengthens every restart window."
+    see: "7-upgrade-path-specifics"
 quiz:
   - q: "A change of nova-compute's <code>nova.conf</code> is applied. Which containers restart on the compute?"
     options: ["<code>nova_compute</code>, and through loop-notify <code>nova_libvirt</code> and <code>nova_ssh</code>", "Only <code>nova_compute</code>"]

@@ -338,3 +338,29 @@ The score counts the first choice of each question. `learning.js` keeps the best
 browser (`kolla-ansible-academy:quiz:<release>`); the journey page shows it next to the page, with a "Continue where you
 left off" link (`overrides/partials/resume.html`, also on the release home) to the first page not yet marked as read.
 "Reset my progress" forgets both.
+
+**Scenarios.** Before the quiz, a page can hold "What would you do?": a `scenarios` list in its front matter, each a
+situation from a real platform with three possible actions.
+
+```yaml
+scenarios:
+  - title: "Short title of the situation"
+    situation: "Two to four sentences, in the second person."
+    ask: "What would you do?"
+    choices:
+      - text: "One action"
+        verdict: "risky"
+        why: "Why, restating the page."
+      - text: "Another action"
+        verdict: "best"
+        why: "..."
+      - text: "A third action"
+        verdict: "avoid"
+        why: "..."
+    see: "anchor-of-a-section"
+```
+
+Exactly one choice is `best`; the others are `risky` (works, with a risk the page describes) or `avoid` (contradicted
+by the page). The situation may be invented, the technical facts may not: every `why` restates the page with its
+evidence labels, and a destructive action on production is never the best choice. Scenarios are on the operation and
+risk pages and on the Nova deep dive.

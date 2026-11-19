@@ -201,6 +201,48 @@
   {#- What a page template adds after the Markdown (overrides/journey.html). -#}
   {% block page_extra %}{% endblock %}
 
+  {#- "What would you do?": the `scenarios` of the front matter, a list of
+      {title, situation, ask (optional), choices: [{text, verdict (best,
+      risky or avoid), why}], see (anchor of a section of the page,
+      optional)}. Exactly one choice is "best"; every `why` restates what the
+      page establishes. learning.js shows the verdict of the chosen action;
+      without JavaScript every choice stays explained one click away. -#}
+  {% if page.meta and page.meta.scenarios %}
+    {% set verdicts = {"best": "Best choice", "risky": "Works, but risky", "avoid": "Avoid"} %}
+    <section class="admonition scenario oz-scenarios" aria-labelledby="what-would-you-do">
+      <p class="admonition-title" id="what-would-you-do">What would you do?</p>
+      <div class="oz-quiz__intro">
+        <img src="{{ 'assets/images/ozarland/lumo/lab.webp' | url }}" width="400" height="400" alt="">
+        <p><strong>Lumo:</strong> a situation you could meet on a real platform, and three ways to react. Pick the one
+        you would choose: I will tell you what this page says about it. Nothing is recorded.</p>
+      </div>
+      {% for sc in page.meta.scenarios %}
+        {% set sn = loop.index %}
+        <fieldset class="oz-scenario" data-oz-scenario>
+          <legend>{% if page.meta.scenarios | length > 1 %}Scenario {{ sn }}: {% endif %}{{ sc.title | safe }}</legend>
+          <p class="oz-scenario__situation">{{ sc.situation | safe }}</p>
+          <p class="oz-scenario__ask">{{ sc.ask | d("What would you do?", true) | safe }}</p>
+          {% for ch in sc.choices %}
+            <label class="oz-quiz__option"><input type="radio" name="oz-scenario-{{ sn }}" value="{{ loop.index0 }}"> <span>{{ ch.text | safe }}</span></label>
+            <div class="oz-scenario__feedback oz-scenario__feedback--{{ ch.verdict }}" data-oz-scenario-feedback="{{ loop.index0 }}" hidden>
+              <p><strong class="oz-verdict oz-verdict--{{ ch.verdict }}">{{ verdicts[ch.verdict] }}.</strong> {{ ch.why | safe }}
+              {% if sc.see %}<a href="#{{ sc.see }}">Read the section</a>.{% endif %}</p>
+            </div>
+          {% endfor %}
+          <details class="oz-quiz__answer">
+            <summary>See every choice explained</summary>
+            <ul class="oz-scenario__all">
+              {% for ch in sc.choices %}
+                <li><strong class="oz-verdict oz-verdict--{{ ch.verdict }}">{{ verdicts[ch.verdict] }}:</strong> {{ ch.text | safe }}. {{ ch.why | safe }}</li>
+              {% endfor %}
+            </ul>
+            {% if sc.see %}<p><a href="#{{ sc.see }}">Read the section</a>.</p>{% endif %}
+          </details>
+        </fieldset>
+      {% endfor %}
+    </section>
+  {% endif %}
+
   {#- "Check yourself": the `quiz` of the front matter, a list of
       {q, options, answer (index from 0), explain, see (anchor of a section
       of the page, optional)}.

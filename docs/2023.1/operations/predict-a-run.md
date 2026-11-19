@@ -3,6 +3,20 @@ title: Predict and inspect a run
 description: The commands that show what a kolla-ansible run would target, render and restart, from the Ansible listings to kolla_set_configs --check and prechecks.
 tags: [genconfig, kolla-set-configs, check-mode, prechecks, tags]
 impact: [read-only, writes-config]
+scenarios:
+  - title: "The check returns 2"
+    situation: "You changed a glance option and ran <code>kolla-ansible -i multinode -t glance genconfig</code>. On a controller, you run <code>docker exec glance_api /usr/local/bin/kolla_set_configs --check; echo $?</code> (without <code>-u root</code>) and it prints 2. Your colleague concludes that the check is broken and proposes to go ahead with the production <code>reconfigure</code>."
+    ask: "What would you do?"
+    choices:
+      - text: "Read 2 as \"no drift\" and run the <code>reconfigure</code>."
+        verdict: "avoid"
+        why: "0 is the code for \"every listed file matches\". 2 = an unexpected exception; on 2, <code>kolla_docker</code> fails the check task instead of restarting <span class=\"ev ev-code\">CODE</span>."
+      - text: "Re-run the same check with <code>docker exec -u root</code>, as Kolla does, and read the exit code then."
+        verdict: "best"
+        why: "Keep <code>-u root</code>: Kolla runs the check as root, and containers that run as a service user cannot read the root-owned 0660 files in <code>/var/lib/kolla/config_files</code>. Then 0 = no drift, 1 (or 137) = drift, restart on the next run."
+      - text: "Skip the check and preview the run with <code>EXTRA_OPTS=\"--check --diff\"</code> on production instead."
+        verdict: "risky"
+        why: "<code>kolla_docker</code> does not declare check-mode support, so Ansible skips it under <code>--check</code>, and many tasks register outputs used later <span class=\"ev ev-code\">CODE</span>. Whether such a run fails or gives partial results is not known <span class=\"ev ev-na\">NOT AVAILABLE</span>: staging only."
 quiz:
   - q: "Is <code>--list-tasks</code> useful to predict a Kolla-Ansible run?"
     options: ["Yes, it lists every task that will run", "No: only <code>include_tasks</code> placeholders are shown"]

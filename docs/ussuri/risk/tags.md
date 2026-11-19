@@ -2,6 +2,35 @@
 title: What a tag really executes
 description: "How tags select work in Kolla-Ansible Ussuri and what each important tag executes: target hosts, containers that can restart, per-tag answers."
 tags: [tags, handlers, loop-notify, serial, limit, nova, neutron, openvswitch, ovn, haproxy, keystone, chrony, iscsi, reconfigure]
+scenarios:
+  - title: "Try a nova-compute change on a few computes first"
+    situation: "Your cloud has 40 computes. You changed an override in <code>/etc/kolla/config/nova/nova-compute.conf</code> and want it applied to 4 computes only, as a first step. A colleague says: \"Just run <code>reconfigure -t nova-cell</code>: the tag only picks the hosts that need it.\""
+    ask: "What would you do?"
+    choices:
+      - text: "Run <code>kolla-ansible reconfigure -t nova --limit</code> on the 4 computes, straight away."
+        verdict: "risky"
+        why: "<code>--limit</code> does restrict the hosts, but on those hosts loop-notify still restarts <code>nova_compute</code>, <code>nova_libvirt</code> and <code>nova_ssh</code> <span class=\"ev ev-code\">CODE</span>, and <code>-t nova</code> also runs <code>common</code> on them. Whether live migrations in progress fail and whether running VMs survive is <span class=\"ev ev-na\">NOT AVAILABLE</span>. For <code>nova</code> the page says: only with batching and a window; prefer <code>genconfig</code> + <code>deploy-containers --limit</code>."
+      - text: "Run <code>genconfig</code>, predict the restarts with <code>kolla_set_configs --check</code>, then apply with <code>deploy-containers --limit</code> on the 4 computes, in a window."
+        verdict: "best"
+        why: "To predict restarts, use <code>genconfig</code> plus <code>kolla_set_configs --check</code>: <code>--list-tasks</code> cannot show the tasks inside roles, and <code>--check</code> is no substitute <span class=\"ev ev-code\">CODE</span>. For <code>nova</code> the page says: only with batching and a window; prefer <code>genconfig</code> + <code>deploy-containers --limit</code>."
+      - text: "Run <code>kolla-ansible reconfigure -t nova-cell</code> as suggested, without <code>--limit</code>."
+        verdict: "avoid"
+        why: "A tag never restricts which hosts a play targets; use <code>--limit</code> for that. <code>nova-cell</code> touches every compute, and with the default Nova settings a nova-compute-only override restarts <code>nova_compute</code>, <code>nova_libvirt</code> and <code>nova_ssh</code> on every compute host <span class=\"ev ev-code\">CODE</span>."
+    see: "31-per-tag-answers-files-vms-apis-networkingstorage-safety-prerequisites"
+  - title: "Push a common config change to every host"
+    situation: "You need to push a change of the common config (fluentd, cron logrotate, kolla_toolbox) to every host of the cloud. A colleague suggests <code>-t common</code>, since that is the name of the role."
+    ask: "What would you do?"
+    choices:
+      - text: "Run <code>kolla-ansible reconfigure -t common</code>, as your colleague suggests."
+        verdict: "avoid"
+        why: "<code>-t common</code> is a no-op <span class=\"ev ev-code\">CODE</span>: the include runs, but no task inside the included file does. It does not reconfigure fluentd, cron or kolla_toolbox."
+      - text: "Run an untagged <code>reconfigure</code> of the whole cloud."
+        verdict: "risky"
+        why: "An untagged run also reaches the common config, but it runs all plays on all hosts: every container can restart, with all bootstrap/DB-sync containers and the Keystone registration of all services. The page calls it the full blast radius."
+      - text: "Run <code>kolla-ansible reconfigure -t chrony</code>, with the VIP up."
+        verdict: "best"
+        why: "<code>-t chrony</code> reaches every host (chrony runs everywhere by default) and runs <code>common</code> + chrony there; it can restart only chrony, fluentd, cron and kolla_toolbox. The page rates it safe and the cheapest way to push common config fleet-wide; its prerequisite is the VIP up for the chrony clients."
+    see: "4-practical-consequences"
 quiz:
   - q: "Why can <code>-t keystone</code> restart HAProxy?"
     options: ["Because handlers ignore tags", "Because the keystone role depends on the haproxy role"]

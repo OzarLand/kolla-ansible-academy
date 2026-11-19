@@ -3,6 +3,33 @@ title: Pre-execution checklist
 description: The eight checks to make before every production run of kolla-ansible, from knowing the diff to keeping rollback material.
 tags: [genconfig, kolla-set-configs, loop-notify, serial, pull, limit, mariadb-backup, risk]
 impact: [writes-config]
+scenarios:
+  - title: "Live migrations still running on the target hosts"
+    situation: "You are about to run a <code>reconfigure</code> on a batch of 10 computes in a cloud with 40 computes. Just before starting, <code>openstack server list --all-projects --status MIGRATING</code> shows two live migrations in flight on hosts of your batch. Your colleague says the run will not take long and suggests starting anyway."
+    ask: "What would you do?"
+    choices:
+      - text: "Start the run now on the whole batch: the migrations will finish on their own during the run."
+        verdict: "avoid"
+        why: "This breaks the workload gate of step 6: no live migrations, resizes, image uploads or volume migrations in flight on the targeted hosts."
+      - text: "Start the run now, but without <code>--limit</code>, so that the whole cloud is done in one pass."
+        verdict: "avoid"
+        why: "It still targets the hosts with migrations in flight (step 6), and step 7 says the opposite: prefer <code>--limit</code> and the narrowest tag."
+      - text: "Wait until <code>openstack server list --all-projects --status MIGRATING|RESIZE</code> and <code>openstack volume list --status *ing</code> show nothing in flight on the targeted hosts, check the health gates, then run on the batch with <code>--limit</code>."
+        verdict: "best"
+        why: "This is steps 5 to 7 of the checklist: no live migrations, resizes, image uploads or volume migrations in flight on the targeted hosts; health gates (Galera, RabbitMQ, compute services and network agents, HAProxy backends) before the run and after each batch; prefer <code>--limit</code> and the narrowest tag."
+  - title: "Free disk space before an upgrade"
+    situation: "You have pulled the new images with <code>kolla-ansible pull</code> before tonight's <code>upgrade</code>, and some hosts are short of disk space. Your colleague suggests running <code>kolla-ansible prune-images</code> now to free space, then starting the upgrade."
+    ask: "What would you do?"
+    choices:
+      - text: "Keep the previous images, but skip the MariaDB backup: the old images are enough to go back."
+        verdict: "risky"
+        why: "Keeping the previous image tags is right, but step 8 lists more rollback material: the previous <code>/etc/kolla/config</code>, <code>globals.yml</code>, <code>passwords.yml</code> and inventory under git, and a MariaDB backup (<code>kolla-ansible mariadb_backup</code>)."
+      - text: "Keep the previous image tags until you are done, and gather all the rollback material before the run: config, <code>globals.yml</code>, <code>passwords.yml</code> and inventory under git, plus <code>kolla-ansible mariadb_backup</code>."
+        verdict: "best"
+        why: "Step 8, rollback material: previous image tags still present locally (do not <code>prune-images</code> before you are done), the previous configuration and inventory under git, and a MariaDB backup."
+      - text: "Run <code>kolla-ansible prune-images</code> now, then start the upgrade."
+        verdict: "avoid"
+        why: "Step 8 says it directly: keep the previous image tags present locally and do not <code>prune-images</code> before you are done."
 quiz:
   - q: "What should you run before <code>upgrade</code> or <code>deploy</code>, so that restart windows do not include downloads?"
     options: ["<code>kolla-ansible pull</code>, with the same tags", "<code>kolla-ansible prechecks</code>", "Nothing: there is no way to avoid downloads during restarts"]

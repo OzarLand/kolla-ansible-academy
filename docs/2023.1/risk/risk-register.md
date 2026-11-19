@@ -2,6 +2,35 @@
 title: Risk register
 description: 25 potentially dangerous operations on a running Kolla-Ansible 2023.1 platform, with impact, likelihood, severity, precautions and evidence.
 tags: [risk, nova, libvirt, neutron, openvswitch, haproxy, mariadb, rabbitmq, memcached, keystone, glance, swift, deploy, reconfigure, upgrade, pull, stop, destroy, bootstrap-servers, mariadb-recovery, loop-notify, limit, images, inventory]
+scenarios:
+  - title: "A new image tag on a running cloud"
+    situation: "You must move your production cloud to a new <code>openstack_tag</code>. A colleague has already changed the tag in <code>globals.yml</code> and proposes to run <code>kolla-ansible deploy</code>, \"since deploy is idempotent anyway\"."
+    ask: "What would you do?"
+    choices:
+      - text: "Run <code>kolla-ansible deploy</code> with the new tag, as proposed."
+        verdict: "avoid"
+        why: "This is R12, rated Critical <span class=\"ev ev-code\">CODE</span>: every container is recreated (fleet-wide), and upgrade-specific steps (RPC pin removal, nova-status check, online migrations, except Placement's) do not run. For Neutron, <code>bootstrap_neutron</code> runs <code>neutron-db-manage … upgrade head</code> with the new image before the handlers restart the old <code>neutron_server</code> containers."
+      - text: "Run <code>kolla-ansible upgrade</code> on the whole cloud at once, with no tag and no serial, and let each host fetch its images."
+        verdict: "risky"
+        why: "<code>upgrade</code> is the right action, but this skips the precautions the register gives for R12: use <code>pull</code> then <code>upgrade</code>, per-service tags, <code>ANSIBLE_SERIAL</code>."
+      - text: "Run <code>kolla-ansible pull</code> first, then <code>upgrade</code> with per-service tags and <code>ANSIBLE_SERIAL</code>."
+        verdict: "best"
+        why: "These are exactly the precautions for R12 (Image tag change run with <code>deploy</code> instead of <code>upgrade</code>): use <code>pull</code> then <code>upgrade</code> (2023.1 docs); per-service tags; <code>ANSIBLE_SERIAL</code>."
+    see: "r12"
+  - title: "Re-running bootstrap-servers for a new compute"
+    situation: "You are adding one compute to a cloud with 40 live computes. To prepare the new host, a colleague wants to run <code>kolla-ansible bootstrap-servers</code> against the whole inventory, \"to keep every host consistent\"."
+    ask: "What would you do?"
+    choices:
+      - text: "Run <code>bootstrap-servers</code> on every host with <code>-e kolla_serial=1</code>."
+        verdict: "risky"
+        why: "Serial is one of the R14 precautions, but the live hosts are still re-bootstrapped: the run can restart the Docker daemon if <code>daemon.json</code> or the Docker unit changes, disables firewalld/ufw, sets SELinux permissive and removes host packages <span class=\"ev ev-code\">CODE</span>."
+      - text: "Diff <code>daemon.json</code> first, then run <code>bootstrap-servers --limit</code> on the new host only."
+        verdict: "best"
+        why: "The precautions for R14 are: run only with <code>--limit</code> on new hosts, or <code>-e kolla_serial=1</code>; diff <code>daemon.json</code> first."
+      - text: "Run <code>bootstrap-servers</code> on the whole inventory, as suggested."
+        verdict: "avoid"
+        why: "This is R14, rated Critical <span class=\"ev ev-code\">CODE</span>: it can restart the Docker daemon (if <code>daemon.json</code> or the Docker unit changes), on all hosts at once by default. Whether every container on the host stops and how the <code>kolla-&lt;name&gt;-container.service</code> units bring them back is <span class=\"ev ev-na\">NOT AVAILABLE</span>."
+    see: "r14"
 quiz:
   - q: "Which of these operations is rated Critical?"
     options: ["<code>kolla-ansible stop</code> (R15)", "<code>kolla-ansible genconfig</code>"]

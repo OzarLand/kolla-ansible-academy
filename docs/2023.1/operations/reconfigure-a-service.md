@@ -3,6 +3,21 @@ title: Reconfigure a single service
 description: What a single-service reconfigure such as -t keystone runs, what the tag also touches, what restarts on drift, the risks and the verification.
 tags: [keystone, glance, placement, cinder, heat, haproxy, reconfigure, tags, loop-notify, one-shot, limit]
 impact: [restarts-on-drift]
+scenarios:
+  - title: "A glance change during business hours"
+    situation: "You changed an option in <code>glance-api.conf</code> that applies to every glance host. A user team is transferring large images to glance all afternoon. Your colleague suggests running <code>kolla-ansible -i multinode -t glance reconfigure</code> right now, since only one service is concerned."
+    ask: "What would you do?"
+    choices:
+      - text: "Run it now with <code>--skip-tags haproxy</code>, so that the API stays up."
+        verdict: "risky"
+        why: "<code>--skip-tags haproxy</code> only drops the loadbalancer play (the frontends). The glance containers still restart on every drifted host, and the service API is unavailable while its containers restart on all its hosts at once."
+      - text: "Run it now: only drifted hosts restart, so the transfers are safe."
+        verdict: "avoid"
+        why: "Drifted hosts restart in parallel, so a change common to all hosts restarts the service on all its hosts at once. In-flight glance or cinder transfers are SIGKILLed after <code>docker_graceful_timeout</code> (60 s by default; R24)."
+      - text: "Run <code>kolla-ansible -t glance genconfig</code>, check each glance container with <code>docker exec -u root &lt;c&gt; /usr/local/bin/kolla_set_configs --check; echo $?</code>, diff <code>/etc/kolla/haproxy/services.d/glance*.cfg</code>, and run the <code>reconfigure</code> in a window with no transfers in flight."
+        verdict: "best"
+        why: "This is the \"before\" verification of §3 (genconfig, the check as root in each container, a diff of the HAProxy frontend), and it avoids R24: in-flight glance transfers are SIGKILLed after <code>docker_graceful_timeout</code> while the containers restart."
+    see: "3-sequence-impact-risks-and-verification-of--t-svc-reconfigure"
 quiz:
   - q: "During <code>-t keystone reconfigure</code>, one keystone container drifted on a host. What restarts on that host?"
     options: ["Only the container that drifted", "All the keystone containers of that host"]

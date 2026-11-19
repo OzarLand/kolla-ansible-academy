@@ -3,6 +3,21 @@ title: Write config first, apply in controlled batches
 description: Write the configuration with genconfig, then apply it batch by batch with deploy-containers --limit, or roll a reconfigure with ANSIBLE_SERIAL.
 tags: [nova, genconfig, deploy-containers, reconfigure, serial, limit, loop-notify, kolla-set-configs]
 impact: [writes-config, restarts-on-drift]
+scenarios:
+  - title: "Half-way through the batches"
+    situation: "On a cloud with 40 computes, you ran <code>kolla-ansible -t nova-cell genconfig</code> on Monday and applied the first two batches with <code>deploy-containers --limit</code>. On Wednesday, before the remaining batches, a colleague wants to run <code>kolla-ansible -t nova reconfigure</code> for an unrelated nova fix, and another wants to reboot the remaining computes for a kernel update."
+    ask: "What would you do?"
+    choices:
+      - text: "Let the colleague run <code>-t nova reconfigure</code> now: it only applies the nova fix."
+        verdict: "avoid"
+        why: "Between <code>genconfig</code> and the last batch, any other Kolla run that reaches the nova-cell check on those hosts applies the pending drift in files listed in <code>config_files</code>: an untagged run, <code>-t nova</code> or <code>-t nova-cell</code> <span class=\"ev ev-code\">CODE</span>. The remaining computes would restart outside your batches."
+      - text: "Reboot the remaining computes first and run the batches afterwards."
+        verdict: "risky"
+        why: "Hosts restarted by Docker or reboot also pick up the new config, because <code>COPY_ALWAYS</code> copies the files and rewrites <code>/run_command</code> at container start <span class=\"ev ev-code\">CODE</span>. The new config would be applied by the reboots, not by your controlled batches."
+      - text: "Finish the remaining <code>deploy-containers --limit</code> batches first, including a batch for the controllers, and only then allow other runs."
+        verdict: "best"
+        why: "The page says to keep the window between writing and applying short, and to apply controllers with their own <code>--limit</code> batch: <code>genconfig -t nova-cell</code> also renders the conductor and console config on controllers, or the drift stays pending there."
+    see: "2-separate-write-config-from-apply-recommended-pattern"
 quiz:
   - q: "What does <code>deploy-containers</code> run?"
     options: ["Everything a <code>deploy</code> runs", "Only <code>check-containers.yml</code> and the handlers it notifies"]

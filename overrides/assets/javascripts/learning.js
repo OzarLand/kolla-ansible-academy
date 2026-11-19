@@ -171,7 +171,7 @@
    * from the glossary, with a link to the section that defines it. */
 
   var SKIP = "a, h1, h2, h3, h4, h5, h6, pre, button, label, legend, summary, script, style, " +
-    ".admonition-title, .portal-impact, .oz-pagebar, .oz-step-end, .oz-lumo, .oz-quiz, .md-source-file, " +
+    ".admonition-title, .portal-impact, .oz-pagebar, .oz-step-end, .oz-lumo, .oz-quiz, .oz-scenarios, .md-source-file, " +
     ".md-content__button, .oz-term, .oz-term-pop, .ev, .md-tags, .portal-updated";
 
   function escapeRegExp(text) {
@@ -413,6 +413,26 @@
     showBest();
   }
 
+  /* ---------------------------------------------------- what would you do?
+   * A scenario of a page (front matter `scenarios`, overrides/main.html):
+   * choosing an action shows its verdict and why, under that action. */
+
+  function setupScenario(fieldset) {
+    var feedbacks = fieldset.querySelectorAll("[data-oz-scenario-feedback]");
+    fieldset.querySelectorAll("input[type=radio]").forEach(function (input) {
+      input.addEventListener("change", function () {
+        feedbacks.forEach(function (box) {
+          box.hidden = box.getAttribute("data-oz-scenario-feedback") !== input.value;
+        });
+        var chosen = fieldset.querySelector('[data-oz-scenario-feedback="' + input.value + '"]');
+        fieldset.classList.remove("is-best", "is-risky", "is-avoid");
+        ["best", "risky", "avoid"].forEach(function (verdict) {
+          if (chosen.classList.contains("oz-scenario__feedback--" + verdict)) fieldset.classList.add("is-" + verdict);
+        });
+      });
+    });
+  }
+
   /* ------------------------------------------------- continue where you left
    * Once at least one page is marked as read, the first page of the journey
    * not yet read; nothing when the journey is finished. */
@@ -438,6 +458,7 @@
     document.querySelectorAll('meta[name="portal-glossary"]').forEach(setupGlossary);
     document.querySelectorAll("[data-oz-quiz]").forEach(setupQuiz);
     document.querySelectorAll("[data-oz-resume]").forEach(setupResume);
+    document.querySelectorAll("[data-oz-scenario]").forEach(setupScenario);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

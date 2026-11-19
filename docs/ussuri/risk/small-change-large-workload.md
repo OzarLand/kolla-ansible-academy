@@ -2,6 +2,20 @@
 title: Why a small change creates a large workload
 description: Six small changes that become a large workload in Kolla-Ansible Ussuri, each with the reason and the source.
 tags: [risk, scaling, loop-notify, nova, neutron, rabbitmq, images, reconfigure]
+scenarios:
+  - title: "A one-line nova-compute change"
+    situation: "Your cloud has 40 computes. A ticket asks you to change one option for nova-compute. Your colleague says: \"It's a one-line change, just run a full <code>reconfigure</code> now and close the ticket.\""
+    ask: "What would you do?"
+    choices:
+      - text: "Write the config first with <code>genconfig</code>, then apply it with <code>deploy-containers --limit</code>, batch by batch."
+        verdict: "best"
+        why: "One option for nova-compute targets every compute, and loop-notify adds the libvirt and ssh restarts. The page points to the pattern \"Write config first, apply in controlled batches\": <code>genconfig</code>, then <code>deploy-containers --limit</code> batch by batch."
+      - text: "Run a full <code>reconfigure</code> of the cloud right away, as suggested."
+        verdict: "avoid"
+        why: "The change is not small: one option for nova-compute targets every compute, and loop-notify adds the libvirt and ssh restarts. On top of that, every run pays the per-host work <span class=\"ev ev-code\">CODE</span>: every full <code>deploy</code> or <code>reconfigure</code> makes 11 <code>compare_container</code> calls per compute."
+      - text: "Run <code>reconfigure</code> on all computes in one go, but only at night."
+        verdict: "risky"
+        why: "The time of day does not change the size of the change: it still targets every compute, and loop-notify still adds the libvirt and ssh restarts on each of them. The page's pattern applies the config in controlled batches with <code>deploy-containers --limit</code>."
 quiz:
   - q: "You change one option for nova-compute. Why is it a large change?"
     options: ["It is not: only one container restarts", "It targets every compute, and loop-notify adds the libvirt and ssh restarts"]
