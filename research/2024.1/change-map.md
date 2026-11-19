@@ -310,8 +310,10 @@ Short IDs (X1…X18) are used in the impact table (§2).
   entry "kept only for upgrade" and the admin-endpoint removal in `keystone/tasks/upgrade.yml` (2023.1
   `roles/keystone/defaults/main.yml:30-40`, `roles/keystone/tasks/upgrade.yml:52-59`) are gone; the `admin` endpoint
   entry with `state: absent` is gone from `keystone_service_endpoints` (2024.1 `roles/keystone/defaults/main.yml:200-202`),
-  and `service-ks-register` no longer supports `state` (2024.1 `roles/service-ks-register/tasks/main.yml:24-45`) nor
-  `service_ks_register_roles`; role assignments accept `domain`/`system` (`:103-112`).
+  and `service-ks-register` no longer supports `state` (2024.1 `roles/service-ks-register/tasks/main.yml:24-45`);
+  `service_ks_register_roles` still exists (`roles/service-ks-register/defaults/main.yml:29`, used at
+  `tasks/main.yml:97`; corrected on review), only the keystone role stopped passing it; role assignments accept
+  `domain`/`system` (`:103-112`).
 - Every `<svc>_internal_endpoint`/`_public_endpoint` uses `kolla_url` and `<svc>_public_port` (`:332-665`, `:1015-1334`).
 - Debian base `bookworm`, python `3.11` (2024.1 `:1262,1269`).
 - Ceph keyrings now `client.<user>.keyring` (2024.1 `:1182-1186`; 2023.1 `ceph.client.<user>.keyring`) — see X18.
