@@ -4,6 +4,9 @@
 
 ## Lumo character sheet
 
+**The name.** "Lumo" comes from *lumen*, Latin for light: like the lantern Lumo carries, the Academy sheds light on
+what Kolla-Ansible really does. The site says so on the portal welcome page and on the home page of each release.
+
 Lumo is an original, gender-neutral cartographer-scholar and guide. The consistent design uses wavy brown hair, a parchment shirt, navy cape with one white cloud emblem, leather satchel with scrolls, small compass, practical boots and a brass lantern. Keep the same face, outfit, proportions and palette across every pose. The mood is patient, kind, calm and confident. Lumo is a companion for adult beginners: never a childlike mascot, a lecturer, or an alarmist.
 
 Lumo is patient and encouraging, honest about uncertainty, and explicit when the source does not establish an answer. Explain one idea at a time. Invite a safe next step; do not imply that a potentially disruptive command is harmless.

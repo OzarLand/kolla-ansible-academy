@@ -2974,3 +2974,8 @@ a.portal-cta:focus-visible {
   --md-default-fg-color: var(--oz-header-text);
   --md-default-fg-color--light: var(--oz-header-muted);
 }
+
+.md-typeset .oz-lumo__why {
+  font-size: 0.7rem;
+  color: var(--portal-text-muted);
+}
