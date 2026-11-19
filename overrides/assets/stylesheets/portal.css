@@ -1655,7 +1655,7 @@ a.portal-cta--primary:hover {
 /* Text beside an illustration. */
 .oz-split {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 14rem;
+  grid-template-columns: minmax(0, 1fr) 18rem;
   gap: 1.6rem;
   align-items: center;
   max-width: 56rem;
@@ -1666,7 +1666,7 @@ a.portal-cta--primary:hover {
 }
 
 .oz-split--reverse {
-  grid-template-columns: 11rem minmax(0, 1fr);
+  grid-template-columns: 15rem minmax(0, 1fr);
 }
 
 .oz-split--reverse > img {
@@ -1676,6 +1676,9 @@ a.portal-cta--primary:hover {
 .oz-split__art {
   width: 100%;
   height: auto;
+  border: 0.15rem solid var(--oz-wood);
+  border-radius: 0.8rem;
+  box-shadow: 0 0.3rem 0.9rem rgb(31 58 107 / 20%);
 }
 
 @media screen and (max-width: 44.9375em) {
@@ -1685,7 +1688,7 @@ a.portal-cta--primary:hover {
   }
 
   .oz-split__art {
-    max-width: 12rem;
+    max-width: 20rem;
     margin: 0 auto;
   }
 

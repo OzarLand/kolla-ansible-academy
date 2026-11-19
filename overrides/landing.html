@@ -6,8 +6,8 @@
   path in the default release, the list of the releases and the shared
   "Part of OzarLand" block. The main call to action carries
   data-portal-default, the default release that tools/site/check_site.py
-  checks. The illustrations (overrides/assets/images/ozarland/) are original
-  drawings in the style of the OzarLand banner; the banner itself is kept for
+  checks. The illustrations (overrides/assets/images/ozarland/*.webp) are
+  painted in the style of the OzarLand banner; the banner itself is kept for
   the organisation profile and the hub README, as its convention says.
 -#}
 {% extends "main.html" %}
@@ -45,7 +45,7 @@
         </p>
       </div>
       <figure class="oz-hero__art">
-        <img src="{{ img }}island.svg" width="640" height="400" alt="An island city of OzarLand: towers and aqueducts on a cliff above the sea, a sailing ship and a navy banner with a cloud emblem">
+        <img src="{{ img }}hero.webp" width="1200" height="751" fetchpriority="high" alt="Travellers of OzarLand gathered around a map of connected servers, on a terrace above an island city with waterfalls, an aqueduct and a sailing ship">
       </figure>
     </div>
   </section>
@@ -81,7 +81,7 @@
         answers, but to help you build your own understanding of how Kolla-Ansible works.
       </p>
     </div>
-    <img class="oz-split__art" src="{{ img }}scroll.svg" width="280" height="200" alt="A parchment map: a dotted path from a book to a cloud emblem, past checked steps">
+    <img class="oz-split__art oz-split__art--map" src="{{ img }}map.webp" width="900" height="643" loading="lazy" alt="A parchment map on a wooden table: a dotted path leads from an open book, past checked steps and server towers, to a cloud emblem">
   </div>
 
   <h2 id="how">How it helps you learn</h2>
@@ -143,7 +143,7 @@
         platform before you use it on production.
       </p>
     </div>
-    <img class="oz-split__art oz-split__art--post" src="{{ img }}signpost.svg" width="240" height="260" alt="A wooden signpost of OzarLand with four arrows, under a lantern">
+    <img class="oz-split__art oz-split__art--post" src="{{ img }}signpost.webp" width="700" height="757" loading="lazy" alt="A wooden signpost with six arrows carved with a book, a lantern, a compass, a gear, a shield and a scroll, on a path that climbs to the island city">
   </div>
 
   <h2 id="releases">Releases</h2>
