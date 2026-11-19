@@ -30,3 +30,9 @@ The 2024.1 (Caracal, Kolla-Ansible 18.x, tag `2024.1-eom`) study is being writte
 Follow CONTRIBUTING.md "Making a release available": `docs/2024.1.toml` with the navigation, `status = "available"`
 and `tag = "2024.1-eom"` in `versions.toml`, the learning blocks and the journey challenges for 2024.1, then
 `make docs-check docs-build STRICT=1` with no error before merging into `main`.
+
+## Review notes to close before release
+
+- method-and-limits: re-read phase 6 once all pages exist; add the service cards to "Generated material" once
+  `tools/service_cards.py` has been run on the 2024.1 component pages; restore the counts of "Related" (findings,
+  fact sheets, open questions) once verified.
