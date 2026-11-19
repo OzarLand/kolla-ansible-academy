@@ -3,6 +3,19 @@ title: Pre-execution checklist
 description: The eight checks to make before every production run of kolla-ansible, from knowing the diff to keeping rollback material.
 tags: [genconfig, kolla-set-configs, loop-notify, serial, pull, limit, mariadb-backup, risk]
 impact: [writes-config]
+quiz:
+  - q: "What should you run before <code>upgrade</code> or <code>deploy</code>, so that restart windows do not include downloads?"
+    options: ["<code>kolla-ansible pull</code>, with the same tags", "<code>kolla-ansible prechecks</code>", "Nothing: there is no way to avoid downloads during restarts"]
+    answer: 0
+    explain: "Step 4 of the checklist: pull first."
+  - q: "Do <code>mariadb</code> and <code>rabbitmq</code> follow <code>ANSIBLE_SERIAL</code>?"
+    options: ["Yes, like every other role", "No, they ignore it"]
+    answer: 1
+    explain: "They ignore it and always run all hosts in one batch (step 3)."
+  - q: "What does <code>-t common</code> do?"
+    options: ["Nothing: it is a no-op", "It runs the common role (fluentd, kolla-toolbox, cron) in its own play"]
+    answer: 0
+    explain: "Never use <code>-t common</code> expecting it to do something <span class=\"ev ev-code\">CODE</span> (step 7)."
 ---
 
 # Pre-execution checklist

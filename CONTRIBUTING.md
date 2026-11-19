@@ -326,9 +326,10 @@ quiz:
     options: ["The service reloads its configuration", "By a full stop and start"]
     answer: 1                    # index of the right option, from 0
     explain: "Restates what the section establishes; inline HTML such as <code> is allowed."
-    see: "43-the-config--check--handler-pattern"   # anchor of the section on this page
+    see: "43-the-config--check--handler-pattern"   # anchor of the section on this page (optional)
 ```
 
 A quiz only restates what the page already establishes, with the same evidence, and `see` points to the section
-that gives it (check_site checks the anchor). The answers differ between releases when the code does: write each
+that gives it (check_site checks the anchor); leave `see` out on a page without sections. Quizzes are on the concept,
+operation and risk pages of the learning journey. The answers differ between releases when the code does: write each
 release's quiz from its own page.

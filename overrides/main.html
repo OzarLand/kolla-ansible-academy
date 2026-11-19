@@ -150,7 +150,8 @@
   {% block page_extra %}{% endblock %}
 
   {#- "Check yourself": the `quiz` of the front matter, a list of
-      {q, options, answer (index from 0), explain, see (anchor of the page)}.
+      {q, options, answer (index from 0), explain, see (anchor of a section
+      of the page, optional)}.
       The texts may hold inline HTML (<code>). Every answer restates what the
       section `see` establishes; learning.js gives the feedback. -#}
   {% if page.meta and page.meta.quiz %}
@@ -171,7 +172,7 @@
           <details class="oz-quiz__answer">
             <summary>Show the answer</summary>
             <p><strong data-oz-feedback hidden></strong><strong>Answer:</strong> {{ item.options[item.answer] | safe }}. {{ item.explain | safe }}
-            <a href="#{{ item.see }}">Read the section</a>.</p>
+            {% if item.see %}<a href="#{{ item.see }}">Read the section</a>.{% endif %}</p>
           </details>
         </fieldset>
       {% endfor %}

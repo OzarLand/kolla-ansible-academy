@@ -3,6 +3,22 @@ title: Reconfigure a single service
 description: What a single-service reconfigure such as -t keystone runs, what the tag also touches, what restarts on drift, the risks and the verification.
 tags: [keystone, glance, placement, cinder, heat, haproxy, reconfigure, tags, loop-notify, one-shot, limit]
 impact: [restarts-on-drift]
+quiz:
+  - q: "During <code>-t keystone reconfigure</code>, one keystone container drifted on a host. What restarts on that host?"
+    options: ["Only the container that drifted", "All the keystone containers of that host"]
+    answer: 1
+    explain: "This is loop-notify: a change that concerns one container restarts every container of that role on that host."
+    see: "11-reconfigure-a-single-service"
+  - q: "Do keystone hosts without drift restart?"
+    options: ["Yes, every keystone host restarts", "No: only drifted hosts restart, in parallel"]
+    answer: 1
+    explain: "A change common to all hosts (globals, <code>keystone.conf</code>, a new image) therefore restarts keystone on all keystone hosts at once."
+    see: "11-reconfigure-a-single-service"
+  - q: "How do you keep HAProxy untouched during a service run?"
+    options: ["With <code>--limit</code>", "With <code>--skip-tags haproxy</code>"]
+    answer: 1
+    explain: "<code>--skip-tags haproxy</code> drops the whole haproxy play, including the per-service frontend includes."
+    see: "12-avoid-touching-haproxy-during-a-service-run"
 ---
 
 # Reconfigure a single service

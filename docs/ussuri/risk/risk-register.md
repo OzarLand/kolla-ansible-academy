@@ -2,6 +2,22 @@
 title: Risk register
 description: 25 potentially dangerous operations on a running Kolla-Ansible Ussuri platform, with impact, likelihood, severity, precautions and evidence.
 tags: [risk, nova, libvirt, neutron, openvswitch, haproxy, mariadb, rabbitmq, memcached, keystone, glance, swift, deploy, reconfigure, upgrade, pull, stop, destroy, bootstrap-servers, mariadb-recovery, loop-notify, limit, images, inventory]
+quiz:
+  - q: "Which of these operations is rated Critical?"
+    options: ["<code>kolla-ansible stop</code> (R15)", "<code>kolla-ansible genconfig</code>"]
+    answer: 0
+    explain: "The risks rated Critical are R7, R12, R14, R15 and R16."
+    see: "r15"
+  - q: "A nova-compute config change is applied by <code>reconfigure</code> with the default serial 0. What restarts?"
+    options: ["<code>nova_compute</code>, <code>nova_libvirt</code> and <code>nova_ssh</code> on every affected compute, all at once", "One compute at a time"]
+    answer: 0
+    explain: "This is risk R1."
+    see: "r1"
+  - q: "Is it known whether running VMs keep running during that restart?"
+    options: ["Yes, they always keep running", "No: the sources do not establish it"]
+    answer: 1
+    explain: "Whether live migrations in flight fail and whether running VMs keep running are <span class=\"ev ev-na\">NOT AVAILABLE</span> (R1)."
+    see: "r1"
 ---
 
 # Risk register

@@ -3,6 +3,22 @@ title: Write config first, apply in controlled batches
 description: Write the configuration with genconfig, then apply it batch by batch with deploy-containers --limit, or roll a reconfigure with ANSIBLE_SERIAL.
 tags: [nova, genconfig, deploy-containers, reconfigure, serial, limit, loop-notify, kolla-set-configs]
 impact: [writes-config, restarts-on-drift]
+quiz:
+  - q: "What does <code>deploy-containers</code> run?"
+    options: ["Everything a <code>deploy</code> runs", "Only <code>check-containers.yml</code> and the handlers it notifies"]
+    answer: 1
+    explain: "It restarts each container with drift written by <code>genconfig</code> and, by loop-notify, the other containers of that role on the same host."
+    see: "11-compute-changes-in-controlled-batches-recommended-pattern"
+  - q: "With <code>genconfig</code>, then <code>deploy-containers --limit &lt;batch&gt;</code>, which hosts restart?"
+    options: ["Only the hosts of the batch", "Every compute at once"]
+    answer: 0
+    explain: "Each batch restarts only its hosts; no bootstrap containers and no Keystone registration run."
+    see: "11-compute-changes-in-controlled-batches-recommended-pattern"
+  - q: "A newly rendered <code>optional</code> file is not yet in the container. What does <code>kolla_set_configs --check</code> do?"
+    options: ["It exits 1 (drift): the restart copies the new file", "It exits 2 and the task fails"]
+    answer: 1
+    explain: "Unless an entry listed before it differs too: then it exits 1 and the restart copies the new file."
+    see: "11-compute-changes-in-controlled-batches-recommended-pattern"
 ---
 
 # Write config first, apply in controlled batches

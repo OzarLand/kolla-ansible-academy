@@ -2,6 +2,22 @@
 title: What a tag really executes
 description: "How tags select work in Kolla-Ansible Ussuri and what each important tag executes: target hosts, containers that can restart, per-tag answers."
 tags: [tags, handlers, loop-notify, serial, limit, nova, neutron, openvswitch, ovn, haproxy, keystone, chrony, iscsi, reconfigure]
+quiz:
+  - q: "Why can <code>-t keystone</code> restart HAProxy?"
+    options: ["Because handlers ignore tags", "Because the keystone role depends on the haproxy role"]
+    answer: 0
+    explain: "Handlers ignore tags <span class=\"ev ev-code\">CODE</span>."
+    see: "22-handlers-ignore-tags-code"
+  - q: "Does a tag restrict which hosts a play targets?"
+    options: ["Yes, a tag selects the hosts of its service", "No: use <code>--limit</code> for that"]
+    answer: 1
+    explain: "A tag never restricts which hosts a play targets; use <code>--limit</code> for that."
+    see: "4-practical-consequences"
+  - q: "Does the <code>nova-api</code> tag touch compute hosts?"
+    options: ["Yes", "No"]
+    answer: 1
+    explain: "<code>nova</code> and <code>nova-cell</code> target the computes; <code>nova-api</code> does not."
+    see: "3-what-a-tag-really-executes-master-table"
 ---
 
 # What a tag really executes

@@ -3,6 +3,15 @@ title: Predict and inspect a run
 description: The commands that show what a kolla-ansible run would target, render and restart, from the Ansible listings to kolla_set_configs --check and prechecks.
 tags: [genconfig, kolla-set-configs, check-mode, prechecks, tags]
 impact: [read-only, writes-config]
+quiz:
+  - q: "Is <code>--list-tasks</code> useful to predict a Kolla-Ansible run?"
+    options: ["Yes, it lists every task that will run", "No: only <code>include_tasks</code> placeholders are shown"]
+    answer: 1
+    explain: "Row \"List tasks\" of the table: only <code>include_tasks</code> placeholders are shown."
+  - q: "How can you see, on a host, whether a container will be restarted?"
+    options: ["Run <code>kolla_set_configs --check</code> inside the container, as root", "Run <code>docker ps</code>"]
+    answer: 0
+    explain: "After <code>genconfig</code>, <code>docker exec -u root &lt;container&gt; /usr/local/bin/kolla_set_configs --check</code>; the meaning of exit codes 0, 1, 2 and 137 is in the table <span class=\"ev ev-code\">CODE</span>."
 ---
 
 # Predict and inspect a run

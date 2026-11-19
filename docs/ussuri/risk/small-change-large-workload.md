@@ -2,6 +2,19 @@
 title: Why a small change creates a large workload
 description: Six small changes that become a large workload in Kolla-Ansible Ussuri, each with the reason and the source.
 tags: [risk, scaling, loop-notify, nova, neutron, rabbitmq, images, reconfigure]
+quiz:
+  - q: "You change one option for nova-compute. Why is it a large change?"
+    options: ["It is not: only one container restarts", "It targets every compute, and loop-notify adds the libvirt and ssh restarts"]
+    answer: 1
+    explain: "First row of the table."
+  - q: "The image of one service is rebuilt. What else restarts?"
+    options: ["Nothing else", "Its sibling containers on the same host"]
+    answer: 1
+    explain: "Row \"Rebuilt image of one service\"."
+  - q: "Does a run with no change cost anything per compute?"
+    options: ["No, nothing happens", "Yes: every full <code>deploy</code> or <code>reconfigure</code> makes 11 <code>compare_container</code> calls per compute"]
+    answer: 1
+    explain: "Every run pays the per-host work <span class=\"ev ev-code\">CODE</span>, independently of restarts."
 ---
 
 # Why a small change creates a large workload
