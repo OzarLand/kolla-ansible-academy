@@ -220,7 +220,7 @@ graceful timeout ([R24](../risk/risk-register.md#r24)).
 |---|---|
 | **Finding** | **The L3 agent wrapper runs `neutron-netns-cleanup --force --agent-type l3` at start** when `enable_neutron_agent_ha: yes` (default `no`); its comment says this removes all L3 namespaces (what the command does is neutron code: [NOT AVAILABLE]) |
 | **Evidence** | [CODE] `roles/neutron/templates/neutron-l3-agent-wrapper.sh.j2:5-11`; `group_vars/all.yml:721` |
-| **Why it matters** | [NOT AVAILABLE] Whether an L3 agent restart interrupts router traffic on that node ([Q4](../troubleshooting/open-questions.md#q4)). 2023.1 adds `neutron_l3_agent_failover_delay` to space the restarts across hosts ([R6](../risk/risk-register.md#r6)) |
+| **Why it matters** | [NOT AVAILABLE] Whether an L3 agent restart interrupts router traffic on that node ([Q4](../troubleshooting/open-questions.md#q4)). 2023.1 adds `neutron_l3_agent_failover_delay` to space the restarts across hosts when set above its default `0` (`roles/neutron/defaults/main.yml:633`) ([R6](../risk/risk-register.md#r6)) |
 
 <a id="f13"></a>
 
