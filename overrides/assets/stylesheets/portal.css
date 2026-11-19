@@ -3168,3 +3168,54 @@ a.portal-cta:focus-visible {
 .md-typeset ul.oz-scenario__all {
   margin-top: 0.3rem;
 }
+
+/* ---------------------------------------------------------------------------
+ * 21. Final challenge of a stage (overrides/journey.html, learning.js).
+ * ------------------------------------------------------------------------- */
+.md-typeset details.oz-challenge {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: inherit;
+  background-color: var(--portal-violet-bg);
+  border: 0.05rem solid var(--portal-violet-border);
+  border-radius: 0.4rem;
+  box-shadow: none;
+}
+
+.md-typeset details.oz-challenge > summary {
+  padding: 0.5rem 1.8rem 0.5rem 2.4rem;
+  font-weight: 700;
+  color: var(--portal-violet-fg);
+  background-color: transparent;
+}
+
+.md-typeset details.oz-challenge > summary::before {
+  top: 0.5rem;
+  left: 0.6rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  background: url("../images/ozarland/callouts/quiz.svg") center / contain no-repeat;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.md-typeset .oz-challenge__quiz {
+  max-width: none;
+  padding: 0 0.7rem 0.4rem;
+  margin: 0;
+}
+
+.md-typeset .oz-stage__challenge-state {
+  margin: 0.5rem 0 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--portal-amber-fg);
+}
+
+.md-typeset .oz-stage__challenge-state.is-passed {
+  color: var(--portal-green-fg);
+}
+
+.md-typeset .oz-stage__challenge-state[hidden] {
+  display: none;
+}

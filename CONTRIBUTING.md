@@ -364,3 +364,11 @@ Exactly one choice is `best`; the others are `risky` (works, with a risk the pag
 by the page). The situation may be invented, the technical facts may not: every `why` restates the page with its
 evidence labels, and a destructive action on production is never the best choice. Scenarios are on the operation and
 risk pages and on the Nova deep dive.
+
+**Final challenge of a stage.** The front matter of `docs/<id>/start/learning-journey.md` holds `challenges`, a quiz
+per stage id of `extra.journey` (`discover`, `understand`, `practise`, `judge`, `master`). It has the format of a page
+quiz, except that `see` is the path of the page that gives the answer, from the root of the release
+(`risk/tags/#4-practical-consequences`). The questions cover the whole stage, at least three of its pages, and do not
+repeat the quizzes of the pages. The seal of a stage lights up once its pages are marked as read and its challenge has
+all answers but one right on the first try (`learning.js`, key `kolla-ansible-academy:challenge:<release>`); the seal
+of the journey needs every stage seal.

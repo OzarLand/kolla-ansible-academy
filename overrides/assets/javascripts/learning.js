@@ -21,20 +21,21 @@
 
   var PREFIX = "kolla-ansible-academy:read:";
   var QUIZ_PREFIX = "kolla-ansible-academy:quiz:";
+  var CHALLENGE_PREFIX = "kolla-ansible-academy:challenge:";
 
   /* Best quiz score of each page: {"<page url>": {"score": n, "total": m}}. */
-  function loadScores(release) {
+  function loadScores(release, prefix) {
     try {
-      var data = JSON.parse(window.localStorage.getItem(QUIZ_PREFIX + release) || "{}");
+      var data = JSON.parse(window.localStorage.getItem((prefix || QUIZ_PREFIX) + release) || "{}");
       return data && typeof data === "object" && !Array.isArray(data) ? data : {};
     } catch (error) {
       return null;
     }
   }
 
-  function saveScores(release, scores) {
+  function saveScores(release, scores, prefix) {
     try {
-      window.localStorage.setItem(QUIZ_PREFIX + release, JSON.stringify(scores));
+      window.localStorage.setItem((prefix || QUIZ_PREFIX) + release, JSON.stringify(scores));
       return true;
     } catch (error) {
       return false;
@@ -110,14 +111,39 @@
         var mark = item.querySelector("[data-oz-read-mark]");
         if (mark) mark.hidden = !done;
       });
+      var challenges = loadScores(release, CHALLENGE_PREFIX) || {};
+      var stagesDone = 0;
+      var stagesAll = 0;
+      var pagesWaiting = 0;
       document.querySelectorAll("[data-oz-stage]").forEach(function (stage) {
+        var id = stage.id.replace(/^stage-/, "");
         var items = stage.querySelectorAll("[data-oz-page]");
         var doneItems = stage.querySelectorAll("[data-oz-page].is-read");
-        var complete = items.length > 0 && items.length === doneItems.length;
+        var pagesRead = items.length > 0 && items.length === doneItems.length;
+        /* A stage with a final challenge needs it passed too. */
+        var quiz = stage.querySelector('[data-oz-quiz-kind="challenge"]');
+        var best = challenges[id];
+        var passed = !quiz || !!(best && best.score >= parseInt(quiz.getAttribute("data-oz-pass"), 10));
+        var complete = pagesRead && passed;
+        stagesAll += 1;
+        if (complete) stagesDone += 1;
+        if (pagesRead && !passed) pagesWaiting += 1;
         stage.classList.toggle("is-complete", complete);
         var label = stage.querySelector("[data-oz-stage-done]");
         if (label) label.hidden = !complete;
-        setSeal(stage.id.replace(/^stage-/, ""), complete, doneItems.length > 0);
+        var state = stage.querySelector("[data-oz-challenge-state]");
+        if (state && quiz) {
+          var need = quiz.getAttribute("data-oz-pass");
+          state.hidden = false;
+          state.classList.toggle("is-passed", passed);
+          state.textContent = passed
+            ? "Final challenge passed (" + best.score + " of " + best.total + ")" +
+              (pagesRead ? ": seal earned." : ". Mark the pages of the stage as read to earn the seal.")
+            : best
+              ? "Final challenge: best score " + best.score + " of " + best.total + ", " + need + " needed for the seal."
+              : "Final challenge: not taken yet (" + need + " right answers needed for the seal).";
+        }
+        setSeal(id, complete, doneItems.length > 0 || !!best);
       });
       var scores = loadScores(release) || {};
       var taken = 0;
@@ -140,7 +166,7 @@
         summary.textContent = taken === 0 ? "" : "Quizzes: " + taken + " taken, " + perfect +
           " with every answer right on the first try.";
       }
-      var finished = total > 0 && read >= total;
+      var finished = total > 0 && read >= total && stagesDone === stagesAll;
       setSeal("journey", finished, read > 0);
       var done = block.querySelector("[data-oz-complete]");
       if (done) done.hidden = !finished;
@@ -148,7 +174,11 @@
       bar.setAttribute("aria-valuenow", String(read));
       block.querySelector("[data-oz-progress-fill]").style.width = (total ? (100 * read) / total : 0) + "%";
       block.querySelector("[data-oz-progress-count]").textContent = String(read);
-      block.querySelector("[data-oz-progress-message]").textContent = message(read, total);
+      block.querySelector("[data-oz-progress-message]").textContent = !finished && pagesWaiting
+        ? (read >= total ? "Every page is read: pass" : "Pass") + " the final challenge of " +
+          (pagesWaiting === 1 ? "a stage whose pages are all read" : pagesWaiting + " stages whose pages are all read") +
+          " to earn its seal."
+        : message(read, total);
       block.classList.toggle("is-complete", finished);
     }
 
@@ -156,10 +186,12 @@
       if (window.confirm("Forget the pages you marked as read and your quiz scores in this release?")) {
         save(release, []);
         saveScores(release, {});
+        saveScores(release, {}, CHALLENGE_PREFIX);
         render();
         document.querySelectorAll("[data-oz-resume]").forEach(setupResume);
       }
     });
+    document.addEventListener("oz:progress", render);
     block.hidden = false;
     render();
   }
@@ -330,15 +362,24 @@
 
   function setupQuiz(section) {
     var release = section.getAttribute("data-oz-release");
-    var page = section.getAttribute("data-oz-page");
+    var page = section.getAttribute("data-oz-quiz-key") || section.getAttribute("data-oz-page");
+    var challenge = section.getAttribute("data-oz-quiz-kind") === "challenge";
+    var prefix = challenge ? CHALLENGE_PREFIX : QUIZ_PREFIX;
+    var pass = parseInt(section.getAttribute("data-oz-pass"), 10);
     var questions = Array.prototype.slice.call(section.querySelectorAll("[data-oz-quiz-answer]"));
     var first = {};
     var scoreBox = section.querySelector("[data-oz-quiz-score]");
     var result = section.querySelector("[data-oz-quiz-result]");
     var bestLine = section.querySelector("[data-oz-quiz-best]");
 
+    function stageRead() {
+      var stage = section.closest("[data-oz-stage]");
+      if (!stage) return false;
+      return stage.querySelectorAll("[data-oz-page]").length === stage.querySelectorAll("[data-oz-page].is-read").length;
+    }
+
     function showBest() {
-      var scores = loadScores(release);
+      var scores = loadScores(release, prefix);
       var best = scores && scores[page];
       if (!bestLine) return;
       bestLine.hidden = !best;
@@ -352,7 +393,15 @@
       });
       var total = questions.length;
       var all = right === total;
-      result.innerHTML = "<strong>Lumo:</strong> " + (all
+      if (challenge) {
+        var ok = right >= pass;
+        result.innerHTML = "<strong>Lumo:</strong> " + right + " of " + total + " right on the first try. " + (ok
+          ? (all ? "A perfect run! " : "Challenge passed! ") + (stageRead()
+            ? "The seal of this stage is yours."
+            : "Mark every page of the stage as read and its seal is yours.")
+          : pass + " are needed to pass. Have another look at the pages linked in the answers, then try again.");
+        all = ok;
+      } else result.innerHTML = "<strong>Lumo:</strong> " + (all
         ? "all " + total + " right on the first try. You have the main ideas of this page" +
           (document.querySelector("[data-oz-read-toggle]") ? ": you can mark it as read below." : ".")
         : right + " of " + total + " right on the first try. Read the sections linked in the answers, then try again: " +
@@ -362,14 +411,15 @@
       });
       scoreBox.classList.toggle("is-perfect", all);
       scoreBox.hidden = false;
-      var scores = loadScores(release);
+      var scores = loadScores(release, prefix);
       if (scores === null) return;
       var best = scores[page];
       if (!best || right > best.score || best.total !== total) {
         scores[page] = { score: right, total: total };
-        saveScores(release, scores);
+        saveScores(release, scores, prefix);
       }
       showBest();
+      document.dispatchEvent(new CustomEvent("oz:progress"));
     }
 
     questions.forEach(function (question, index) {

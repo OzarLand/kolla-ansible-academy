@@ -37,8 +37,9 @@
     <p>Open a page of the stage you are at, read it, then tick <strong>Mark this page as read</strong> at the bottom.
     The bar under the title of each page tells you where you are, and the buttons take you to the previous or next
     step. Many pages end with <strong>What would you do?</strong>, a situation from a real platform with three ways to
-    react, and <strong>Check yourself</strong>, a short quiz. Your progress is kept in this browser only: nothing is
-    sent anywhere.</p>
+    react, and <strong>Check yourself</strong>, a short quiz. Each stage ends with a <strong>final challenge</strong>
+    below: read its pages and pass the challenge to earn the seal of the stage. Your progress is kept in this browser
+    only: nothing is sent anywhere.</p>
   </div>
   <div class="admonition why">
     <p class="admonition-title">Why this order</p>
@@ -109,8 +110,52 @@
               <li data-oz-page="{{ item[0] }}"><a href="{{ item[0] | url }}">{{ item[1] }}</a><span class="oz-read-mark" data-oz-read-mark hidden> read</span><span class="oz-quiz-mark" data-oz-quiz-mark hidden></span></li>
             {% endfor %}
           </ol>
+          {#- Final challenge of the stage: `challenges.<stage id>` of the
+              front matter, a list of {q, options, answer, explain, see (page
+              path of the release, with an anchor)}. Its seal needs the pages
+              read and at least `pass` right answers on the first try. -#}
+          {% if page.meta.challenges and stage.id in page.meta.challenges %}
+            <p class="oz-stage__challenge-state" data-oz-challenge-state="{{ stage.id }}" hidden></p>
+          {% endif %}
         </div>
         <img class="oz-stage__seal" src="{{ (img ~ 'badges/stage-' ~ loop.index ~ '.svg') | url }}" width="96" height="96" alt="">
+        {% if page.meta.challenges and stage.id in page.meta.challenges %}
+          {% set questions = page.meta.challenges[stage.id] %}
+          {% set pass = (questions | length) - 1 %}
+          <details class="oz-challenge" id="challenge-{{ stage.id }}">
+            <summary>Final challenge of the stage: {{ questions | length }} questions</summary>
+            <section class="oz-quiz oz-challenge__quiz" data-oz-quiz data-oz-quiz-kind="challenge" data-oz-pass="{{ pass }}" data-oz-release="{{ config.extra.portal.current }}" data-oz-quiz-key="{{ stage.id }}" aria-label="Final challenge: {{ stage.name }}">
+              <div class="oz-quiz__intro">
+                <img src="{{ (img ~ 'lumo/thinking.webp') | url }}" width="400" height="400" alt="">
+                <p><strong>Lumo:</strong> {{ questions | length }} questions on the whole stage. Get at least {{ pass }}
+                right on the first try, with every page of the stage marked as read, and the seal of
+                {{ stage.name }} is yours. You can try again as often as you like.<span class="oz-quiz__best" data-oz-quiz-best hidden></span></p>
+              </div>
+              {% for item in questions %}
+                {% set qn = loop.index %}
+                <fieldset class="oz-quiz__q" data-oz-quiz-answer="{{ item.answer }}">
+                  <legend>{{ qn }}. {{ item.q | safe }}</legend>
+                  {% for option in item.options %}
+                    <label class="oz-quiz__option"><input type="radio" name="oz-challenge-{{ stage.id }}-{{ qn }}" value="{{ loop.index0 }}"> <span>{{ option | safe }}</span></label>
+                  {% endfor %}
+                  <details class="oz-quiz__answer">
+                    <summary>Show the answer</summary>
+                    <p><strong data-oz-feedback hidden></strong><strong>Answer:</strong> {{ item.options[item.answer] | safe }}. {{ item.explain | safe }}
+                    {% if item.see %}<a href="{{ item.see | url }}">Read the page</a>.{% endif %}</p>
+                  </details>
+                </fieldset>
+              {% endfor %}
+              <div class="oz-quiz__score" data-oz-quiz-score hidden>
+                <img data-oz-quiz-pose="right" src="{{ (img ~ 'lumo/celebrating.webp') | url }}" width="400" height="400" alt="" hidden>
+                <img data-oz-quiz-pose="again" src="{{ (img ~ 'lumo/pointing.webp') | url }}" width="400" height="400" alt="" hidden>
+                <div>
+                  <p role="status" data-oz-quiz-result></p>
+                  <button type="button" class="portal-cta" data-oz-quiz-retry>Try the challenge again</button>
+                </div>
+              </div>
+            </section>
+          </details>
+        {% endif %}
       </li>
     {% endfor %}
   </ol>
