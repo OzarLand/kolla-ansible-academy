@@ -236,7 +236,7 @@ declares the two options without an argument default, so the values from `docker
 |---|---|
 | **Finding** | **The L3 agent wrapper runs `neutron-netns-cleanup --force --agent-type l3` at start** when `enable_neutron_agent_ha: yes` (default `no`); its comment says this removes all L3 namespaces (what the command does is neutron code: [NOT AVAILABLE]). New in 2024.1, the cleanup also reads `fwaas_driver.ini` when FWaaS is enabled |
 | **Evidence** | [CODE] `roles/neutron/templates/neutron-l3-agent-wrapper.sh.j2:5-14`; `group_vars/all.yml:816` |
-| **Why it matters** | [NOT AVAILABLE] Whether an L3 agent restart interrupts router traffic on that node ([Q4](../troubleshooting/open-questions.md#q4)). `neutron_l3_agent_failover_delay` (default `0`, `roles/neutron/defaults/main.yml:651`) spaces the restarts of running L3 agents across hosts (`roles/neutron/handlers/main.yml:127-157`) ([R6](../risk/risk-register.md#r6)) |
+| **Why it matters** | [NOT AVAILABLE] Whether an L3 agent restart interrupts router traffic on that node ([Q4](../troubleshooting/open-questions.md#q4)). `neutron_l3_agent_failover_delay` (default `0`, `roles/neutron/defaults/main.yml:651`) spaces the restarts of running L3 agents across hosts when set above `0`; with the default they are not spaced (`roles/neutron/handlers/main.yml:127-157`) ([R6](../risk/risk-register.md#r6)) |
 
 <a id="f13"></a>
 
