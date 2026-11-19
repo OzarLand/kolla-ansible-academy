@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 260" role="img" aria-labelledby="t">
+  <title id="t">A wooden signpost of OzarLand with four arrows, under a lantern</title>
+  <defs>
+    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e2b77a"/><stop offset="1" stop-color="#c4904f"/></linearGradient>
+    <radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd877" stop-opacity=".9"/><stop offset="1" stop-color="#ffd877" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect x="112" y="40" width="16" height="210" rx="3" fill="#7a4a24"/>
+  <path d="M60 250 h120" stroke="#6b8f3a" stroke-width="8" stroke-linecap="round"/>
+  <g stroke="#7a4a24" stroke-width="2.5" stroke-linejoin="round">
+    <path d="M128 70 h86 l18 16 l-18 16 h-86z" fill="url(#wood)"/>
+    <path d="M112 112 h-86 l-18 16 l18 16 h86z" fill="url(#wood)"/>
+    <path d="M128 154 h80 l18 16 l-18 16 h-80z" fill="url(#wood)"/>
+    <path d="M112 196 h-74 l-18 16 l18 16 h74z" fill="url(#wood)"/>
+  </g>
+  <g fill="#7a4a24">
+    <rect x="142" y="82" width="58" height="5" rx="2"/><rect x="142" y="92" width="38" height="4" rx="2"/>
+    <rect x="40" y="124" width="58" height="5" rx="2"/><rect x="60" y="134" width="38" height="4" rx="2"/>
+    <rect x="142" y="166" width="52" height="5" rx="2"/><rect x="142" y="176" width="34" height="4" rx="2"/>
+    <rect x="52" y="208" width="46" height="5" rx="2"/><rect x="66" y="218" width="32" height="4" rx="2"/>
+  </g>
+  <g fill="#5f9a3e">
+    <path d="M118 46 c-14 -4 -20 6 -26 2 c6 -8 18 -10 26 -6z"/><path d="M124 58 c12 -8 22 0 28 -4 c-6 8 -18 10 -28 8z"/>
+    <circle cx="210" cy="104" r="4"/><circle cx="30" cy="146" r="4"/>
+  </g>
+  <circle cx="120" cy="22" r="22" fill="url(#glow)"/>
+  <path d="M120 0 v8" stroke="#3a2a1a" stroke-width="2"/>
+  <path d="M110 10 h20 l-3 5 h-14z" fill="#3a2a1a"/>
+  <rect x="112" y="15" width="16" height="18" rx="2" fill="#ffd877" stroke="#3a2a1a" stroke-width="2"/>
+  <path d="M110 33 h20 l-4 5 h-12z" fill="#3a2a1a"/>
+</svg>

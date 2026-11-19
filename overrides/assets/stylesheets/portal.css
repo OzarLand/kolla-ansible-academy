@@ -1490,44 +1490,284 @@ body {
   color: var(--portal-text-muted);
 }
 
-/* Landing page of the portal: the calls to action of the hero. */
-.portal-hero__actions {
+/* ------------------- 14. Landing page of the portal: OzarLand identity
+   Colours taken from the OzarLand banner (navy pennants with a cloud
+   emblem, parchment, wood, lanterns, sea, terracotta roofs). Used only by
+   overrides/landing.html (classes oz-*) and its calls to action. */
+
+[data-md-color-scheme="default"] {
+  --oz-navy: #1f3a6b;
+  --oz-navy-strong: #152a50;
+  --oz-parchment: #f3e3c3;
+  --oz-parchment-soft: #fbf4e4;
+  --oz-wood: #c4904f;
+  --oz-wood-dark: #6b4220;
+  --oz-lantern: #f0b440;
+  --oz-sea: #1e9fb5;
+  --oz-terracotta: #b55a3a;
+  --oz-hero-bg: linear-gradient(135deg, #fbf4e4 0%, #f3e3c3 55%, #dcebf7 100%);
+  --oz-cta-bg: var(--oz-navy);
+  --oz-cta-fg: #ffffff;
+  --oz-ink: #1f3a6b;
+}
+
+[data-md-color-scheme="slate"] {
+  --oz-navy: #8fb0e6;
+  --oz-navy-strong: #b7cdf0;
+  --oz-parchment: #f3e3c3;
+  --oz-parchment-soft: #1c2433;
+  --oz-wood: #d9a865;
+  --oz-wood-dark: #d9a865;
+  --oz-lantern: #f0b440;
+  --oz-sea: #4cc3d6;
+  --oz-terracotta: #e0825f;
+  --oz-hero-bg: linear-gradient(135deg, #142038 0%, #1a2a47 55%, #1d3550 100%);
+  --oz-cta-bg: #f0b440;
+  --oz-cta-fg: #1a1408;
+  --oz-ink: #f3e3c3;
+}
+
+.portal-hero.oz-hero {
+  background: var(--oz-hero-bg);
+  border-bottom: 0.2rem solid var(--oz-wood);
+}
+
+.oz-hero__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 26rem);
+  gap: 1.6rem;
+  align-items: center;
+}
+
+@media screen and (max-width: 60em) {
+  .oz-hero__inner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.oz-hero__org {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.8rem;
+  align-items: center;
+  margin: 0 0 0.7rem;
+  font-size: 0.7rem;
+}
+
+.oz-hero__org a {
+  font-weight: 600;
+  color: var(--oz-ink);
+  text-decoration: none;
+}
+
+.oz-hero__org a:hover {
+  text-decoration: underline;
+}
+
+.oz-hero__badge {
+  padding: 0.15rem 0.55rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--oz-parchment);
+  text-transform: uppercase;
+  background-color: #1f3a6b;
+  border-bottom: 0.1rem solid var(--oz-lantern);
+  border-radius: 0.2rem;
+}
+
+.oz-hero .portal-hero__title {
+  color: var(--oz-ink);
+}
+
+.oz-hero__tagline {
+  margin: 0.5rem 0 0;
+  font-size: 0.95rem;
+  font-style: italic;
+  font-weight: 600;
+  color: var(--oz-wood-dark);
+}
+
+.oz-hero .portal-hero__lead {
+  color: var(--portal-text);
+}
+
+.oz-hero__art {
+  margin: 0;
+}
+
+.oz-hero__art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 0.2rem solid var(--oz-wood);
+  border-radius: 1rem;
+  box-shadow: 0 0.4rem 1.2rem rgb(31 58 107 / 25%);
+}
+
+/* Calls to action (hero and closing block). */
+.portal-hero__actions,
+.oz-land__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
   margin: 1.4rem 0 0;
 }
 
-.portal-cta {
+.md-typeset a.portal-cta,
+a.portal-cta {
   display: inline-flex;
   align-items: center;
   min-height: 2.2rem;
   padding: 0 1rem;
   font-size: 0.8rem;
   font-weight: 650;
-  color: var(--portal-text);
+  color: var(--oz-ink);
   text-decoration: none;
   background-color: var(--portal-bg);
-  border: 0.05rem solid var(--portal-border-strong);
+  border: 0.1rem solid var(--oz-wood);
   border-radius: 0.3rem;
 }
 
-.portal-cta:hover {
-  border-color: var(--portal-accent);
+.md-typeset a.portal-cta:hover,
+a.portal-cta:hover {
+  border-color: var(--oz-wood-dark);
 }
 
-.portal-cta:focus-visible {
+a.portal-cta:focus-visible {
   outline: 0.1rem solid var(--portal-accent);
   outline-offset: 0.1rem;
 }
 
-.portal-cta--primary {
-  color: var(--portal-bg);
-  background-color: var(--portal-accent);
-  border-color: var(--portal-accent);
+.md-typeset a.portal-cta--primary,
+a.portal-cta--primary,
+.md-typeset a.portal-cta--primary:hover,
+a.portal-cta--primary:hover {
+  color: var(--oz-cta-fg);
+  background-color: var(--oz-cta-bg);
+  border-color: var(--oz-cta-bg);
 }
 
-.portal-cta--primary:hover {
-  color: var(--portal-bg);
-  filter: brightness(1.1);
+a.portal-cta--primary:hover {
+  filter: brightness(1.12);
+}
+
+/* Text beside an illustration. */
+.oz-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 14rem;
+  gap: 1.6rem;
+  align-items: center;
+  max-width: 56rem;
+}
+
+.oz-split > div > :is(p, ol) {
+  max-width: 44rem;
+}
+
+.oz-split--reverse {
+  grid-template-columns: 11rem minmax(0, 1fr);
+}
+
+.oz-split--reverse > img {
+  order: -1;
+}
+
+.oz-split__art {
+  width: 100%;
+  height: auto;
+}
+
+@media screen and (max-width: 44.9375em) {
+  .oz-split,
+  .oz-split--reverse {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .oz-split__art {
+    max-width: 12rem;
+    margin: 0 auto;
+  }
+
+  .oz-split--reverse > img {
+    order: 0;
+  }
+}
+
+/* Cards with an icon. */
+.md-typeset .oz-cards > ul > li {
+  border-top: 0.2rem solid var(--oz-wood);
+}
+
+.oz-icon {
+  display: block;
+  width: 2.2rem;
+  height: 2.2rem;
+  margin-bottom: 0.4rem;
+}
+
+/* Learning path: numbered wooden markers. */
+.md-typeset ol.oz-path {
+  padding: 0;
+  margin-left: 0;
+  list-style: none;
+  counter-reset: oz-step;
+}
+
+[dir] .md-typeset ol.oz-path > li {
+  position: relative;
+  padding-left: 2.2rem;
+  margin: 0 0 0.7rem;
+  counter-increment: oz-step;
+}
+
+.md-typeset ol.oz-path > li::before {
+  position: absolute;
+  top: -0.05rem;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #ffffff;
+  content: counter(oz-step);
+  background-color: #1f3a6b;
+  border: 0.1rem solid var(--oz-lantern);
+  border-radius: 50%;
+}
+
+/* Closing block "Part of OzarLand". */
+.oz-land {
+  max-width: 56rem;
+  padding: 0.2rem 1.2rem 1.2rem;
+  margin-top: 2rem;
+  background-color: var(--oz-parchment-soft);
+  border: 0.05rem solid var(--oz-wood);
+  border-left: 0.3rem solid var(--oz-wood);
+  border-radius: 0.4rem;
+}
+
+.md-typeset .oz-land > h2 {
+  padding-top: 0;
+  margin-top: 1rem;
+  border-top: 0;
+}
+
+.md-typeset .oz-land table {
+  display: table;
+  width: 100%;
+  font-size: 0.75rem;
+}
+
+.md-typeset .oz-land tr.oz-land__here td {
+  background-color: var(--portal-accent-soft);
+}
+
+/* The first heading of the landing page sits in a split block: no rule above it. */
+.md-container:has(> .oz-hero) .md-typeset > .oz-split:first-of-type h2 {
+  padding-top: 0;
+  margin-top: 1.2rem;
+  border-top: 0;
 }

@@ -1,37 +1,52 @@
 {#-
   Root of the portal (/index.html), built from a stub that
-  tools/site/releases.py generates. The welcome page: why the project exists
-  (to make learning Kolla-Ansible Day-2 operations easier), a suggested
-  learning path in the default release, and the list of the releases. The
-  main call to action carries data-portal-default, the default release that
-  tools/site/check_site.py checks.
+  tools/site/releases.py generates. The welcome page: a project of the
+  OzarLand organisation whose purpose is to make learning Kolla-Ansible Day-2
+  operations easier. It holds why the project exists, a suggested learning
+  path in the default release, the list of the releases and the shared
+  "Part of OzarLand" block. The main call to action carries
+  data-portal-default, the default release that tools/site/check_site.py
+  checks. The illustrations (overrides/assets/images/ozarland/) are original
+  drawings in the style of the OzarLand banner; the banner itself is kept for
+  the organisation profile and the hub README, as its convention says.
 -#}
 {% extends "main.html" %}
 {% set portal = config.extra.portal %}
 {% set root = base_url ~ "/" ~ portal.up %}
 {% set start = root ~ portal.default ~ "/" %}
+{% set img = root ~ "assets/images/ozarland/" %}
+{% set hub = "https://github.com/OzarLand/ozarland" %}
 {% set default = namespace(title=portal.default) %}
 {% for release in portal.releases if release.id == portal.default %}
   {% set default.title = release.title %}
 {% endfor %}
 
 {% block htmltitle %}
-  <title>{{ config.site_name }}</title>
+  <title>{{ config.site_name }} · OzarLand</title>
 {% endblock %}
 
 {% block hero %}
-  <section class="portal-hero" aria-label="Introduction">
-    <div class="md-grid portal-hero__inner">
-      <p class="portal-hero__eyebrow">{{ config.site_author }}</p>
-      <h1 class="portal-hero__title" id="welcome">{{ config.site_name }}</h1>
-      <p class="portal-hero__lead">
-        A learning resource for Kolla-Ansible Day-2 operations. It explains, from the source code of each release,
-        what a command really does to a running OpenStack platform, so that you understand it before you run it.
-      </p>
-      <p class="portal-hero__actions">
-        <a class="portal-cta portal-cta--primary" href="{{ start }}" data-portal-default="{{ portal.default }}">Start learning with {{ default.title }}</a>
-        <a class="portal-cta" href="#releases">Choose a release</a>
-      </p>
+  <section class="portal-hero oz-hero" aria-label="Introduction">
+    <div class="md-grid portal-hero__inner oz-hero__inner">
+      <div class="oz-hero__text">
+        <p class="oz-hero__org">
+          <a href="{{ hub }}"><span aria-hidden="true">←</span> OzarLand home</a>
+          <span class="oz-hero__badge">An OzarLand project</span>
+        </p>
+        <h1 class="portal-hero__title" id="welcome">{{ config.site_name }}</h1>
+        <p class="oz-hero__tagline">A shared land for better OpenStack operations.</p>
+        <p class="portal-hero__lead">
+          A learning resource for Kolla-Ansible Day-2 operations. It explains, from the source code of each release,
+          what a command really does to a running OpenStack platform, so that you understand it before you run it.
+        </p>
+        <p class="portal-hero__actions">
+          <a class="portal-cta portal-cta--primary" href="{{ start }}" data-portal-default="{{ portal.default }}">Start learning with {{ default.title }}</a>
+          <a class="portal-cta" href="#releases">Choose a release</a>
+        </p>
+      </div>
+      <figure class="oz-hero__art">
+        <img src="{{ img }}island.svg" width="640" height="400" alt="An island city of OzarLand: towers and aqueducts on a cliff above the sea, a sailing ship and a navy banner with a cloud emblem">
+      </figure>
     </div>
   </section>
 {% endblock %}
@@ -51,23 +66,29 @@
 {% endblock %}
 
 {% block content %}
-  <h2 id="why">Why this project exists</h2>
-  <p>
-    The Kolla-Ansible documentation tells you which command to run. Operating a platform also requires knowing what
-    that command executes: which plays and tasks run, which containers can restart, and what can go wrong. That
-    knowledge is spread across playbooks, roles, handlers and container images, and it is hard to learn from them
-    directly.
-  </p>
-  <p>
-    The purpose of this project is to make that learning easier. Each release is studied from its source code and
-    explained in operator terms, page by page, from the concepts to the procedures. The goal is not only to give
-    answers, but to help you build your own understanding of how Kolla-Ansible works.
-  </p>
+  <div class="oz-split">
+    <div>
+      <h2 id="why">Why this project exists</h2>
+      <p>
+        The Kolla-Ansible documentation tells you which command to run. Operating a platform also requires knowing
+        what that command executes: which plays and tasks run, which containers can restart, and what can go wrong.
+        That knowledge is spread across playbooks, roles, handlers and container images, and it is hard to learn from
+        them directly.
+      </p>
+      <p>
+        The purpose of this project is to make that learning easier. Each release is studied from its source code and
+        explained in operator terms, page by page, from the concepts to the procedures. The goal is not only to give
+        answers, but to help you build your own understanding of how Kolla-Ansible works.
+      </p>
+    </div>
+    <img class="oz-split__art" src="{{ img }}scroll.svg" width="280" height="200" alt="A parchment map: a dotted path from a book to a cloud emblem, past checked steps">
+  </div>
 
   <h2 id="how">How it helps you learn</h2>
-  <div class="grid cards">
+  <div class="grid cards oz-cards">
     <ul>
       <li>
+        <svg class="oz-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 12 q9 -5 18 0 q9 -5 18 0 v26 q-9 -5 -18 0 q-9 -5 -18 0z" fill="var(--oz-navy)"/><path d="M24 12 v26" stroke="var(--oz-parchment)" stroke-width="2"/><path d="M11 19 h8 M11 24 h8 M29 19 h8 M29 24 h6" stroke="var(--oz-parchment)" stroke-width="2" stroke-linecap="round"/></svg>
         <p><strong><a href="{{ start }}start/conventions/">Learn from the code itself</a></strong></p>
         <hr>
         <p>
@@ -76,6 +97,7 @@
         </p>
       </li>
       <li>
+        <svg class="oz-icon" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="26" r="16" fill="var(--oz-lantern)" opacity=".3"/><path d="M24 4 v5" stroke="var(--oz-wood-dark)" stroke-width="2.5"/><path d="M16 10 h16 l-3 4 h-10z" fill="var(--oz-wood-dark)"/><rect x="17" y="14" width="14" height="18" rx="2" fill="var(--oz-lantern)" stroke="var(--oz-wood-dark)" stroke-width="2.5"/><path d="M16 32 h16 l-4 5 h-8z" fill="var(--oz-wood-dark)"/></svg>
         <p><strong><a href="{{ start }}start/conventions/">Know where knowledge stops</a></strong></p>
         <hr>
         <p>
@@ -84,6 +106,7 @@
         </p>
       </li>
       <li>
+        <svg class="oz-icon" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="18" fill="var(--oz-parchment)" stroke="var(--oz-wood-dark)" stroke-width="2.5"/><path d="M24 8 l5 16 l-5 16 l-5 -16z" fill="var(--oz-terracotta)"/><path d="M24 24 l5 0 l-5 16z" fill="var(--oz-navy)"/><circle cx="24" cy="24" r="2.5" fill="var(--oz-wood-dark)"/></svg>
         <p><strong><a href="{{ start }}concepts/">Understand before acting</a></strong></p>
         <hr>
         <p>
@@ -92,6 +115,7 @@
         </p>
       </li>
       <li>
+        <svg class="oz-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M10 4 v40 M30 4 v40" stroke="var(--oz-wood-dark)" stroke-width="3" stroke-linecap="round"/><path d="M12 7 h14 v22 l-7 -5 l-7 5z" fill="var(--oz-navy)"/><path d="M32 7 h12 v22 l-6 -5 l-6 5z" fill="var(--oz-sea)"/><path d="M15 16 a3 3 0 0 1 2 -5 a4 4 0 0 1 7 1 a2.5 2.5 0 0 1 0 4z" fill="var(--oz-parchment)"/></svg>
         <p><strong><a href="#releases">Compare the releases</a></strong></p>
         <hr>
         <p>
@@ -102,23 +126,53 @@
     </ul>
   </div>
 
-  <h2 id="learning-path">A suggested learning path</h2>
-  <p>In {{ default.title }}, read the pages in this order:</p>
-  <ol>
-    <li><a href="{{ start }}start/conventions/">Conventions and evidence labels</a>: how to read a page and its evidence.</li>
-    <li><a href="{{ start }}start/ten-things-to-know/">Ten things to know before a production run</a>: the essentials, each with the section that gives the evidence.</li>
-    <li><a href="{{ start }}concepts/">Architecture and concepts</a>: the repository, the execution flow of a run, compute scaling, the kolla images.</li>
-    <li><a href="{{ start }}operations/">Operations</a>: one page per Day-2 operation, with its commands, its impact and its risks.</li>
-    <li><a href="{{ start }}risk/">Risk and impact</a>: what a tag really executes and how to judge the risk of a change.</li>
-    <li><a href="{{ start }}reference/">Reference</a>: the glossary, the fact sheets and the Ansible listings, to go deeper.</li>
-  </ol>
-  <p>
-    The study is a reading of the source code: nothing in it was run against a host. Try a procedure on a test
-    platform before you use it on production.
-  </p>
+  <div class="oz-split oz-split--reverse">
+    <div>
+      <h2 id="learning-path">A suggested learning path</h2>
+      <p>In {{ default.title }}, read the pages in this order:</p>
+      <ol class="oz-path">
+        <li><a href="{{ start }}start/conventions/">Conventions and evidence labels</a>: how to read a page and its evidence.</li>
+        <li><a href="{{ start }}start/ten-things-to-know/">Ten things to know before a production run</a>: the essentials, each with the section that gives the evidence.</li>
+        <li><a href="{{ start }}concepts/">Architecture and concepts</a>: the repository, the execution flow of a run, compute scaling, the kolla images.</li>
+        <li><a href="{{ start }}operations/">Operations</a>: one page per Day-2 operation, with its commands, its impact and its risks.</li>
+        <li><a href="{{ start }}risk/">Risk and impact</a>: what a tag really executes and how to judge the risk of a change.</li>
+        <li><a href="{{ start }}reference/">Reference</a>: the glossary, the fact sheets and the Ansible listings, to go deeper.</li>
+      </ol>
+      <p>
+        The study is a reading of the source code: nothing in it was run against a host. Try a procedure on a test
+        platform before you use it on production.
+      </p>
+    </div>
+    <img class="oz-split__art oz-split__art--post" src="{{ img }}signpost.svg" width="240" height="260" alt="A wooden signpost of OzarLand with four arrows, under a lantern">
+  </div>
 
   <h2 id="releases">Releases</h2>
   <p>Each release is a separate study, with its own pages, navigation and search.</p>
   {% set release_heading = 3 %}
   {% include "partials/release-lists.html" %}
+
+  <section class="oz-land" aria-labelledby="ozarland">
+    <h2 id="ozarland">Part of OzarLand</h2>
+    <p>
+      <strong>OzarLand: a shared land for better OpenStack operations.</strong> It started as a personal initiative by
+      Soufian Zaouam to share practical OpenStack operational knowledge, and it is meant to grow into a space where
+      operators exchange experience, document solutions and help each other run more reliable platforms. It is open
+      to everyone: your knowledge, questions and corrections are welcome.
+    </p>
+    <table>
+      <thead><tr><th></th><th>Repository</th><th>What it holds</th></tr></thead>
+      <tbody>
+        <tr><td></td><td><a href="{{ hub }}">ozarland</a></td><td>Start here: newcomer path, community rules, <a href="{{ hub }}/discussions">Discussions</a></td></tr>
+        <tr><td>🔧</td><td><a href="https://github.com/OzarLand/openstack-vm-runbooks">openstack-vm-runbooks</a></td><td>Symptom-driven runbooks for instance problems</td></tr>
+        <tr><td>🏗️</td><td><a href="https://github.com/OzarLand/kolla-ansible-deployment-patterns">kolla-ansible-deployment-patterns</a></td><td>Ways to deploy with Kolla-Ansible, compared</td></tr>
+        <tr><td>🧪</td><td><a href="https://github.com/OzarLand/openstack-quick-lab">openstack-quick-lab</a></td><td>A disposable OpenStack lab to practise on</td></tr>
+        <tr><td>🤖</td><td><a href="https://github.com/OzarLand/openstack-operator-skills">openstack-operator-skills</a></td><td>Claude skills that apply this knowledge</td></tr>
+        <tr class="oz-land__here"><td>📘</td><td><strong>kolla-ansible-day2</strong> (you are here)</td><td>Source-code study of Kolla-Ansible for Day-2 operations, one study per release</td></tr>
+      </tbody>
+    </table>
+    <p class="oz-land__actions">
+      <a class="portal-cta portal-cta--primary" href="{{ hub }}">Visit OzarLand</a>
+      <a class="portal-cta" href="{{ hub }}/discussions">Ask a question</a>
+    </p>
+  </section>
 {% endblock %}
