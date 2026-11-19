@@ -36,3 +36,7 @@ and `tag = "2024.1-eom"` in `versions.toml`, the learning blocks and the journey
 - method-and-limits: re-read phase 6 once all pages exist; add the service cards to "Generated material" once
   `tools/service_cards.py` has been run on the 2024.1 component pages; restore the counts of "Related" (findings,
   fact sheets, open questions) once verified.
+- conventions: restore the list of Critical risks in the `critical` class and the R3/R10 references in
+  `maintenance-window` once the 2024.1 risk register is written.
+- glossary: check the anchor `concepts/compute-scaling-and-performance.md#1-how-ansible-core-216-spends-time-in-kolla-ansible`
+  and the R/F/Q identifier ranges once those pages exist.
