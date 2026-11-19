@@ -115,6 +115,8 @@ kolla-ansible -i multinode -t nova reconfigure
   downloads the pinned version and verifies its checksum, and the site loads it only on pages that contain a diagram.
   Version, checksums and the update procedure are in
   [overrides/assets/vendor/mermaid/README.md](overrides/assets/vendor/mermaid/README.md).
+  A diagram is written in the page of each release, even when two releases draw the same thing (5 of the 34 diagrams
+  today): it is evidence of that release's code, so it is not shared with another release, whose code may change.
 
 ## Risks, findings and open questions
 

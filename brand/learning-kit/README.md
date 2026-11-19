@@ -59,20 +59,20 @@ Site files: `overrides/assets/images/ozarland/` (mascot and spot scenes converte
 | Kit file | Site file | Used by |
 |---|---|---|
 | `mascot/welcome.png` | `lumo/welcome.webp` | home page of each release (`overrides/home.html`) |
-| `mascot/pointing.png` | `lumo/pointing.webp` | welcome page of the portal (`overrides/landing.html`) |
+| `mascot/pointing.png` | `lumo/pointing.webp` | welcome page of the portal (`overrides/landing.html`); quiz or challenge score with a wrong answer |
 | `mascot/map.png` | `lumo/map.webp` | journey page (`overrides/journey.html`) |
-| `mascot/avatar.png` | `lumo/avatar.webp` | end of each page of the journey (`overrides/main.html`) |
 | `spots/well-done.png` | `lumo/well-done.webp` | journey page, when every page is read |
 | `mascot/caution.png` | `lumo/caution.webp` | pages of an operation rated Critical (`impact: [critical]`) |
-| `mascot/celebrating.png` | `lumo/celebrating.webp` | end of a journey page, once it is marked as read |
-| `mascot/reading.png` | `lumo/reading.webp` | glossary page |
-| `mascot/lab.png` | `lumo/lab.webp` | journey page, "Practise safely" |
-| `mascot/thinking.png` | `lumo/thinking.webp` | "Check yourself" quizzes |
+| `mascot/celebrating.png` | `lumo/celebrating.webp` | end of a journey page, once it is marked as read; quiz or challenge passed |
+| `mascot/reading.png` | `lumo/reading.webp` | glossary page; "To remember" cards |
+| `mascot/lab.png` | `lumo/lab.webp` | journey page, "Practise safely"; "What would you do?" scenarios |
+| `mascot/thinking.png` | `lumo/thinking.webp` | "Check yourself" quizzes, final challenges of the stages |
 | `journey/journey-map.webp`, `stage-1.webp` … `stage-5.webp` | `journey/` | journey page |
 | `badges/level-*.svg` | `badges/` | level chip of every page |
 | `badges/stage-*.svg`, `journey-complete.svg` | `badges/` | seals of the journey page |
-| `callouts/*.svg` | `callouts/` | callouts guide, why, lab, checkpoint, careful, remember, quiz |
-
+| `callouts/*.svg` | `callouts/` | callouts guide, why, lab, checkpoint, careful, remember, quiz, scenario |
 | `spots/empty-search.png` | `lumo/empty-search.webp` | search without result: `learning.js` adds Lumo's help to the search dialog of the theme (template `#oz-empty-search` of `overrides/main.html`) |
+| `spots/page-end.png` | `lumo/page-end.webp` | end of every journey page, next to "ready for the next step?" |
 
-Not used yet: the spot `page-end` (`lumo/`).
+Not used: `mascot/avatar.png` (`lumo/avatar.webp`), which the `page-end` scene replaced at the end of the journey pages; it
+stays available for a compact guide callout.

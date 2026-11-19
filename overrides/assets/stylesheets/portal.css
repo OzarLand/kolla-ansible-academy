@@ -2329,10 +2329,11 @@ a.portal-cta:focus-visible {
   font-size: 0.75rem;
 }
 
+/* Lumo points along the path to the next step (page-end scene, 3:2). */
 .md-typeset .oz-step-end__lumo img {
   flex: none;
-  width: 2.6rem;
-  height: 2.6rem;
+  width: 6rem;
+  height: auto;
 }
 
 /* Callout icons of the kit (colour drawings, not masks). */
