@@ -43,3 +43,4 @@ and `tag = "2024.1-eom"` in `versions.toml`, the learning blocks and the journey
 - impact classes: in 2024.1 `genconfig` and `-t common` can pull the fluentd image (`roles/common/tasks/config.yml:42-51`).
   Decide whether the `writes-config` class text ("restarts no container") needs a note about that pull before release.
 - components: openvswitch and ovn carry a "Key answers" note that the other component pages do not have; harmonise (keep on all or none) before release.
+- fact sheets: A carries a "Key answers" note that the 2023.1 fact sheets do not; harmonise across A–E.
