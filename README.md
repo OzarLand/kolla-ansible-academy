@@ -57,7 +57,7 @@ rebuilds and publishes it on every push to `main` that changes the documentation
 Each release is a site of its own under the address of the portal, for example
 `https://ozarland.github.io/kolla-ansible-day2/ussuri/`: its search, its navigation and its "recently updated" list
 cover that release only. The header of every page shows the release being read and lets the reader switch to another
-one. The root address opens the default release. The addresses published before the portal had releases, such as
+one. The root address opens the default release, 2023.1. The addresses published before the portal had releases, such as
 `/kolla-ansible-day2/operations/reconfigure-nova/`, are redirected to the same page under `/ussuri/`.
 
 The portal is generated from the Markdown under `docs/<release>/`, which is the single source. Every page can also be
