@@ -4,7 +4,7 @@ description: What a single-service reconfigure such as -t keystone runs, what th
 tags: [keystone, glance, placement, cinder, heat, haproxy, reconfigure, tags, loop-notify, one-shot, limit]
 remember:
   - "A changed <code>services.d/&lt;svc&gt;*.cfg</code> restarts HAProxy on every loadbalancer host, the backups first and then the VIP holder; add <code>--skip-tags haproxy</code> when frontends are not meant to change."
-  - "On each drifted host all the service's containers restart, all such hosts in parallel: a change common to all hosts restarts the service on all its hosts at once."
+  - "On each drifted host all the service's containers restart, all such hosts in parallel unless <code>ANSIBLE_SERIAL</code> is set: a change common to all hosts then restarts the service on all its hosts at once."
   - "Even a narrow tag also touches the service's HAProxy frontends, Keystone registration and DB sync; in 2023.1 it no longer runs <code>common</code>."
   - "The service API is unavailable while its containers restart, with up to <code>docker_graceful_timeout</code> (60 s by default) before SIGKILL."
   - "Before: copy <code>services.d/&lt;svc&gt;*.cfg</code> (genconfig re-renders it, and a later <code>-t &lt;svc&gt;</code> run then no longer restarts HAProxy), <code>-t &lt;svc&gt; genconfig</code>, then <code>kolla_set_configs --check</code> with <code>-u root</code> in each container and a diff of the <code>services.d</code> file."
@@ -19,7 +19,7 @@ scenarios:
         why: "<code>--skip-tags haproxy</code> only drops the loadbalancer play (the frontends). The glance containers still restart on every drifted host, and the service API is unavailable while its containers restart on all its hosts at once."
       - text: "Run it now: only drifted hosts restart, so the transfers are safe."
         verdict: "avoid"
-        why: "Drifted hosts restart in parallel, so a change common to all hosts restarts the service on all its hosts at once. In-flight glance or cinder transfers are SIGKILLed after <code>docker_graceful_timeout</code> (60 s by default; R24)."
+        why: "Without <code>ANSIBLE_SERIAL</code>, drifted hosts restart in parallel, so a change common to all hosts restarts the service on all its hosts at once. In-flight glance or cinder transfers are SIGKILLed after <code>docker_graceful_timeout</code> (60 s by default; R24)."
       - text: "Copy <code>/etc/kolla/haproxy/services.d/glance*.cfg</code>, run <code>kolla-ansible -t glance genconfig</code>, check each glance container with <code>docker exec -u root &lt;c&gt; /usr/local/bin/kolla_set_configs --check; echo $?</code>, diff <code>/etc/kolla/haproxy/services.d/glance*.cfg</code>, and run the <code>reconfigure</code> in a window with no transfers in flight."
         verdict: "best"
         why: "This is the \"before\" verification of §3 (genconfig, the check as root in each container, a diff of the HAProxy frontend), and it avoids R24: in-flight glance transfers are SIGKILLed after <code>docker_graceful_timeout</code> while the containers restart."
@@ -82,7 +82,7 @@ kolla-ansible -i multinode -t keystone reconfigure
     that host restart (`keystone`, `keystone_ssh` and `keystone_fernet`; in 2023.1 all three are `enabled: true`
     unconditionally, `roles/keystone/defaults/main.yml:6, :44, :57`, and `keystone_token_provider` no longer exists;
     `roles/keystone/tasks/check-containers.yml:2-17`). Hosts without drift
-    do not restart. Drifted hosts restart in parallel, so a change common to all hosts (globals, `keystone.conf`, a
+    do not restart. Without `ANSIBLE_SERIAL`, drifted hosts restart in parallel, so a change common to all hosts (globals, `keystone.conf`, a
     new image) restarts keystone on all keystone hosts at once.
 - **One-shot:** keystone db sync. Fernet keys are re-distributed.
 - **Impact:** if restarted, keystone restarts on all drifted hosts at once; [NOT AVAILABLE] whether authentication fails
@@ -142,7 +142,7 @@ For an API service such as keystone, glance, cinder, heat or placement:
    (`roles/loadbalancer/handlers/main.yml:9-34, :54-68`) [CODE] ([R8](../risk/risk-register.md#r8)).
 3. Service play, on the service hosts: Keystone registration (`run_once`) → config → check-containers →
    DB/user creation and the DB-sync container on the first host → flush. Every drifted host restarts all of the
-   service's containers (loop-notify), all such hosts in parallel. Keystone is the exception: it registers last
+   service's containers (loop-notify), all such hosts in parallel unless `ANSIBLE_SERIAL` batches the play. Keystone is the exception: it registers last
    ([§1.1](#11-reconfigure-a-single-service)).
 
 - **Interruption:** the service API is unavailable while its containers restart (stop with up to

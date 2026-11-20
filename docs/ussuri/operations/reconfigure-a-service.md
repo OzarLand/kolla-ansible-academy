@@ -4,7 +4,7 @@ description: What a single-service reconfigure such as -t keystone runs, what th
 tags: [keystone, glance, placement, cinder, heat, haproxy, reconfigure, tags, loop-notify, one-shot, limit]
 remember:
   - "A changed <code>services.d/&lt;svc&gt;*.cfg</code> restarts HAProxy on all haproxy hosts at once; add <code>--skip-tags haproxy</code> when frontends are not meant to change."
-  - "On each drifted host all the service's containers restart, all such hosts in parallel: a change common to all hosts restarts the service on all its hosts at once."
+  - "On each drifted host all the service's containers restart, all such hosts in parallel unless <code>ANSIBLE_SERIAL</code> is set: a change common to all hosts then restarts the service on all its hosts at once."
   - "Even a narrow tag also touches the service's HAProxy frontends, Keystone registration, DB sync and <code>common</code> on every host of the service play."
   - "The service API is unavailable while its containers restart (up to 10 s stop, then start) on all its hosts at once."
   - "Before: <code>-t &lt;svc&gt; genconfig</code>, then <code>kolla_set_configs --check</code> with <code>-u root</code> in each container and a diff of the <code>services.d</code> file."
@@ -19,7 +19,7 @@ scenarios:
         why: "<code>--skip-tags haproxy</code> only drops the haproxy play (the frontends). The glance containers still restart on every drifted host, and the service API is unavailable while its containers restart (up to 10 s stop, then start) on all its hosts at once."
       - text: "Run it now: only drifted hosts restart, so the transfers are safe."
         verdict: "avoid"
-        why: "Drifted hosts restart in parallel, so a change common to all hosts restarts the service on all its hosts at once. In-flight glance or cinder transfers are SIGKILLed after 10 s (R24)."
+        why: "Without <code>ANSIBLE_SERIAL</code>, drifted hosts restart in parallel, so a change common to all hosts restarts the service on all its hosts at once. In-flight glance or cinder transfers are SIGKILLed after 10 s (R24)."
       - text: "Run <code>kolla-ansible -t glance genconfig</code>, check each glance container with <code>docker exec -u root &lt;c&gt; /usr/local/bin/kolla_set_configs --check; echo $?</code>, diff <code>/etc/kolla/haproxy/services.d/glance*.cfg</code>, and run the <code>reconfigure</code> in a window with no transfers in flight."
         verdict: "best"
         why: "This is the \"before\" verification of §3 (genconfig, the check as root in each container, a diff of the HAProxy frontend), and it avoids R24: in-flight glance transfers are SIGKILLed after 10 s while the containers restart."
@@ -78,7 +78,7 @@ kolla-ansible -i multinode -t keystone reconfigure
   - haproxy, on all haproxy hosts, only if the frontend changed;
   - per host (loop-notify): on each keystone host where any keystone container drifted, all keystone containers of
     that host restart (`keystone`, plus `keystone_ssh` and `keystone_fernet` with Fernet tokens). Hosts without drift
-    do not restart. Drifted hosts restart in parallel, so a change common to all hosts (globals, `keystone.conf`, a
+    do not restart. Without `ANSIBLE_SERIAL`, drifted hosts restart in parallel, so a change common to all hosts (globals, `keystone.conf`, a
     new image) restarts keystone on all keystone hosts at once.
 - **One-shot:** keystone db sync. Fernet keys are re-distributed.
 - **Impact:** if restarted, keystone restarts on all drifted hosts at once; [NOT AVAILABLE] whether authentication fails
@@ -132,7 +132,7 @@ For an API service such as keystone, glance, cinder, heat or placement:
    restarts on all haproxy hosts at once if that file changed ([R8](../risk/risk-register.md#r8)).
 3. Service play, on the service hosts: `common` → Keystone registration (`run_once`) → config → check-containers →
    DB/user creation and the DB-sync container on the first host → flush. Every drifted host restarts all of the
-   service's containers (loop-notify), all such hosts in parallel. Keystone is the exception: it registers last
+   service's containers (loop-notify), all such hosts in parallel unless `ANSIBLE_SERIAL` batches the play. Keystone is the exception: it registers last
    ([§1.1](#11-reconfigure-a-single-service)).
 
 - **Interruption:** the service API is unavailable while its containers restart (up to 10 s stop, then start) on all
