@@ -173,10 +173,8 @@ class EvidenceTest(unittest.TestCase):
         self.assertIn(f"item {CODE}", html)
 
     def test_only_exact_tokens(self) -> None:
+        # `[CODE: note]` variants are chips with a note: EvidenceNoteTest.
         for source in (
-            "[CODE: ansible 2.9.27 `linear.py:311`]",
-            "[CODE; consequences NOT AVAILABLE]",
-            "[NOT AVAILABLE: keepalived semantics]",
             "[code]",
             "[Code]",
             "[ CODE ]",
@@ -203,6 +201,32 @@ class EvidenceTest(unittest.TestCase):
 
     def test_option_disables_chips(self) -> None:
         self.assertEqual(render("x [CODE]", evidence=False), "<p>x [CODE]</p>")
+
+
+class EvidenceNoteTest(unittest.TestCase):
+    def test_variants_become_chip_and_note(self) -> None:
+        html = render(
+            "a [CODE: no `ansible.cfg` here; [sheet E](e.md#x)] b [CODE, `site.yml`] "
+            "c [CODE; consequences NOT AVAILABLE] d [NOT AVAILABLE: Docker semantics]"
+        )
+        self.assertIn(
+            '<span class="ev-note"><span class="ev ev-code">CODE</span> (no <code>ansible.cfg</code> here; '
+            '<a href="e.md#x">sheet E</a>)</span>',
+            html,
+        )
+        self.assertIn('<span class="ev ev-code">CODE</span> (<code>site.yml</code>)</span>', html)
+        self.assertIn('<span class="ev ev-code">CODE</span> (consequences NOT AVAILABLE)</span>', html)
+        self.assertIn('<span class="ev ev-na">NOT AVAILABLE</span> (Docker semantics)</span>', html)
+
+    def test_unclosed_escaped_and_code_are_left_alone(self) -> None:
+        for source in ("x [CODE unclosed", "`[CODE: in code]`", "\\[CODE: escaped]"):
+            with self.subTest(source=source):
+                self.assertNotIn("ev-note", render(source))
+        self.assertIn("[CODE unclosed", render("x [CODE unclosed"))
+
+    def test_exact_token_and_link_unchanged(self) -> None:
+        html = render("[CODE] and [CODE](u)")
+        self.assertIn('<span class="ev ev-code">CODE</span> and <a href="u">CODE</a>', html)
 
 
 class HeadingIdTest(unittest.TestCase):
@@ -529,13 +553,14 @@ class TableBreaksTest(unittest.TestCase):
             "| Evidence |\n|---|\n"
             "| `roles/neutron/tasks/rolling_upgrade.yml:13-33,43-67` and `kolla_docker.py:781-803,873-875` |\n"
         )
-        html = render(source)
+        # Without the citation class, to see the breaks alone (CitesTest covers both).
+        html = render(source, cites=False)
         self.assertIn(
             "<code>roles/<wbr>neutron/<wbr>tasks/<wbr>rolling_upgrade.yml:13-33,<wbr>43-67</code>", html
         )
         self.assertIn("<code>kolla_docker.py:781-803,<wbr>873-875</code>", html)
         # Same text with and without the feature.
-        self.assertEqual(self.text_of(html), self.text_of(render(source, breaks=False)))
+        self.assertEqual(self.text_of(html), self.text_of(render(source, breaks=False, cites=False)))
         self.assertNotIn("<wbr>", render(source, breaks=False))
 
     def test_only_code_spans_of_table_cells(self) -> None:
@@ -587,6 +612,35 @@ class ImpactTest(unittest.TestCase):
     def test_text_is_unchanged_and_option_turns_it_off(self) -> None:
         self.assertIn("<code>recovery</code>", render("`recovery`", impact=False))
         self.assertIn(">recovery</code>", render("`recovery`"))
+
+
+class CitesTest(unittest.TestCase):
+    def test_citations_get_the_class(self) -> None:
+        html = render(
+            "See `site.yml:88-103`, `roles/nova-cell/handlers/main.yml:74-168, :170`, "
+            "`:140-203` and `tools/kolla-ansible:10-11`.\n"
+        )
+        self.assertIn('<code class="cite">site.yml:88-103</code>', html)
+        self.assertIn('<code class="cite">roles/nova-cell/handlers/main.yml:74-168, :170</code>', html)
+        self.assertIn('<code class="cite">:140-203</code>', html)
+        self.assertIn('<code class="cite">tools/kolla-ansible:10-11</code>', html)
+
+    def test_table_citations_keep_their_breaks(self) -> None:
+        html = render("| Evidence |\n|---|\n| `roles/neutron/tasks/rolling_upgrade.yml:13-33,43-67` |\n")
+        self.assertIn(
+            '<code class="cite">roles/<wbr>neutron/<wbr>tasks/<wbr>rolling_upgrade.yml:13-33,<wbr>43-67</code>',
+            html,
+        )
+
+    def test_other_code_is_left_alone(self) -> None:
+        html = render(
+            "`kolla-ansible -i multinode genconfig`, `site.yml`, `serial: 0`, `key: value`, "
+            "`http://host:5000`, `a:b`, `-e kolla_serial=1`\n\n```yaml\nfoo: 1\n```\n"
+        )
+        self.assertNotIn("cite", html)
+
+    def test_option_turns_it_off(self) -> None:
+        self.assertIn("<code>site.yml:1</code>", render("`site.yml:1`", cites=False))
 
 
 class SeverityTest(unittest.TestCase):

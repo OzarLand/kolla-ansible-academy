@@ -21,6 +21,11 @@ the two labels, with the path prefixes used in citations, is in [Evidence
 labels](docs/ussuri/start/conventions.md#evidence-labels). Introductions, hub pages and descriptions only restate what a
 section says, and link to it.
 
+On the site, `[CODE]` and `[NOT AVAILABLE]` show as chips. A label that opens a longer bracket, such as `[CODE: no
+ansible.cfg in the tree]` (also `;`, `,` or a space after the label), shows as the chip followed by its note in
+parentheses. A code span that is a `path:line` citation (`site.yml:88-103`, `:140-203`) is shown more quietly than a
+command, so write citations as their own code spans, without other words inside the backticks.
+
 ## Where a page goes
 
 | Directory | Tab | What belongs there |

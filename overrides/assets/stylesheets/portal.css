@@ -638,6 +638,19 @@ body {
 }
 
 /*
+ * On a wide screen, a command or an identifier in a cell is not cut in the
+ * middle of a word: its column grows to fit its longest token instead
+ * (`break-word` counts that token in the column's minimum width, `anywhere`
+ * does not). Citations keep breaking anywhere, after their <wbr>. On a narrow
+ * screen every code span may break anywhere, so the table still fits.
+ */
+@media screen and (min-width: 60em) {
+  .md-typeset table:not([class]) code:not(.cite) {
+    overflow-wrap: break-word;
+  }
+}
+
+/*
  * Wide tables (five columns or more). Instead of being squeezed into the
  * text column, the table takes the width its content needs, each column
  * capped so prose cells stay readable, and scrolls sideways inside the
@@ -3281,4 +3294,28 @@ a.portal-cta:focus-visible {
   .md-typeset .oz-remember__body {
     flex-direction: column;
   }
+}
+
+/* ---------------------------------------------------------------------------
+ * 23. Source citations (tools/site/portal_mdx/cites.py): a code span that is a
+ * `path:line` citation reads more quietly than a command or a setting, so the
+ * explanation around it stands out. It keeps the code font, so it is still
+ * clearly a reference to the code; it loses the background and is a bit
+ * smaller and muted.
+ * ------------------------------------------------------------------------- */
+.md-typeset code.cite {
+  padding: 0;
+  font-size: 0.8em;
+  color: var(--portal-text-muted);
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.md-typeset a code.cite,
+.md-typeset a:hover code.cite {
+  color: inherit;
+}
+
+.md-typeset table:not([class]) code.cite {
+  font-size: 0.82em;
 }

@@ -9,8 +9,11 @@ exactly those two bracket tokens as chips::
 
 Rules:
 
-* only the exact tokens are converted; ``[CODE: explanation]`` and other
-  variants stay as written;
+* the exact tokens become a chip; a token that opens a longer bracket,
+  ``[CODE: explanation]`` (also ``;``, ``,`` or a space after the label, and
+  ``[NOT AVAILABLE: …]``), becomes the chip followed by the explanation in
+  parentheses, ``CODE (explanation)``; the explanation keeps its inline
+  Markdown (code, links), and a bracket that is never closed stays as written;
 * code spans, fenced or indented code and raw HTML blocks are never touched
   (they are already protected when inline patterns run); text inside an
   inline raw ``<code>``, ``<kbd>``, ``<samp>``, ``<tt>``, ``<var>`` or
@@ -65,6 +68,55 @@ class EvidenceInlineProcessor(InlineProcessor):
         return el, m.start(0), m.end(0)
 
 
+# `[CODE: …]`, `[CODE; …]`, `[CODE, …]`, `[CODE …]`, `[NOT AVAILABLE: …]`.
+EVIDENCE_NOTE_PATTERN = r"\[(CODE|NOT(?: |\n[ ]*)AVAILABLE)(?:[:;,][ \n]*|[ \n]+)(?=\S)"
+
+
+def _closing_bracket(data: str, start: int) -> int | None:
+    """Index of the `]` that closes the bracket opened before `start`."""
+    depth = 0
+    index = start
+    while index < len(data):
+        char = data[index]
+        index += 1
+        if char == "\\":
+            index += 1  # an escaped bracket does not count
+            continue
+        if char == "[":
+            depth += 1
+        elif char == "]":
+            if depth == 0:
+                return index - 1
+            depth -= 1
+    return None
+
+
+class EvidenceNoteInlineProcessor(InlineProcessor):
+    """Turn ``[CODE: note]`` into a chip followed by ``(note)``."""
+
+    def handleMatch(  # type: ignore[override]
+        self, m: re.Match[str], data: str
+    ) -> tuple[etree.Element | None, int | None, int | None]:
+        if _inside_raw_code(data[: m.start(0)]):
+            return None, None, None
+        end = _closing_bracket(data, m.end(0))
+        if end is None:
+            return None, None, None
+        note = data[m.end(0):end].strip()
+        if not note:
+            return None, None, None
+        label = " ".join(m.group(1).split())
+        wrapper = etree.Element("span")
+        wrapper.set("class", "ev-note")
+        chip = etree.SubElement(wrapper, "span")
+        chip.set("class", _CLASSES[label])
+        chip.text = AtomicString(label)
+        # The tail is parsed again by the inline processor: code spans,
+        # links and emphasis inside the note keep working.
+        chip.tail = f" ({note})"
+        return wrapper, m.start(0), end + 1
+
+
 class EvidenceExtension(Extension):
     """Register the evidence chip inline pattern."""
 
@@ -76,6 +128,9 @@ class EvidenceExtension(Extension):
         # inside the link.
         md.inlinePatterns.register(
             EvidenceInlineProcessor(EVIDENCE_PATTERN, md), "portal-evidence", 175
+        )
+        md.inlinePatterns.register(
+            EvidenceNoteInlineProcessor(EVIDENCE_NOTE_PATTERN, md), "portal-evidence-note", 176
         )
 
 

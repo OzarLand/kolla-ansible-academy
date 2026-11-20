@@ -4,7 +4,7 @@ r"""Markdown helpers of the Kolla-Ansible Academy portal.
 (``portal_mdx``) and uses :func:`portal_mdx.slug.gh_slugify` for heading ids.
 The build runs with ``PYTHONPATH=tools/site`` so the package is importable.
 
-The extension bundles eight small, independent features; each can be turned
+The extension bundles nine small, independent features; each can be turned
 off with an option of the same name:
 
 ``lists``
@@ -30,6 +30,9 @@ off with an option of the same name:
 ``impact``
     a code span that is exactly an impact class name gets a class
     (:mod:`portal_mdx.impact`).
+``cites``
+    a code span that is a source citation (``path:line``) gets a class, so
+    that citations read more quietly than commands (:mod:`portal_mdx.cites`).
 
 None of them changes the text of a page: the Markdown source stays the single
 source of truth and renders the same way on github.com.
@@ -41,6 +44,7 @@ from markdown import Extension, Markdown
 
 from .anchors import AnchorsExtension
 from .breaks import TableBreaksExtension
+from .cites import CitesExtension
 from .evidence import EvidenceExtension
 from .impact import ImpactExtension
 from .lists import GithubListsExtension
@@ -69,6 +73,7 @@ class PortalExtension(Extension):
             "anchors": [True, "GitHub suffixes (-1, -2) for repeated headings"],
             "severity": [True, "Add a class to severity cells of risk tables"],
             "impact": [True, "Add a class to code spans that name an impact class"],
+            "cites": [True, "Add a class to code spans that are path:line citations"],
         }
         super().__init__(**kwargs)
 
@@ -90,6 +95,8 @@ class PortalExtension(Extension):
             SeverityExtension().extendMarkdown(md)
         if self.getConfig("impact"):
             ImpactExtension().extendMarkdown(md)
+        if self.getConfig("cites"):
+            CitesExtension().extendMarkdown(md)
 
 
 def makeExtension(**kwargs: object) -> PortalExtension:
