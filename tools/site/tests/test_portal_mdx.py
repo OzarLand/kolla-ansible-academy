@@ -647,8 +647,16 @@ class LabelsTest(unittest.TestCase):
     def test_wide_table_cells_get_labels(self) -> None:
         html = render("| Tag | Hosts | Restarts | Risk |\n|---|---|---|---|\n| `nova` | computes | libvirt | R1 |\n")
         self.assertIn('<table data-portal-cards="">', html)
-        self.assertIn('<td data-label="Tag"><code>nova</code></td>', html)
-        self.assertIn('<td data-label="Risk">R1</td>', html)
+        self.assertRegex(html, r'<td (data-col="short" )?data-label="Tag"><code>nova</code></td>')
+        self.assertRegex(html, r'<td (data-col="short" )?data-label="Risk">R1</td>')
+
+    def test_long_and_short_columns_are_marked(self) -> None:
+        prose = "word " * 50
+        html = render(f"| Id | Name | Notes | More |\n|---|---|---|---|\n| R1 | some medium text here and there ok | {prose} | x |\n")
+        self.assertIn('<th data-col="short">Id</th>', html)
+        self.assertIn('data-col="long">Notes</th>', html)
+        self.assertIn('<td data-col="long" data-label="Notes">', html)
+        self.assertNotIn('data-label="Name" data-col', html)
 
     def test_narrow_tables_are_left_alone(self) -> None:
         html = render("| a | b | c |\n|---|---|---|\n| 1 | 2 | 3 |\n")

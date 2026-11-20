@@ -3389,3 +3389,21 @@ a.portal-cta:focus-visible {
     font-weight: 700;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * 25. Room for the prose columns of wide tables (tools/site/portal_mdx/labels.py
+ * marks long and short columns). On a wide screen a prose column may be much
+ * wider than the default cap of section 6, and a column of short values
+ * narrower, so a row is no longer as tall as its longest note in a squeezed
+ * column. The table still scrolls sideways when it needs to.
+ * ------------------------------------------------------------------------- */
+@media screen and (min-width: 60em) {
+  .md-typeset table:not([class])[data-portal-cards]:has(> thead th:nth-child(5)) :is(th, td)[data-col="long"] {
+    min-width: 16rem;
+    max-width: min(30rem, 60vw);
+  }
+
+  .md-typeset table:not([class])[data-portal-cards]:has(> thead th:nth-child(5)) :is(th, td)[data-col="short"] {
+    max-width: 9rem;
+  }
+}
