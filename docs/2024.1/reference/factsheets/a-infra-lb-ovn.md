@@ -64,7 +64,7 @@ Common mechanics that apply to every role below (all verified in code):
 - **Changed in 2024.1, unit text:** the unit template changed, and `compare_container` compares the whole unit text
   (`module_utils/kolla_container_worker.py:58-65`, `module_utils/kolla_systemd_worker.py:154-167`). The first 2024.1
   check of a container whose unit 2023.1 wrote reports drift, and the restart handler runs
-  ([F16](../findings.md#f16)). This applies to every container of this sheet that an upgrade did not recreate.
+  ([F16](../findings.md#f16)). This applies to every container of this sheet that no 2024.1 run has recreated or restarted yet.
 - **There is no "reload" path in the roles in scope.** The haproxy image still ships a reload helper,
   `kolla_ensure_haproxy_latest_config` (kolla `docker/haproxy/haproxy/Dockerfile.j2:17,21`,
   `docker/haproxy/haproxy/ensure_latest_config.sh:5-14`), but kolla-ansible 2024.1 never calls it (grep finds no
@@ -694,7 +694,7 @@ None.
     out (cache session backend), and whether the cold Keystone and keystonemiddleware token-validation caches give a
     load spike on Keystone and the DB.
   - Triggers are rare: a change of `api_interface_address`, port, memory or connection limit, or an image change on
-    upgrade, plus, once, the unit-text drift after an upgrade from 2023.1 when the container was not recreated
+    upgrade, plus, once, the unit-text drift after an upgrade from 2023.1 when no 2024.1 run has recreated or restarted the container
     ([F16](../findings.md#f16)). A change confined to `config.json` is only applied by a deploy/reconfigure that
     rewrites it; after a separate `genconfig`, `kolla_set_configs --check` sees no `config_files` to compare
     (kolla `docker/base/set_configs.py:556-559`; [F14](../findings.md#f14)).

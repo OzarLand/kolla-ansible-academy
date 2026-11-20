@@ -130,10 +130,12 @@ Docker the unit is used when it exists, `docker stop` with the same timeout othe
 through it, except for one-shot containers (`module_utils/kolla_podman_worker.py:575-593`). `graceful_timeout` comes
 from `docker_graceful_timeout: 60` (`group_vars/all.yml:139, :151`).
 
-**New in 2024.1:** the unit text names the engine and changed from the 2023.1 template, and `compare_container`
-compares the whole unit file (`module_utils/kolla_systemd_worker.py:154-167`). A container recreated from a new image
-gets the new unit when it is created (`module_utils/kolla_docker_worker.py:334-339`); a container that a run does not
-recreate is reported as changed at its first 2024.1 check if its unit was written by 2023.1 code
+**New in 2024.1:** the unit text changed from the 2023.1 template (with Docker, only the start-limit line differs:
+`StartLimitInterval=` where 2023.1 wrote `StartLimitIntervalSec=`), and `compare_container` compares the whole unit
+file (`module_utils/kolla_systemd_worker.py:20-39, :154-167`). A container recreated from a new image gets the new
+unit when it is created (`module_utils/kolla_docker_worker.py:334-339`), and a restart rewrites it (`:439-459`); a
+container that no 2024.1 run has created, recreated or restarted yet is reported as changed at its first 2024.1 check
+(Swift `deploy` has none) if its unit was written by 2023.1 code
 ([F16](../reference/findings.md#f16)).
 
 | Case | Who downloads | What restarts | Source |

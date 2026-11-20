@@ -383,7 +383,8 @@ sequenceDiagram
   - the container's systemd unit file is missing or differs from the one the module would write
     (`module_utils/kolla_systemd_worker.py:154-167`), for example after `docker_graceful_timeout`,
     `docker_restart_policy` or `docker_client_timeout` changed, since all three are written into the unit
-    (`kolla_systemd_worker.py:20-39, :50-79`).
+    (`kolla_systemd_worker.py:20-39, :50-79`); a policy change between `unless-stopped` and `always` renders the
+    same `Restart=always` and changes nothing (`:56-58`).
 
   The `--check` path means a config file changed by an earlier `genconfig`, or by hand, will still restart the
   container on the next `deploy`/`reconfigure`/`deploy-containers` [CODE].
@@ -569,8 +570,9 @@ not part of ansible-core 2.16.20 (`lib/ansible/modules/` has no docker module); 
   `ExecStart=/usr/bin/<engine> start -a <name>` and `ExecStop=/usr/bin/<engine> stop …`; `After=`/`Wants=` are
   `docker.service` for Docker and `network-online.target` for Podman; the start-limit line is
   `StartLimitInterval=` (`kolla_systemd_worker.py:20-39, :50-54, :69-79`). Because `compare_container` compares the
-  whole unit text (`:154-167`), a unit file whose text differs from this template, such as one written by an earlier
-  release of the module, is reported as changed and its container is restarted by the handler, which rewrites the
+  whole unit text (`:154-167`), a unit file whose text differs from this template, such as one written by 2023.1 (whose
+  template hard-coded `docker`, so with Docker only its `StartLimitIntervalSec=` line and the blank line after it
+  differ), is reported as changed and its container is restarted by the handler, which rewrites the
   unit first [CODE].
 - **`kolla_container_engine` is an engine switch.** It defaults to `"docker"` (`group_vars/all.yml:92`). It selects
   the worker of `kolla_container`, the engine of `kolla_toolbox`, `kolla_container_facts` and

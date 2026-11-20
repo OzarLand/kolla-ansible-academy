@@ -94,7 +94,8 @@ follows them.
     cover transient quorum queues and stream fanout when those are on (`roles/rabbitmq/tasks/precheck.yml:131-189`).
     With the 2024.1 defaults it therefore fails while classic queues exist; its message calls the migration a manual
     procedure. The HA block still asserts the `ha-all` policy when `om_enable_rabbitmq_high_availability` is on
-    (`:107-129`). Both blocks carry the tag `rabbitmq-ha-precheck` (`:129`, `:189`).
+    (`:107-129`). A cloud that kept the 2023.1 default (HA off) has no such policy, since 2023.1 runs removed it, and
+    the message of that assert calls the move to mirrored queues manual too (`:115-123`). Both blocks carry the tag `rabbitmq-ha-precheck` (`:129`, `:189`).
   - These checks run only for `kolla_action` `precheck`, set by `kolla-ansible prechecks`
     (`tools/kolla-ansible:444-447`; the prechecks play, `site.yml:77-86`; the role entry point includes
     `<kolla_action>.yml`, `roles/rabbitmq/tasks/main.yml:2-3`). `deploy`, `reconfigure` and `upgrade` do not run them.

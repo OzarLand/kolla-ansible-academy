@@ -101,7 +101,7 @@ dependencies and the evidence, what to check around a run and what stays open; t
   one batch [CODE]. Whether VM networking is interrupted on every compute at the same time is [NOT AVAILABLE] ([Update
   container images §4](../operations/update-container-images.md#4-risks), [R7](../risk/risk-register.md#r7)).
 - **First 2024.1 check after an upgrade from 2023.1:** the check compares the systemd unit too, and its text changed,
-  so an `openvswitch_db` or `openvswitch_vswitchd` whose unit 2023.1 wrote, and that the upgrade did not recreate, is
+  so an `openvswitch_db` or `openvswitch_vswitchd` whose unit 2023.1 wrote, and that no 2024.1 run has recreated or restarted yet, is
   restarted by the first 2024.1 check ([F16](../reference/findings.md#f16)) [CODE].
 - **conf.db at start, new in the 2024.1 image:** `kolla_start` sources the image's extend_start chain before it runs
   the command (kolla `docker/base/start.sh:18-24`). In `openvswitch-db-server` that chain creates `conf.db` if absent,

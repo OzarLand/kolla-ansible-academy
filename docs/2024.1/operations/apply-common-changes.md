@@ -111,7 +111,7 @@ field, `lib/ansible/playbook/taggable.py:42`), and the included block is then fi
   `lib/ansible/plugins/strategy/__init__.py:648-673`;
   [Tags §2.4](../risk/tags.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code)). The
   `config.json` task is looped with the same `notify` (`roles/common/tasks/config.yml:93-102`).
-  - **First 2024.1 run after 2023.1:** a container that the upgrade did not recreate is reported as changed by its
+  - **First 2024.1 run after 2023.1:** a container that no 2024.1 run has recreated or restarted yet is reported as changed by its
     unit file ([F16](../reference/findings.md#f16)); for fluentd, the new journal volume also makes the container
     differ (`roles/common/defaults/main.yml:124`), so it is recreated [CODE].
   - A change of `config.json`'s `command` alone (e.g. kolla_toolbox's) is not seen by `kolla_set_configs --check`

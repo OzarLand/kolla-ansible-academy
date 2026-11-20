@@ -83,7 +83,7 @@ service card follows them.
      `healthcheck_listen memcached <memcached_port>` (`roles/memcached/defaults/main.yml:36-43`), so a port change also
      changes a compared parameter; a change of the connection limit or of the memory size does not.
 - **First 2024.1 check of a container that 2023.1 created** [CODE]: the systemd unit text changed
-  ([F16](../reference/findings.md#f16)), so a memcached container that the upgrade did not recreate is restarted at its
+  ([F16](../reference/findings.md#f16)), so a memcached container that no 2024.1 run has recreated or restarted yet is restarted at its
   first 2024.1 `deploy`/`reconfigure`, on all memcached hosts at once (the play's `serial`, below).
 
 ### Known limits and open points

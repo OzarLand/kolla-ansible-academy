@@ -36,8 +36,8 @@ stays open; the service card follows them.
 - **What the tag executes (`mariadb`):** [Tags §3](../risk/tags.md#3-what-a-tag-really-executes-master-table) and [Tags
   §3.1](../risk/tags.md#31-per-tag-answers-files-vms-apis-networkingstorage-safety-prerequisites), rows `mariadb`
 - **Risks:** [R9](../risk/risk-register.md#r9); `mariadb_recovery`: [R18](../risk/risk-register.md#r18)
-- **After an upgrade from 2023.1:** [F16](../reference/findings.md#f16): a MariaDB container that the upgrade did not
-  recreate, and whose systemd unit 2023.1 wrote, is reported as changed by its first 2024.1 check
+- **After an upgrade from 2023.1:** [F16](../reference/findings.md#f16): a MariaDB container that no 2024.1 run has
+  recreated or restarted yet, and whose systemd unit 2023.1 wrote, is reported as changed by its first 2024.1 check
   (`roles/mariadb/tasks/check-containers.yml:2-18`); the handler then puts its host in `mariadb_restart`
   (`roles/mariadb/handlers/main.yml:56-63`), so it restarts in the `serial: "33%"` restart play
   (`mariadb.yml:18-34`) [CODE]

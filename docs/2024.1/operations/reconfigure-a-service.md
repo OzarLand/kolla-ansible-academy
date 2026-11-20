@@ -4,8 +4,8 @@ description: What a single-service reconfigure such as -t keystone runs in 2024.
 tags: [keystone, glance, placement, cinder, heat, haproxy, reconfigure, tags, loop-notify, one-shot, limit, genconfig]
 remember:
   - "A changed <code>services.d/&lt;svc&gt;*.cfg</code> restarts HAProxy on every loadbalancer host, the backups together and then the VIP holder; add <code>--skip-tags haproxy</code> when frontends are not meant to change."
-  - "On each drifted host all the service's containers restart, all such hosts in parallel: a change common to all hosts restarts the service on all its hosts at once."
-  - "The first 2024.1 reconfigure of a service deployed by 2023.1 finds drift on every host: the systemd unit text changed (F16) and quorum queues are on by default (F17)."
+  - "On each drifted host all the service's containers restart, all such hosts in parallel unless <code>ANSIBLE_SERIAL</code> is set: without it, a change common to all hosts restarts the service on all its hosts at once."
+  - "A service that <code>kolla-ansible upgrade</code> has not reached drifts on every host on its first 2024.1 reconfigure: its image tag changes (and the reconfigure skips the role's upgrade tasks), its systemd unit text changed (F16) and quorum queues are on by default (F17). Upgrade it first."
   - "The service API is unavailable while its containers restart, with up to <code>docker_graceful_timeout</code> (60 s by default) between SIGTERM and SIGKILL."
   - "<code>genconfig</code> also re-renders <code>services.d</code>: copy the file first, and after it a <code>-t &lt;svc&gt;</code> run no longer notifies the HAProxy restart."
 impact: [restarts-on-drift]
@@ -16,27 +16,27 @@ scenarios:
     choices:
       - text: "Run it now with <code>--skip-tags haproxy</code>, so that the API stays up."
         verdict: "risky"
-        why: "<code>--skip-tags haproxy</code> only drops the loadbalancer play (the frontends). The glance containers still restart on every drifted host, all such hosts in parallel, so the glance API is unavailable on all its hosts at once."
+        why: "<code>--skip-tags haproxy</code> only drops the loadbalancer play (the frontends). The glance containers still restart on every drifted host, all such hosts in parallel when <code>ANSIBLE_SERIAL</code> is not set, so the glance API is unavailable on all its hosts at once."
       - text: "Run it now: only drifted hosts restart, so the transfers are safe."
         verdict: "avoid"
-        why: "Drifted hosts restart in parallel, so a change common to all hosts restarts glance on all its hosts at once. In-flight transfers are SIGKILLed if glance has not exited <code>docker_graceful_timeout</code> (60 s by default) after SIGTERM (R24)."
-      - text: "Copy <code>/etc/kolla/haproxy/services.d/glance*.cfg</code>, run <code>kolla-ansible -t glance genconfig</code>, check each glance container with <code>docker exec -u root &lt;c&gt; /usr/local/bin/kolla_set_configs --check; echo $?</code>, diff the frontend against the copy, and run the <code>reconfigure</code> in a window with no transfers in flight."
+        why: "Without <code>ANSIBLE_SERIAL</code>, drifted hosts restart in parallel, so a change common to all hosts restarts glance on all its hosts at once. In-flight transfers are SIGKILLed if glance has not exited <code>docker_graceful_timeout</code> (60 s by default) after SIGTERM (R24)."
+      - text: "Copy <code>/etc/kolla/haproxy/services.d/glance*.cfg</code>, run <code>kolla-ansible -t glance genconfig</code>, check each glance container with <code>docker exec -u root &lt;c&gt; /usr/local/bin/kolla_set_configs --check; echo $?</code>, diff the frontend against the copy, and run the <code>reconfigure</code> in a window with no transfers in flight, with <code>ANSIBLE_SERIAL</code> set if glance must stay up on some hosts."
         verdict: "best"
         why: "This is the \"before\" verification of §3 (a copy of the frontend, genconfig, the check as root in each container, a diff), and it avoids R24: in-flight glance transfers are SIGKILLed after <code>docker_graceful_timeout</code> while the containers restart."
     see: "3-sequence-impact-risks-and-verification-of--t-svc-reconfigure"
-  - title: "The first keystone reconfigure after the 2024.1 upgrade"
-    situation: "Your cloud was deployed with 2023.1 and the deploy host now runs 2024.1. You want to change one keystone option and plan <code>kolla-ansible -i multinode -t keystone reconfigure</code>, expecting nothing else to change because no other keystone setting moved."
+  - title: "The first keystone reconfigure after moving the deploy host to 2024.1"
+    situation: "Your cloud was deployed with 2023.1 and the deploy host now runs 2024.1; <code>kolla-ansible upgrade</code> has not been run yet. You want to change one keystone option and plan <code>kolla-ansible -i multinode -t keystone reconfigure</code>, expecting nothing else to change because no other keystone setting moved."
     ask: "What would you do?"
     choices:
       - text: "Run it at any time: with no other change, only the host where you changed something restarts."
         verdict: "avoid"
-        why: "The option is common to all hosts, and in any case the first 2024.1 check reports drift on every keystone container whose unit 2023.1 wrote (F16) and on the rendered <code>keystone.conf</code> (quorum queues, F17): keystone restarts on all its hosts at once."
-      - text: "Plan a window: expect keystone to restart on all its hosts at once and, if the rendered frontend changed, HAProxy on every loadbalancer host; check the <code>services.d/keystone.cfg</code> diff first."
+        why: "The option is common to all hosts, and in any case the first 2024.1 check reports drift on every keystone container: its image (the 2024.1 tag), its unit that 2023.1 wrote (F16) and the rendered <code>keystone.conf</code> (quorum queues, F17). Keystone would be recreated on all its hosts at once on the 2024.1 image, without its upgrade tasks."
+      - text: "Run <code>kolla-ansible upgrade</code> (keystone included) first, in its own window; then plan the reconfigure, check the <code>services.d/keystone.cfg</code> diff first, and expect keystone and, if the rendered frontend changed, HAProxy to restart."
         verdict: "best"
-        why: "This is what the code predicts for a first 2024.1 run (§3): every keystone host drifts, and the <code>balance</code> line of the keystone frontend is written differently by 2024.1, so the frontend file is expected to change too."
+        why: "A <code>reconfigure</code> compares the image too, so it would move keystone to the 2024.1 image through the deploy path, without the database upgrade handlers of <code>roles/keystone/tasks/upgrade.yml</code> <span class=\"ev ev-code\">CODE</span>. The upgrade also writes the new units and the quorum setting. The <code>balance</code> line of the keystone frontend is written differently by 2024.1, so the frontend file is expected to change (§3)."
       - text: "Add <code>--limit control01</code> to restart only one host."
         verdict: "risky"
-        why: "<code>--limit</code> narrows every play to <code>control01</code>: the other keystone hosts keep the old configuration until a later run, and the loadbalancer hosts are not in the limit, so the frontend change waits too. It does not avoid the restarts; it only splits them over several runs."
+        why: "<code>--limit</code> narrows every play to <code>control01</code>: the other keystone hosts keep the old configuration until a later run, and the loadbalancer hosts are not in the limit, so the frontend change waits too. It does not avoid the restarts or the image change; it only splits them over several runs."
     see: "11-reconfigure-a-single-service"
 quiz:
   - q: "During <code>-t keystone reconfigure</code>, one keystone container drifted on a host. What restarts on that host?"
@@ -45,9 +45,9 @@ quiz:
     explain: "This is loop-notify: a change that concerns one container restarts every container of that role on that host (<code>keystone</code>, <code>keystone_ssh</code>, <code>keystone_fernet</code>)."
     see: "11-reconfigure-a-single-service"
   - q: "Do keystone hosts without drift restart?"
-    options: ["Yes, every keystone host restarts", "No: only drifted hosts restart, in parallel"]
+    options: ["Yes, every keystone host restarts", "No: only drifted hosts restart, in parallel unless <code>ANSIBLE_SERIAL</code> is set"]
     answer: 1
-    explain: "A change common to all hosts (globals, <code>keystone.conf</code>, a new image, the first 2024.1 run) therefore restarts keystone on all keystone hosts at once."
+    explain: "Without <code>ANSIBLE_SERIAL</code>, a change common to all hosts (globals, <code>keystone.conf</code>, a new image, the first 2024.1 run of a service not yet upgraded) therefore restarts keystone on all keystone hosts at once."
     see: "11-reconfigure-a-single-service"
   - q: "How do you keep HAProxy untouched during a service run?"
     options: ["With <code>--limit</code>", "With <code>--skip-tags haproxy</code>"]
@@ -79,11 +79,12 @@ dependence](index.md#code-guarantees-and-environment-dependence).
 > **Key answers**
 >
 > - **What restarts ([§1.1](#11-reconfigure-a-single-service)):** on each host where any container of the service
->   drifted, all its containers; all such hosts in parallel. HAProxy restarts only if the service's rendered frontend
+>   drifted, all its containers; all such hosts in parallel, unless `ANSIBLE_SERIAL` is set. HAProxy restarts only if the service's rendered frontend
 >   changed, backups first and the VIP holder last ([§3](#3-sequence-impact-risks-and-verification-of--t-svc-reconfigure)).
-> - **First 2024.1 run on a 2023.1 cloud:** expect drift on every host of the service: the systemd unit text changed
->   ([F16](../reference/findings.md#f16)) and quorum queues are on by default in every service that talks to RabbitMQ
->   ([F17](../reference/findings.md#f17)). For keystone the frontend text changes too
+> - **First 2024.1 run on a 2023.1 cloud:** a service that `kolla-ansible upgrade` has not reached drifts on every
+>   host: its image tag changes, and the reconfigure skips the role's upgrade tasks; the systemd unit text changed
+>   ([F16](../reference/findings.md#f16)); quorum queues are on by default in every service that talks to RabbitMQ
+>   ([F17](../reference/findings.md#f17)). Upgrade it first. For keystone the frontend text changes too
 >   ([§3](#3-sequence-impact-risks-and-verification-of--t-svc-reconfigure)).
 > - **Keep HAProxy out:** `--skip-tags haproxy` ([§1.2](#12-avoid-touching-haproxy-during-a-service-run)).
 > - **`genconfig` first:** it re-renders `services.d` too, so a later `-t <svc>` run no longer restarts HAProxy for
@@ -123,8 +124,10 @@ kolla-ansible -i multinode -t keystone reconfigure
   - per host (loop-notify): on each keystone host where any keystone container drifted, all keystone containers of
     that host restart (`keystone`, `keystone_ssh` and `keystone_fernet`, all three `enabled: true` unconditionally,
     `roles/keystone/defaults/main.yml:6, :34, :47`; `roles/keystone/tasks/check-containers.yml:2-17`). Hosts without
-    drift do not restart. Drifted hosts restart in parallel, so a change common to all hosts (globals,
-    `keystone.conf`, a new image) restarts keystone on all keystone hosts at once.
+    drift do not restart. Drifted hosts restart in parallel, unless `ANSIBLE_SERIAL` is set (default 0,
+    `tools/kolla-ansible:296, :531`; the keystone play reads `serial: '{{ kolla_serial|default("0") }}'`,
+    `site.yml:486`), so without it a change common to all hosts (globals, `keystone.conf`, a new image) restarts
+    keystone on all keystone hosts at once.
 - **One-shot:** the `bootstrap_keystone` db sync container, once (`run_once`,
   `roles/keystone/tasks/bootstrap_service.yml:33-50`); the Fernet bootstrap container only when no host runs
   `keystone_fernet` (`:52-75`). Fernet keys are re-distributed (`roles/keystone/tasks/deploy.yml:15`).
@@ -194,18 +197,26 @@ For an API service such as keystone, glance, cinder, heat or placement:
 3. Service play, on the service hosts: Keystone registration (`run_once`) → config → check-containers →
    DB/user creation and the DB-sync container on the first host → flush (e.g. `roles/glance/tasks/deploy.yml:2-15`;
    placement runs its clone step before config, `roles/placement/tasks/deploy.yml:2-14`). Every drifted host restarts
-   all of the service's containers (loop-notify), all such hosts in parallel. Keystone is the exception: it registers
+   all of the service's containers (loop-notify), all such hosts in parallel unless `ANSIBLE_SERIAL` is set. Keystone
+   is the exception: it registers
    last ([§1.1](#11-reconfigure-a-single-service)).
 
 **First 2024.1 run on a cloud deployed by 2023.1** [CODE]:
 
-- Every container of the service drifts: `compare_container` also compares the systemd unit text
-  (`module_utils/kolla_container_worker.py:58-65`, `module_utils/kolla_systemd_worker.py:154-167`), and the 2024.1 unit
-  template differs from the one 2023.1 wrote ([F16](../reference/findings.md#f16)). The services that talk to RabbitMQ
+- If `kolla-ansible upgrade` has not reached the service, its image changes: `openstack_release` defaults to `2024.1`
+  (`group_vars/all.yml:679-681`), the check compares the image (`module_utils/kolla_container_worker.py:75`), and the
+  handler recreates the container on the 2024.1 image (`module_utils/kolla_docker_worker.py:353-361`), through the
+  deploy path, without the role's upgrade tasks (e.g. `roles/keystone/tasks/upgrade.yml:23-31`). Upgrade it first.
+- Every container whose unit no 2024.1 run has recreated or restarted yet drifts: `compare_container` also compares
+  the systemd unit text (`module_utils/kolla_container_worker.py:58-65`, `module_utils/kolla_systemd_worker.py:154-167`),
+  and the 2024.1 unit template differs from the one 2023.1 wrote; with Docker only the start-limit line differs
+  ([F16](../reference/findings.md#f16)). A `kolla-ansible upgrade` that recreated the service's containers already
+  wrote the new units. The services that talk to RabbitMQ
   also render `rabbit_quorum_queue = true` by default (`group_vars/all.yml:268`; e.g.
   `roles/keystone/templates/keystone.conf.j2:77-78`, `roles/glance/templates/glance-api.conf.j2:139-140`,
   `roles/cinder/templates/cinder.conf.j2:90-91`, `roles/heat/templates/heat.conf.j2:89-90`;
-  [F17](../reference/findings.md#f17)). So the first run restarts the service on all its hosts at once.
+  [F17](../reference/findings.md#f17)). So the first run on a service not yet upgraded restarts it on all its hosts
+  at once, unless `ANSIBLE_SERIAL` is set.
 - For keystone, the `balance` line of both frontends is now written `balance roundrobin` instead of
   `balance "roundrobin"` (`roles/keystone/defaults/main.yml:20, :30`), and the template copies it as is
   (`roles/haproxy-config/templates/haproxy_single_service_split.cfg.j2:77-79`): the rendered

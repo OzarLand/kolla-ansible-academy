@@ -156,8 +156,8 @@ example is keystone ([Reconfigure a single service
 - **First run after the upgrade from 2023.1** [CODE]: on a Ceph cloud, expect `cinder_volume` and `cinder_backup` to
   restart for the new `config.json` and `ceph/` files, every `cinder_volume` for the new `hostnqn` file, and every
   cinder container for the quorum-queue option of `cinder.conf` unless the cloud already had it
-  ([What changed in 2024.1](#what-changed-in-20241), [F17](../reference/findings.md#f17)). A container that the upgrade
-  did not recreate is also flagged by the changed systemd unit text ([F16](../reference/findings.md#f16)).
+  ([What changed in 2024.1](#what-changed-in-20241), [F17](../reference/findings.md#f17)). A container that no 2024.1 run
+  has recreated or restarted yet is also flagged by the changed systemd unit text ([F16](../reference/findings.md#f16)).
 - [fact sheet C §3.8](../reference/factsheets/c-glance-placement-cinder-horizon-heat.md#38-operational-notes), item 7:
   the cinder role itself does not target computes; enabling `enable_cinder_backend_iscsi`/LVM also flips glance-api to
   privileged with `/dev`, so glance-api is recreated. In 2024.1 `cinder_backend_ceph` (with Cinder enabled) still makes

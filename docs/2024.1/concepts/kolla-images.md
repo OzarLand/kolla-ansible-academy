@@ -262,7 +262,8 @@ as `Restart=always`, with `RestartSec` 11 s, `StartLimitInterval` 120 and `Start
 `docker_client_timeout` 120 and `docker_restart_policy_retry` 10 (`module_utils/kolla_systemd_worker.py:20-39,56-66`,
 `group_vars/all.yml:105,120,149-152`) [CODE]. Changed in 2024.1: the unit names the engine in `ExecStart`/`ExecStop`
 and depends on `docker.service` for Docker or `network-online.target` otherwise, and the start-limit key is written
-`StartLimitInterval=` where 2023.1 wrote `StartLimitIntervalSec=` (`module_utils/kolla_systemd_worker.py:24-32,50-54`).
+`StartLimitInterval=` where 2023.1 wrote `StartLimitIntervalSec=` (`module_utils/kolla_systemd_worker.py:24-32,50-54`);
+with Docker the engine lines read as in 2023.1, whose template hard-coded `docker`, so only the start-limit line differs.
 [NOT AVAILABLE: systemd semantics] Whether the unit then restarts the container in a loop until the input is fixed, or
 stops after the start limit is reached, and whether the two key names behave the same.
 

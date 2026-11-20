@@ -6,7 +6,7 @@ remember:
   - "<code>reconfigure</code> is <code>deploy</code> for 52 of the 54 roles that have a <code>reconfigure.yml</code>; the only lightweight path is <code>genconfig</code> followed by <code>deploy-containers</code> <span class=\"ev ev-code\">CODE</span>."
   - "Config is applied by a full stop/start through the container's systemd unit, never a reload, and the stop timeout is 60 s, with Docker or Podman <span class=\"ev ev-code\">CODE</span>."
   - "One changed container restarts all containers of its role on that host; without batching, handlers restart it on every host of the play at once, and <code>deploy</code> needs <code>-e kolla_serial=N</code> <span class=\"ev ev-code\">CODE</span>."
-  - "The first 2024.1 run on a cloud deployed by 2023.1 restarts containers whose operator config did not change: new unit text, the new <code>hostnqn</code> file, quorum queues on by default <span class=\"ev ev-code\">CODE</span>."
+  - "The first 2024.1 run on a cloud deployed by 2023.1 restarts containers whose operator config did not change: new unit text, the new <code>hostnqn</code> file, quorum queues on by default; and it moves every service that <code>kolla-ansible upgrade</code> has not reached to its 2024.1 image <span class=\"ev ev-code\">CODE</span>."
   - "<code>deploy</code> never pulls an image that is already present: rebuilt images under the same tag need <code>pull</code> <span class=\"ev ev-code\">CODE</span>."
 quiz:
   - q: "What is the only lightweight path to apply config?"
@@ -59,7 +59,9 @@ the section that gives the evidence; the main citations are repeated here.
    separate plays with `serial: "33%"` (`mariadb.yml:18-52`, `rabbitmq.yml:30-49`; one node at a time with three
    nodes), and each RabbitMQ node is drained first (`roles/rabbitmq/tasks/restart_services.yml:9-17`). Changed in
    2024.1: the etcd play has no `serial` (`site.yml:470-481`), and every play sets `max_fail_percentage`, 100 by
-   default, which never stops a play early (`site.yml:95-99`) ([Execution flow
+   default (`site.yml:96-99`): a failed host only drops out, unless every host of a batch fails, which stops the
+   playbook (ansible-core 2.16.20 `lib/ansible/executor/playbook_executor.py:204-208`); with `ANSIBLE_SERIAL=1` or in the
+   33% restart plays of three nodes, one failure ends the run ([Execution flow
    §5](../concepts/deployment-execution-flow.md#5-batching-serial-and-its-interaction-with-order)) [CODE].
 5. **A service tag is never just that service.** For a service with a frontend it also renders the haproxy frontend
    config on every loadbalancer host and, if that file changed, restarts HAProxy (`roles/haproxy-config/tasks/main.yml:22-23`),
@@ -89,7 +91,10 @@ the section that gives the evidence; the main citations are repeated here.
      2024.1 check of a container whose unit 2023.1 wrote reports drift;
    - **the new `hostnqn` file** of `nova_compute` and `cinder_volume` (`roles/nova-cell/tasks/config.yml:203-216`).
 
-   Settle the queue type and list the affected containers first ([Pre-execution checklist
+   In addition, every service that `kolla-ansible upgrade` has not reached still runs a 2023.1 image: `openstack_release`
+   defaults to `2024.1` (`group_vars/all.yml:679-681`) and the check task compares the image
+   (`module_utils/kolla_container_worker.py:75`), so a `deploy` or `reconfigure` recreates it on the 2024.1 image without
+   the role's upgrade tasks. Upgrade first, settle the queue type and list the affected containers ([Pre-execution checklist
    §2](../operations/pre-execution-checklist.md#2-first-20241-run-on-a-cloud-deployed-by-20231)).
 8. **`deploy` never pulls an image that is already present.** Rebuilt images under the same tag need `pull`
    (`module_utils/kolla_docker_worker.py:365-367`; Podman `module_utils/kolla_podman_worker.py:675-677`). A tag
