@@ -3,11 +3,11 @@ title: Reconfigure a single service
 description: What a single-service reconfigure such as -t keystone runs, what the tag also touches, what restarts on drift, the risks and the verification.
 tags: [keystone, glance, placement, cinder, heat, haproxy, reconfigure, tags, loop-notify, one-shot, limit]
 remember:
-  - "A changed <code>services.d/&lt;svc&gt;*.cfg</code> restarts HAProxy on all loadbalancer hosts at once; add <code>--skip-tags haproxy</code> when frontends are not meant to change."
+  - "A changed <code>services.d/&lt;svc&gt;*.cfg</code> restarts HAProxy on every loadbalancer host, the backups first and then the VIP holder; add <code>--skip-tags haproxy</code> when frontends are not meant to change."
   - "On each drifted host all the service's containers restart, all such hosts in parallel: a change common to all hosts restarts the service on all its hosts at once."
   - "Even a narrow tag also touches the service's HAProxy frontends, Keystone registration and DB sync; in 2023.1 it no longer runs <code>common</code>."
   - "The service API is unavailable while its containers restart, with up to <code>docker_graceful_timeout</code> (60 s by default) before SIGKILL."
-  - "Before: <code>-t &lt;svc&gt; genconfig</code>, then <code>kolla_set_configs --check</code> with <code>-u root</code> in each container and a diff of the <code>services.d</code> file."
+  - "Before: copy <code>services.d/&lt;svc&gt;*.cfg</code> (genconfig re-renders it, and a later <code>-t &lt;svc&gt;</code> run then no longer restarts HAProxy), <code>-t &lt;svc&gt; genconfig</code>, then <code>kolla_set_configs --check</code> with <code>-u root</code> in each container and a diff of the <code>services.d</code> file."
 impact: [restarts-on-drift]
 scenarios:
   - title: "A glance change during business hours"
@@ -20,7 +20,7 @@ scenarios:
       - text: "Run it now: only drifted hosts restart, so the transfers are safe."
         verdict: "avoid"
         why: "Drifted hosts restart in parallel, so a change common to all hosts restarts the service on all its hosts at once. In-flight glance or cinder transfers are SIGKILLed after <code>docker_graceful_timeout</code> (60 s by default; R24)."
-      - text: "Run <code>kolla-ansible -t glance genconfig</code>, check each glance container with <code>docker exec -u root &lt;c&gt; /usr/local/bin/kolla_set_configs --check; echo $?</code>, diff <code>/etc/kolla/haproxy/services.d/glance*.cfg</code>, and run the <code>reconfigure</code> in a window with no transfers in flight."
+      - text: "Copy <code>/etc/kolla/haproxy/services.d/glance*.cfg</code>, run <code>kolla-ansible -t glance genconfig</code>, check each glance container with <code>docker exec -u root &lt;c&gt; /usr/local/bin/kolla_set_configs --check; echo $?</code>, diff <code>/etc/kolla/haproxy/services.d/glance*.cfg</code>, and run the <code>reconfigure</code> in a window with no transfers in flight."
         verdict: "best"
         why: "This is the \"before\" verification of §3 (genconfig, the check as root in each container, a diff of the HAProxy frontend), and it avoids R24: in-flight glance transfers are SIGKILLed after <code>docker_graceful_timeout</code> while the containers restart."
     see: "3-sequence-impact-risks-and-verification-of--t-svc-reconfigure"
@@ -137,8 +137,9 @@ For an API service such as keystone, glance, cinder, heat or placement:
 2. loadbalancer play, on the loadbalancer hosts: only the `<svc>` include runs and renders `services.d/<svc>*.cfg`.
    The loadbalancer role's own tasks carry only the play tags (`haproxy`, `keepalived`, `loadbalancer`), not the
    `<svc>` tag, so they are skipped [CODE] (`site.yml:99-110`; [Tags
-   §2.3](../risk/tags.md#23-include_role--tags-always-inside-the-haproxy-play-code)). HAProxy restarts on all
-   loadbalancer hosts at once if that file changed ([R8](../risk/risk-register.md#r8)).
+   §2.3](../risk/tags.md#23-include_role--tags-always-inside-the-haproxy-play-code)). If that file changed,
+   HAProxy restarts on every loadbalancer host, the backup hosts first and then the host that holds the VIP
+   (`roles/loadbalancer/handlers/main.yml:9-34, :54-68`) [CODE] ([R8](../risk/risk-register.md#r8)).
 3. Service play, on the service hosts: Keystone registration (`run_once`) → config → check-containers →
    DB/user creation and the DB-sync container on the first host → flush. Every drifted host restarts all of the
    service's containers (loop-notify), all such hosts in parallel. Keystone is the exception: it registers last
@@ -163,7 +164,11 @@ For an API service such as keystone, glance, cinder, heat or placement:
   [R20](../risk/risk-register.md#r20) (glance file backend), [R23](../risk/risk-register.md#r23) (`--limit` on a large
   inventory), [R24](../risk/risk-register.md#r24) (SIGKILL after `docker_graceful_timeout`).
 - **Verification:**
-  - before: `kolla-ansible -t <svc> genconfig`, then `docker exec -u root <c> /usr/local/bin/kolla_set_configs --check;
+  - before: copy `/etc/kolla/haproxy/services.d/<svc>*.cfg` first. `genconfig` re-renders it too (the loadbalancer
+    block also runs for `config`, `site.yml:341`) while every loadbalancer handler is skipped under `config`
+    (`roles/loadbalancer/handlers/main.yml:17`), so after `genconfig` a `-t <svc>` run finds the file unchanged and
+    does not restart HAProxy; a frontend change then reaches HAProxy only through `-t haproxy reconfigure` or a run
+    without tags [CODE]. Then `kolla-ansible -t <svc> genconfig`, then `docker exec -u root <c> /usr/local/bin/kolla_set_configs --check;
     echo $?` in each `<svc>` container (without `-u root` it exits 2 in images that run as a service user, e.g.
     glance-api; [Kolla images §3.4](../concepts/kolla-images.md#34-running-it-by-hand-needs-root)) and a diff of
     `/etc/kolla/haproxy/services.d/<svc>*.cfg` against the previous version;
