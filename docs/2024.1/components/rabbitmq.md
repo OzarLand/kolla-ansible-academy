@@ -186,6 +186,22 @@ follows them.
 The rows of the card are explained in [How to read a service card](index.md#how-to-read-a-service-card).
 
 <!-- BEGIN GENERATED: tools/service_cards.py rabbitmq -->
+
+| Item | Value |
+|---|---|
+| Play | rabbitmq.yml (`import_playbook` at site.yml:468; 3 plays) |
+| Tags | rabbitmq |
+| Play host patterns | rabbitmq, rabbitmq_restart |
+| Node types in play (example inventory) | control |
+| Node types running its containers | – |
+| Containers | `rabbitmq` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | version-check → remove-ha-all-policy (if) → config → check-containers → bootstrap |
+| Task files | bootstrap.yml, check-containers.yml, check.yml, config.yml, config_validate.yml, copy-certs.yml, deploy-containers.yml, deploy.yml, feature-flags.yml, loadbalancer.yml, main.yml, post-deploy.yml, precheck.yml, pull.yml, reconfigure.yml, remove-ha-all-policy.yml, reset-state.yml, restart_services.yml, stop.yml, upgrade.yml, version-check.yml |
+| Templates | `advanced.config.j2`, `definitions.json.j2`, `enabled_plugins.j2`, `erl_inetrc.j2`, `rabbitmq-env.conf.j2`, `rabbitmq.conf.j2`, `rabbitmq.json.j2` |
+| Handlers (definition order) | Restart rabbitmq container |
+| Key variables | `enable_rabbitmq`, `om_rpc_*`, `rabbitmq_*`, `rpc_transport_url` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

@@ -219,6 +219,22 @@ check is the command `kolla-ansible octavia-certificates --check-expiry <days>` 
 The rows of the card are explained on the [Components](index.md#how-to-read-a-service-card) page.
 
 <!-- BEGIN GENERATED: tools/service_cards.py octavia -->
+
+| Item | Value |
+|---|---|
+| Play | site.yml:981 |
+| Tags | octavia |
+| Play host patterns | octavia-api, octavia-health-manager, octavia-housekeeping, octavia-worker |
+| Node types in play (example inventory) | control |
+| Node types running its containers | control |
+| Containers | `octavia_api`, `octavia_driver_agent`, `octavia_health_manager`, `octavia_housekeeping`, `octavia_worker` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | register → prepare (if) → config-host → config → check-containers → clone (if) → bootstrap → flush handlers |
+| Task files | bootstrap.yml, bootstrap_service.yml, check-containers.yml, check.yml, clone.yml, config-host.yml, config.yml, config_validate.yml, copy-certs.yml, deploy-containers.yml, deploy.yml, get_resources_info.yml, hm-interface.yml, loadbalancer.yml, main.yml, openrc.yml, precheck.yml, prepare.yml, pull.yml, reconfigure.yml, register.yml, stop.yml, upgrade.yml |
+| Templates | `octavia-api.json.j2`, `octavia-driver-agent.json.j2`, `octavia-health-manager.json.j2`, `octavia-housekeeping.json.j2`, `octavia-interface.service.j2`, `octavia-openrc.sh.j2`, `octavia-ssh-key.j2`, `octavia-worker.json.j2`, `octavia-wsgi.conf.j2`, `octavia.conf.j2` |
+| Handlers (definition order) | Restart octavia-api container; Restart octavia-driver-agent container; Restart octavia-health-manager container; Restart octavia-housekeeping container; Restart octavia-worker container |
+| Key variables | `enable_octavia`, `octavia_amp_*`, `octavia_network_interface` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

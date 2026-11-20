@@ -165,6 +165,41 @@ risk](#impact-and-risk) and in [fact sheet A §5.8](../reference/factsheets/a-in
 The rows of the card are explained in [How to read a service card](index.md#how-to-read-a-service-card).
 
 <!-- BEGIN GENERATED: tools/service_cards.py ovn-controller ovn-db -->
+
+### OVN controller — role `ovn-controller`
+
+| Item | Value |
+|---|---|
+| Play | site.yml:641 |
+| Tags | ovn, ovn-controller |
+| Play host patterns | ovn-controller |
+| Node types in play (example inventory) | compute, network |
+| Node types running its containers | compute, network |
+| Containers | `ovn_controller` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | config → check-containers → setup-ovs → flush handlers |
+| Task files | check-containers.yml, config.yml, config_validate.yml, deploy-containers.yml, deploy.yml, main.yml, precheck.yml, pull.yml, reconfigure.yml, setup-ovs.yml, stop.yml, upgrade.yml |
+| Templates | `ovn-controller.json.j2` |
+| Handlers (definition order) | Restart ovn-controller container |
+| Key variables | `enable_ovn`, `neutron_plugin_agent: ovn`, `neutron_ovn_distributed_fip` |
+| Role dependencies | none |
+
+### OVN databases — role `ovn-db`
+
+| Item | Value |
+|---|---|
+| Play | site.yml:655 |
+| Tags | ovn, ovn-db |
+| Play host patterns | ovn-nb-db, ovn-northd, ovn-sb-db |
+| Node types in play (example inventory) | control |
+| Node types running its containers | control |
+| Containers | `ovn_northd`, `ovn_nb_db`, `ovn_sb_db` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | lookup_cluster (if) → bootstrap-initial (if) → config → check-containers → flush handlers → bootstrap-db (if) |
+| Task files | bootstrap-db.yml, bootstrap-initial.yml, check-containers.yml, config.yml, config_validate.yml, deploy-containers.yml, deploy.yml, lookup_cluster.yml, main.yml, precheck.yml, pull.yml, reconfigure.yml, stop.yml, upgrade.yml |
+| Templates | `ovn-nb-db.json.j2`, `ovn-northd.json.j2`, `ovn-sb-db.json.j2` |
+| Handlers (definition order) | Restart ovn-nb-db container; Restart ovn-sb-db container; Restart ovn-northd container |
+| Key variables | `enable_ovn`, `neutron_plugin_agent: ovn`, `neutron_ovn_distributed_fip` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

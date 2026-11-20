@@ -189,6 +189,22 @@ service card follows them.
 The rows of the card are explained on the [Components](index.md#how-to-read-a-service-card) page.
 
 <!-- BEGIN GENERATED: tools/service_cards.py neutron -->
+
+| Item | Value |
+|---|---|
+| Play | site.yml:671 |
+| Tags | neutron |
+| Play host patterns | neutron-server, neutron-dhcp-agent, neutron-l3-agent, ironic-neutron-agent, neutron-metadata-agent, neutron-ovn-metadata-agent, neutron-metering-agent, neutron-bgp-dragent, neutron-infoblox-ipam-agent, compute, manila-share |
+| Node types in play (example inventory) | compute, control, network |
+| Node types running its containers | compute, control, network |
+| Containers | `neutron_server`, `neutron_openvswitch_agent`, `neutron_linuxbridge_agent`, `neutron_dhcp_agent`, `neutron_l3_agent`, `neutron_sriov_agent`, `neutron_mlnx_agent`, `neutron_eswitchd`, `neutron_metadata_agent`, `neutron_ovn_metadata_agent`, `neutron_bgp_dragent`, `neutron_infoblox_ipam_agent`, `neutron_metering_agent`, `ironic_neutron_agent`, `neutron_tls_proxy`, `neutron_ovn_agent` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | neutron_plugin_agent_check → register → clone (if) → config-host → config → check-containers → config-neutron-fake (if) → bootstrap → flush handlers |
+| Task files | bootstrap.yml, bootstrap_service.yml, check-containers.yml, check.yml, clone.yml, config-host.yml, config-neutron-fake.yml, config.yml, config_validate.yml, copy-certs.yml, deploy-containers.yml, deploy.yml, legacy_upgrade.yml, loadbalancer.yml, main.yml, neutron_plugin_agent_check.yml, precheck.yml, pull.yml, reconfigure.yml, register.yml, rolling_upgrade.yml, stop.yml, upgrade.yml |
+| Templates | `bgp_dragent.ini.j2`, `dhcp_agent.ini.j2`, `dnsmasq.conf.j2`, `eswitchd.conf.j2`, `fwaas_driver.ini.j2`, `ironic-neutron-agent.json.j2`, `ironic_neutron_agent.ini.j2`, `l3_agent.ini.j2`, `linuxbridge_agent.ini.j2`, `metadata_agent.ini.j2`, `metering_agent.ini.j2`, `ml2_conf.ini.j2`, `mlnx_agent.ini.j2`, `neutron-bgp-dragent.json.j2`, `neutron-dhcp-agent.json.j2`, `neutron-eswitchd.json.j2`, `neutron-infoblox-ipam-agent.json.j2`, `neutron-l3-agent-wrapper.sh.j2`, `neutron-l3-agent.json.j2`, `neutron-linuxbridge-agent.json.j2`, `neutron-metadata-agent.json.j2`, `neutron-metering-agent.json.j2`, `neutron-mlnx-agent.json.j2`, `neutron-openvswitch-agent-xenapi.json.j2`, `neutron-openvswitch-agent.json.j2` … (+14) |
+| Handlers (definition order) | Restart neutron-server container; Restart neutron-openvswitch-agent container; Restart fake neutron-openvswitch-agent container; Restart neutron-linuxbridge-agent container; Restart neutron-dhcp-agent container; Get container facts; Group hosts; Start stopped neutron-l3-agent container; Wait if container starting; Restart running neutron-l3-agent container; Restart neutron-sriov-agent container; Restart neutron-mlnx-agent container; Restart neutron-eswitchd container; Restart neutron-tls-proxy container; Restart neutron-metadata-agent container; Restart neutron-ovn-metadata-agent container; Restart neutron-bgp-dragent container; Restart neutron-infoblox-ipam-agent container; Restart neutron-metering-agent container; Restart ironic-neutron-agent container; Restart neutron-ovn-agent container |
+| Key variables | `enable_neutron`, `neutron_plugin_agent`, `enable_neutron_dvr`, `enable_neutron_agent_ha`, `enable_neutron_provider_networks`, `neutron_enable_rolling_upgrade` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

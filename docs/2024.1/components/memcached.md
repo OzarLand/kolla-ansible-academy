@@ -116,6 +116,22 @@ service card follows them.
 The rows of the card are explained in [How to read a service card](index.md#how-to-read-a-service-card).
 
 <!-- BEGIN GENERATED: tools/service_cards.py memcached -->
+
+| Item | Value |
+|---|---|
+| Play | site.yml:402 |
+| Tags | memcache, memcached |
+| Play host patterns | memcached |
+| Node types in play (example inventory) | control |
+| Node types running its containers | control |
+| Containers | `memcached` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | config → check-containers |
+| Task files | check-containers.yml, check.yml, config.yml, config_validate.yml, deploy-containers.yml, deploy.yml, loadbalancer.yml, main.yml, precheck.yml, pull.yml, reconfigure.yml, stop.yml, upgrade.yml |
+| Templates | `memcached.json.j2` |
+| Handlers (definition order) | Restart memcached container |
+| Key variables | `enable_memcached`, `memcached_port` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

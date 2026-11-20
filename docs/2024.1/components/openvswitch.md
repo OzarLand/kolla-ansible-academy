@@ -176,6 +176,22 @@ dependencies and the evidence, what to check around a run and what stays open; t
 The rows of the card are explained in [How to read a service card](index.md#how-to-read-a-service-card).
 
 <!-- BEGIN GENERATED: tools/service_cards.py openvswitch -->
+
+| Item | Value |
+|---|---|
+| Play | site.yml:611 |
+| Tags | openvswitch |
+| Play host patterns | openvswitch |
+| Node types in play (example inventory) | compute, network |
+| Node types running its containers | compute, network |
+| Containers | `openvswitch_db`, `openvswitch_vswitchd` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | config-host → config → check-containers → flush handlers → post-config |
+| Task files | check-containers.yml, check.yml, config-host.yml, config.yml, config_validate.yml, deploy-containers.yml, deploy.yml, main.yml, post-config.yml, precheck.yml, pull.yml, reconfigure.yml, stop.yml, upgrade.yml |
+| Templates | `openvswitch-db-server.json.j2`, `openvswitch-vswitchd.json.j2`, `ovs-vsctl.j2`, `start-ovs.j2`, `start-ovsdb-server.j2` |
+| Handlers (definition order) | Restart openvswitch-db-server container; Waiting for openvswitch_db service to be ready; Restart openvswitch-vswitchd container |
+| Key variables | `enable_openvswitch`, `neutron_bridge_name`, `neutron_external_interface`, `computes_need_external_bridge` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

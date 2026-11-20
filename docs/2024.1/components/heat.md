@@ -158,6 +158,22 @@ destroy](../operations/stop-and-destroy.md) uses `-t heat`. For Heat, `reconfigu
 The rows of the card are explained on the [Components](index.md#how-to-read-a-service-card) page.
 
 <!-- BEGIN GENERATED: tools/service_cards.py heat -->
+
+| Item | Value |
+|---|---|
+| Play | site.yml:724 |
+| Tags | heat |
+| Play host patterns | heat-api, heat-api-cfn, heat-engine |
+| Node types in play (example inventory) | control |
+| Node types running its containers | control |
+| Containers | `heat_api`, `heat_api_cfn`, `heat_engine` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | register → config → check-containers → clone (if) → bootstrap → flush handlers |
+| Task files | bootstrap.yml, bootstrap_service.yml, check-containers.yml, check.yml, clone.yml, config.yml, config_validate.yml, copy-certs.yml, deploy-containers.yml, deploy.yml, loadbalancer.yml, main.yml, precheck.yml, pull.yml, reconfigure.yml, register.yml, stop.yml, upgrade.yml |
+| Templates | `heat-api-cfn.json.j2`, `heat-api.json.j2`, `heat-engine.json.j2`, `heat.conf.j2`, `wsgi-heat-api-cfn.conf.j2`, `wsgi-heat-api.conf.j2` |
+| Handlers (definition order) | Restart heat-api container; Restart heat-api-cfn container; Restart heat-engine container |
+| Key variables | `enable_heat`, `heat_*_external_fqdn` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

@@ -130,6 +130,22 @@ service card follows them.
 The rows of the card are explained on the [Components](index.md#how-to-read-a-service-card) page.
 
 <!-- BEGIN GENERATED: tools/service_cards.py placement -->
+
+| Item | Value |
+|---|---|
+| Play | site.yml:593 |
+| Tags | placement |
+| Play host patterns | placement-api |
+| Node types in play (example inventory) | control |
+| Node types running its containers | control |
+| Containers | `placement_api` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | register → clone (if) → config → check-containers → bootstrap → flush handlers |
+| Task files | bootstrap.yml, bootstrap_service.yml, check-containers.yml, check.yml, clone.yml, config.yml, config_validate.yml, copy-certs.yml, deploy-containers.yml, deploy.yml, loadbalancer.yml, main.yml, precheck.yml, pull.yml, reconfigure.yml, register.yml, stop.yml, upgrade.yml |
+| Templates | `migrate-db.rc.j2`, `placement-api-wsgi.conf.j2`, `placement-api.json.j2`, `placement.conf.j2` |
+| Handlers (definition order) | Restart placement-api container |
+| Key variables | `enable_placement` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

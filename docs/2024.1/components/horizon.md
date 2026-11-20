@@ -140,6 +140,22 @@ below the table). It does not run `common`: as in 2023.1, `common` is its own pl
 The rows of the card are explained on the [Components](index.md#how-to-read-a-service-card) page.
 
 <!-- BEGIN GENERATED: tools/service_cards.py horizon -->
+
+| Item | Value |
+|---|---|
+| Play | site.yml:740 |
+| Tags | horizon |
+| Play host patterns | horizon |
+| Node types in play (example inventory) | control |
+| Node types running its containers | control |
+| Containers | `horizon` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | config → check-containers → clone (if) → bootstrap (if) → flush handlers |
+| Task files | bootstrap.yml, bootstrap_service.yml, check-containers.yml, check.yml, clone.yml, config.yml, config_validate.yml, copy-certs.yml, deploy-containers.yml, deploy.yml, loadbalancer.yml, main.yml, policy_item.yml, precheck.yml, pull.yml, reconfigure.yml, stop.yml, upgrade.yml |
+| Templates | `_9998-kolla-settings.py.j2`, `_9999-custom-settings.py.j2`, `horizon.conf.j2`, `horizon.json.j2` |
+| Handlers (definition order) | Restart horizon container |
+| Key variables | `enable_horizon`, `enable_horizon_*`, `horizon_backend_database` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

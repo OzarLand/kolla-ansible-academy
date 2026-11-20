@@ -275,6 +275,41 @@ a run and what stays open; the two service cards follow them.
 The rows of the two cards are explained on the [Components](index.md#how-to-read-a-service-card) page.
 
 <!-- BEGIN GENERATED: tools/service_cards.py nova nova-cell -->
+
+### Nova (API level) — role `nova`
+
+| Item | Value |
+|---|---|
+| Play | nova.yml (`import_playbook` at site.yml:609) |
+| Tags | nova, nova-api(-*) |
+| Play host patterns | nova-api, nova-scheduler, nova-super-conductor |
+| Node types in play (example inventory) | control |
+| Node types running its containers | control |
+| Containers | `nova_api`, `nova_scheduler`, `nova_super_conductor` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | register → config → check-containers → flush handlers |
+| Task files | bootstrap.yml, bootstrap_service.yml, bootstrap_upgrade.yml, check-containers.yml, check.yml, clone.yml, config.yml, config_bootstrap.yml, config_validate.yml, copy-certs.yml, deploy-containers.yml, deploy.yml, loadbalancer.yml, main.yml, map_cell0.yml, online_data_migrations.yml, precheck.yml, pull.yml, reconfigure.yml, refresh_scheduler_cell_cache.yml, register.yml, reload_api.yml, reload_super_conductor.yml, rolling_upgrade.yml, stop.yml, upgrade.yml |
+| Templates | `nova-api-bootstrap.json.j2`, `nova-api-wsgi.conf.j2`, `nova-api.json.j2`, `nova-scheduler.json.j2`, `nova-super-conductor.json.j2`, `nova.conf.j2` |
+| Handlers (definition order) | Restart nova-super-conductor container; Restart nova-scheduler container; Restart nova-api container |
+| Key variables | `enable_nova`, `enable_cells`, `nova_safety_upgrade`, `nova_console` |
+| Role dependencies | none |
+
+### Nova (cell level) — role `nova-cell`
+
+| Item | Value |
+|---|---|
+| Play | nova.yml (`import_playbook` at site.yml:609) |
+| Tags | nova, nova-cell(-*) |
+| Play host patterns | compute, nova-compute-ironic, nova-conductor, nova-novncproxy, nova-serialproxy, nova-spicehtml5proxy |
+| Node types in play (example inventory) | compute, control |
+| Node types running its containers | compute, control |
+| Containers | `nova_libvirt`, `nova_ssh`, `nova_novncproxy`, `nova_spicehtml5proxy`, `nova_serialproxy`, `nova_conductor`, `nova_compute`, `nova_compute_ironic` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | clone (if) → config-host → config → check-containers → config-nova-fake (if) → flush handlers → wait_discover_computes (if) → post-config |
+| Task files | bootstrap.yml, bootstrap_service.yml, bootstrap_upgrade.yml, cell_proxy_loadbalancer.yml, check-containers.yml, check.yml, clone.yml, config-host.yml, config-libvirt-tls.yml, config-nova-fake.yml, config.yml, config_bootstrap.yml, config_validate.yml, copy-certs.yml, create_cells.yml, deploy-containers.yml, deploy.yml, discover_computes.yml, external_ceph.yml, get_cell_settings.yml, libvirt-cleanup.yml, loadbalancer.yml, main.yml, online_data_migrations.yml, post-config.yml, precheck.yml, proxy_loadbalancer.yml, pull.yml, rabbitmq.yml, reconfigure.yml, reload.yml, rolling_upgrade.yml, stop.yml, upgrade.yml, wait_discover_computes.yml |
+| Templates | `99-kolla-kvm.rules.j2`, `auth.conf.j2`, `hostnqn.j2`, `libvirt-secret.j2`, `libvirtd.conf.j2`, `nova-cell-bootstrap.json.j2`, `nova-compute-ironic.json.j2`, `nova-compute.json.j2`, `nova-conductor.json.j2`, `nova-libvirt.json.j2`, `nova-novncproxy.json.j2`, `nova-serialproxy.json.j2`, `nova-spicehtml5proxy.json.j2`, `nova-ssh.json.j2`, `nova.conf.d/libvirt.conf.j2`, `nova.conf.j2`, `qemu.conf.j2`, `sasl.conf.j2`, `secret.xml.j2`, `ssh_config.j2`, `sshd_config.j2` |
+| Handlers (definition order) | Restart nova-conductor container; Restart nova-novncproxy container; Restart nova-spicehtml5proxy container; Restart nova-serialproxy container; Restart nova-ssh container; Restart nova-libvirt container; Checking libvirt container is ready; Create libvirt SASL user; Reload libvirtd; Restart nova-compute container; Restart nova-compute-ironic container; Restart nova-compute-fake containers; Wait for nova-compute services to update service versions |
+| Key variables | `nova_compute_virt_type`, `nova_backend_ceph`, `libvirt_tls`, `libvirt_enable_sasl`, `nova_cell_*_group`, `migration_interface` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

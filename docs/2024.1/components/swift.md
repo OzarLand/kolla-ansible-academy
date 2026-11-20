@@ -147,6 +147,22 @@ config, start, check (`roles/swift/tasks/deploy.yml:2-10`) [CODE].
 The rows of the card are explained on the [Components](index.md#how-to-read-a-service-card) page.
 
 <!-- BEGIN GENERATED: tools/service_cards.py swift -->
+
+| Item | Value |
+|---|---|
+| Play | site.yml:511 |
+| Tags | swift |
+| Play host patterns | swift-account-server, swift-container-server, swift-object-server, swift-proxy-server |
+| Node types in play (example inventory) | control, storage |
+| Node types running its containers | – |
+| Containers | – |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | register → config → start → check |
+| Task files | check.yml, config.yml, config_validate.yml, copy-certs.yml, deploy-containers.yml, deploy.yml, legacy_upgrade.yml, loadbalancer.yml, main.yml, precheck.yml, pull.yml, reconfigure.yml, register.yml, rolling_upgrade.yml, start.yml, stop.yml, upgrade.yml |
+| Templates | `account.conf.j2`, `container.conf.j2`, `object.conf.j2`, `proxy-server.conf.j2`, `rsyncd.conf.j2`, `swift-account-auditor.json.j2`, `swift-account-reaper.json.j2`, `swift-account-replication-server.json.j2`, `swift-account-replicator.json.j2`, `swift-account-server.json.j2`, `swift-container-auditor.json.j2`, `swift-container-replication-server.json.j2`, `swift-container-replicator.json.j2`, `swift-container-server.json.j2`, `swift-container-updater.json.j2`, `swift-object-auditor.json.j2`, `swift-object-expirer.json.j2`, `swift-object-replication-server.json.j2`, `swift-object-replicator.json.j2`, `swift-object-server.json.j2`, `swift-object-updater.json.j2`, `swift-proxy-server.json.j2`, `swift-rsyncd.json.j2`, `swift.conf.j2` |
+| Handlers (definition order) | Restart swift-proxy-server container |
+| Key variables | `enable_swift`, `swift_devices_*`, `swift_*_server ports` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

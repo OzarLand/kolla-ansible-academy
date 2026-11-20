@@ -233,6 +233,22 @@ around a run and what stays open; the service card follows them.
 The rows of the card are explained in [How to read a service card](index.md#how-to-read-a-service-card).
 
 <!-- BEGIN GENERATED: tools/service_cards.py loadbalancer -->
+
+| Item | Value |
+|---|---|
+| Play | site.yml:105 |
+| Tags | haproxy, keepalived, loadbalancer; each of the 39 per-service `include_role … tasks_from: loadbalancer` tasks in this play also carries its service tag |
+| Play host patterns | loadbalancer |
+| Node types in play (example inventory) | network |
+| Node types running its containers | network |
+| Containers | `haproxy`, `proxysql`, `keepalived`, `haproxy_ssh` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | config-host → config → check-containers |
+| Task files | check-containers.yml, check.yml, config-host.yml, config.yml, config_validate.yml, copy-certs.yml, deploy-containers.yml, deploy.yml, main.yml, precheck.yml, pull.yml, reconfigure.yml, stop.yml, upgrade.yml |
+| Templates | `haproxy-ssh/haproxy-ssh.json.j2`, `haproxy-ssh/sshd_config.j2`, `haproxy/haproxy.json.j2`, `haproxy/haproxy_external_frontend.cfg.j2`, `haproxy/haproxy_main.cfg.j2`, `haproxy/haproxy_run.sh.j2`, `keepalived/check_alive_haproxy.sh.j2`, `keepalived/check_alive_proxysql.sh.j2`, `keepalived/keepalived.conf.j2`, `keepalived/keepalived.json.j2`, `proxysql/proxysql.json.j2`, `proxysql/proxysql.yaml.j2`, `proxysql/proxysql_run.sh.j2` |
+| Handlers (definition order) | Check IP addresses on the API interface; Group HA nodes by status; Stop backup keepalived container; Stop backup haproxy container; Stop backup proxysql container; Start backup haproxy container; Wait for backup haproxy to start; Start backup proxysql container; Wait for backup proxysql to start; Start backup keepalived container; Stop master haproxy container; Stop master proxysql container; Stop master keepalived container; Start master haproxy container; Wait for master haproxy to start; Start master proxysql container; Wait for master proxysql to start; Start master keepalived container; Wait for haproxy to listen on VIP; Wait for proxysql to listen on VIP; Restart haproxy-ssh container |
+| Key variables | `enable_haproxy`, `enable_keepalived`, `kolla_internal_vip_address`, `kolla_external_vip_address`, `keepalived_virtual_router_id`, `kolla_enable_tls_*` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

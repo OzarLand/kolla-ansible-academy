@@ -139,6 +139,22 @@ handlers (`roles/barbican/tasks/upgrade.yml:2-9`) [CODE].
 The rows of the card are explained on the [Components](index.md#how-to-read-a-service-card) page.
 
 <!-- BEGIN GENERATED: tools/service_cards.py barbican -->
+
+| Item | Value |
+|---|---|
+| Play | site.yml:853 |
+| Tags | barbican |
+| Play host patterns | barbican-api, barbican-keystone-listener, barbican-worker |
+| Node types in play (example inventory) | control |
+| Node types running its containers | control |
+| Containers | `barbican_api`, `barbican_keystone_listener`, `barbican_worker` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | register → config → check-containers → clone (if) → bootstrap → flush handlers |
+| Task files | bootstrap.yml, bootstrap_service.yml, check-containers.yml, clone.yml, config.yml, config_validate.yml, copy-certs.yml, deploy-containers.yml, deploy.yml, loadbalancer.yml, main.yml, precheck.yml, pull.yml, reconfigure.yml, register.yml, stop.yml, upgrade.yml |
+| Templates | `barbican-api.ini.j2`, `barbican-api.json.j2`, `barbican-keystone-listener.json.j2`, `barbican-worker.json.j2`, `barbican.conf.j2` |
+| Handlers (definition order) | Restart barbican-api container; Restart barbican-keystone-listener container; Restart barbican-worker container |
+| Key variables | `enable_barbican`, `barbican_crypto_key (passwords.yml)` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

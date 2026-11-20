@@ -209,6 +209,22 @@ stays open; the service card follows them.
 The rows of the card are explained in [How to read a service card](index.md#how-to-read-a-service-card).
 
 <!-- BEGIN GENERATED: tools/service_cards.py mariadb -->
+
+| Item | Value |
+|---|---|
+| Play | mariadb.yml (`import_playbook` at site.yml:400; 5 plays) |
+| Tags | mariadb |
+| Play host patterns | mariadb, mariadb_restart, mariadb_start, mariadb_bootstrap_restart |
+| Node types in play (example inventory) | control |
+| Node types running its containers | – |
+| Containers | `mariadb`, `mariadb_clustercheck` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | config → check-containers → bootstrap |
+| Task files | backup.yml, bootstrap.yml, bootstrap_cluster.yml, check-containers.yml, check.yml, config.yml, config_validate.yml, deploy-containers.yml, deploy.yml, loadbalancer.yml, lookup_cluster.yml, main.yml, post-deploy.yml, post-upgrade.yml, precheck.yml, pull.yml, reconfigure.yml, recover_cluster.yml, register.yml, restart_services.yml, stop.yml, upgrade.yml |
+| Templates | `backup.my.cnf.j2`, `galera.cnf.j2`, `hostname.j2`, `mariabackup.json.j2`, `mariadb-clustercheck.json.j2`, `mariadb.json.j2` |
+| Handlers (definition order) | Starting first MariaDB container; Wait for first MariaDB service port liveness; Wait for first MariaDB service to sync WSREP; Ensure MariaDB is running normally on bootstrap host; Restart MariaDB on existing cluster members; Start MariaDB on new nodes; Restart mariadb-clustercheck container |
+| Key variables | `enable_mariadb`, `mariadb_*`, `database_address`, `enable_external_mariadb_load_balancer` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

@@ -194,6 +194,22 @@ stays open; the service card follows them.
 The rows of the card are explained on the [Components](index.md#how-to-read-a-service-card) page.
 
 <!-- BEGIN GENERATED: tools/service_cards.py keystone -->
+
+| Item | Value |
+|---|---|
+| Play | site.yml:483 |
+| Tags | keystone |
+| Play host patterns | keystone |
+| Node types in play (example inventory) | control |
+| Node types running its containers | control |
+| Containers | `keystone`, `keystone_ssh`, `keystone_fernet` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | config → check-containers → clone (if) → bootstrap → flush handlers → distribute_fernet → register → register_identity_providers (if) |
+| Task files | bootstrap.yml, bootstrap_service.yml, check-containers.yml, clone.yml, config-federation-oidc.yml, config.yml, config_validate.yml, copy-certs.yml, deploy-containers.yml, deploy.yml, distribute_fernet.yml, loadbalancer.yml, main.yml, precheck.yml, pull.yml, reconfigure.yml, register.yml, register_identity_providers.yml, stop.yml, upgrade.yml |
+| Templates | `crontab.j2`, `fernet-healthcheck.sh.j2`, `fernet-node-sync.sh.j2`, `fernet-push.sh.j2`, `fernet-rotate.sh.j2`, `keystone-fernet.json.j2`, `keystone-ssh.json.j2`, `keystone-startup.sh.j2`, `keystone.conf.j2`, `keystone.json.j2`, `ssh_config.j2`, `sshd_config.j2`, `wsgi-keystone.conf.j2` |
+| Handlers (definition order) | Init keystone database upgrade; Restart keystone-ssh container; Restart keystone-fernet container; Restart keystone container; Finish keystone database upgrade |
+| Key variables | `enable_keystone`, `keystone_token_provider`, `fernet_token_expiry`, `fernet_key_rotation_interval` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

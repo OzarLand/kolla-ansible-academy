@@ -233,6 +233,22 @@ card follows them.
 The rows of the card are explained on the [Components](index.md#how-to-read-a-service-card) page.
 
 <!-- BEGIN GENERATED: tools/service_cards.py glance -->
+
+| Item | Value |
+|---|---|
+| Play | site.yml:544 |
+| Tags | glance |
+| Play host patterns | glance-api |
+| Node types in play (example inventory) | control |
+| Node types running its containers | control |
+| Containers | `glance_api`, `glance_tls_proxy` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | register → config → check-containers → clone (if) → bootstrap → flush handlers |
+| Task files | bootstrap.yml, bootstrap_service.yml, check-containers.yml, clone.yml, config.yml, config_validate.yml, copy-certs.yml, deploy-containers.yml, deploy.yml, external_ceph.yml, legacy_upgrade.yml, loadbalancer.yml, main.yml, precheck.yml, pull.yml, reconfigure.yml, register.yml, rolling_upgrade.yml, stop.yml, stop_service.yml, upgrade.yml |
+| Templates | `glance-api.conf.j2`, `glance-api.json.j2`, `glance-cache.conf.j2`, `glance-swift.conf.j2`, `glance-tls-proxy.cfg.j2`, `glance-tls-proxy.json.j2` |
+| Handlers (definition order) | Restart glance-api container; Restart glance-tls-proxy container |
+| Key variables | `enable_glance`, `glance_backend_*`, `glance_api_hosts`, `glance_enable_rolling_upgrade` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

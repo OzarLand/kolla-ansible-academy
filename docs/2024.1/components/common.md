@@ -151,6 +151,22 @@ Read in the 2024.1 sources and compared with 2023.1 [CODE]:
 The rows of the card are explained in [How to read a service card](index.md#how-to-read-a-service-card).
 
 <!-- BEGIN GENERATED: tools/service_cards.py common -->
+
+| Item | Value |
+|---|---|
+| Play | site.yml:88 |
+| Tags | common |
+| Play host patterns | cron, fluentd, kolla-logs, kolla-toolbox |
+| Node types in play (example inventory) | compute, control, monitoring, network, storage |
+| Node types running its containers | compute, control, monitoring, network, storage |
+| Containers | `fluentd`, `kolla_toolbox`, `cron` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | config → check-containers → bootstrap → flush handlers |
+| Task files | bootstrap.yml, check-containers.yml, check.yml, config.yml, config_validate.yml, copy-certs.yml, deploy-containers.yml, deploy.yml, main.yml, precheck.yml, pull.yml, reconfigure.yml, stop.yml, upgrade.yml |
+| Templates | `admin-openrc-system.sh.j2`, `admin-openrc.sh.j2`, `clouds.yaml.j2`, `conf/filter/00-record_transformer.conf.j2`, `conf/filter/01-rewrite.conf.j2`, `conf/filter/02-parser.conf.j2`, `conf/format/apache_access.conf.j2`, `conf/format/wsgi_access.conf.j2`, `conf/input/00-global.conf.j2`, `conf/input/01-syslog.conf.j2`, `conf/input/02-mariadb.conf.j2`, `conf/input/03-rabbitmq.conf.j2`, `conf/input/04-openstack-wsgi.conf.j2`, `conf/input/05-libvirt.conf.j2`, `conf/input/08-prometheus.conf.j2`, `conf/input/10-openvswitch.conf.j2`, `conf/input/11-letsencrypt.conf.j2`, `conf/input/12-systemd.conf.j2`, `conf/output/00-local.conf.j2`, `conf/output/01-es.conf.j2`, `conf/output/03-opensearch.conf.j2`, `cron-logrotate-ansible.conf.j2`, `cron-logrotate-aodh.conf.j2`, `cron-logrotate-barbican.conf.j2`, `cron-logrotate-blazar.conf.j2` … (+57) |
+| Handlers (definition order) | Restart fluentd container; Restart kolla-toolbox container; Initializing toolbox container using normal user; Restart cron container |
+| Key variables | `enable_fluentd`, `enable_* (all, via td-agent/logrotate)`, `elasticsearch_address`, `enable_monasca` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

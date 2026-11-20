@@ -133,6 +133,22 @@ selects the manila include of the loadbalancer play (`site.yml:218-222`) [CODE].
 The rows of the card are explained on the [Components](index.md#how-to-read-a-service-card) page.
 
 <!-- BEGIN GENERATED: tools/service_cards.py manila -->
+
+| Item | Value |
+|---|---|
+| Play | site.yml:786 |
+| Tags | manila |
+| Play host patterns | manila-api, manila-data, manila-share, manila-scheduler |
+| Node types in play (example inventory) | control, network |
+| Node types running its containers | control, network |
+| Containers | `manila_api`, `manila_scheduler`, `manila_share`, `manila_data` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | clone (if) → register → config → check-containers → bootstrap → flush handlers |
+| Task files | bootstrap.yml, bootstrap_service.yml, check-containers.yml, check.yml, clone.yml, config.yml, config_validate.yml, copy-certs.yml, deploy-containers.yml, deploy.yml, external_ceph.yml, loadbalancer.yml, main.yml, precheck.yml, pull.yml, reconfigure.yml, register.yml, stop.yml, upgrade.yml |
+| Templates | `manila-api.json.j2`, `manila-data.json.j2`, `manila-scheduler.json.j2`, `manila-share.conf.j2`, `manila-share.json.j2`, `manila.conf.j2` |
+| Handlers (definition order) | Restart manila-api container; Restart manila-data container; Restart manila-scheduler container; Restart manila-share container |
+| Key variables | `enable_manila`, `enable_manila_backend_*` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

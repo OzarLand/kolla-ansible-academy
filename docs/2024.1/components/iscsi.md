@@ -145,6 +145,22 @@ the study says about running it is in the rows linked under [Impact and risk](#i
 The rows of the card are explained in [How to read a service card](index.md#how-to-read-a-service-card).
 
 <!-- BEGIN GENERATED: tools/service_cards.py iscsi -->
+
+| Item | Value |
+|---|---|
+| Play | site.yml:439 |
+| Tags | iscsi |
+| Play host patterns | iscsid, tgtd |
+| Node types in play (example inventory) | compute, control, storage |
+| Node types running its containers | compute, control, storage |
+| Containers | `iscsid`, `tgtd` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | config-host → config → check-containers → flush handlers |
+| Task files | check-containers.yml, check.yml, config-host.yml, config.yml, config_validate.yml, deploy-containers.yml, deploy.yml, main.yml, precheck.yml, pull.yml, reconfigure.yml, stop.yml, upgrade.yml |
+| Templates | `iscsid.json.j2`, `tgtd.json.j2` |
+| Handlers (definition order) | Restart iscsid container; Restart tgtd container |
+| Key variables | `enable_iscsid`, `enable_cinder_backend_lvm` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related

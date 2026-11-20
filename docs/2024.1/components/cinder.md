@@ -252,6 +252,22 @@ example is keystone ([Reconfigure a single service
 The rows of the card are explained on the [Components](index.md#how-to-read-a-service-card) page.
 
 <!-- BEGIN GENERATED: tools/service_cards.py cinder -->
+
+| Item | Value |
+|---|---|
+| Play | site.yml:576 |
+| Tags | cinder |
+| Play host patterns | cinder-api, cinder-backup, cinder-scheduler, cinder-volume |
+| Node types in play (example inventory) | control, storage |
+| Node types running its containers | control, storage |
+| Containers | `cinder_api`, `cinder_scheduler`, `cinder_volume`, `cinder_backup` |
+| deploy/reconfigure flow (`tasks/deploy.yml`) | register → config → check-containers → clone (if) → bootstrap → flush handlers |
+| Task files | bootstrap.yml, bootstrap_service.yml, check-containers.yml, clone.yml, config.yml, config_validate.yml, copy-certs.yml, deploy-containers.yml, deploy.yml, external_ceph.yml, loadbalancer.yml, main.yml, precheck.yml, pull.yml, reconfigure.yml, register.yml, reload.yml, stop.yml, upgrade.yml |
+| Templates | `cinder-api.json.j2`, `cinder-backup.json.j2`, `cinder-scheduler.json.j2`, `cinder-volume.json.j2`, `cinder-wsgi.conf.j2`, `cinder.conf.j2`, `hostnqn.j2` |
+| Handlers (definition order) | Restart cinder-api container; Restart cinder-scheduler container; Restart cinder-volume container; Restart cinder-backup container; Wait for cinder services to update service versions |
+| Key variables | `enable_cinder`, `enable_cinder_backend_*`, `cinder_backend_ceph`, `cinder_backup_driver`, `cinder_coordination_backend` |
+| Role dependencies | none |
+
 <!-- END GENERATED -->
 
 ## Related
