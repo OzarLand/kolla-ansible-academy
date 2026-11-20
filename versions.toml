@@ -19,7 +19,7 @@
 # "Adding a release".
 
 # Release opened by the root of the portal. It must be available.
-default = "2023.1"
+default = "2024.1"
 
 # Release that was published without a release prefix before the portal had
 # releases: an old address such as /operations/reconfigure-nova/ is redirected
