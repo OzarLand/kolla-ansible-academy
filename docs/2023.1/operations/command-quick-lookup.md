@@ -26,8 +26,8 @@ also say what the examples assume: "Can restart" is the **Restarts** convention,
 | `-t keystone reconfigure` | haproxy, control | keystone ×3, haproxy | keystone db sync | small |
 | `-t glance reconfigure` | haproxy, `glance-api` | glance-api, haproxy | db sync + metadefs load + MariaDB global flag toggle | small |
 | `-t placement reconfigure` | haproxy, control | placement-api, haproxy | db sync + online data migrations (one `bootstrap_placement` container) | small |
-| `-t nova reconfigure` | haproxy, control, **all computes** | all nova incl. **libvirt**, haproxy | 5 runs (those of `nova-api` and `nova-cell` below) | number of computes |
-| `-t nova-api reconfigure` | haproxy, control | nova-api, scheduler, haproxy | 2 (API DB sync, `map_cell0`) | small |
+| `-t nova reconfigure` | haproxy, control, **all computes** | all nova incl. **libvirt**, haproxy | 6 runs (those of `nova-api` and `nova-cell` below) | number of computes |
+| `-t nova-api reconfigure` | haproxy, control | nova-api, scheduler, haproxy | 3 (API DB sync, `map_cell0`, `list_cells` for cell0: `roles/nova/tasks/map_cell0.yml:24-30`) | small |
 | `-t nova-cell reconfigure` | haproxy (console-proxy frontends), control (conductor, consoles), **all computes** | conductor, consoles, compute, libvirt, ssh; haproxy if a console-proxy frontend changed | 3 (cell DB sync, `list_cells` ×2: cell lookup and discovery; `discover_hosts` itself is a `docker exec` into `nova_conductor`) | number of computes |
 | `-t neutron reconfigure` | haproxy, control, network, **all computes** | server, all agents, haproxy | `bootstrap_neutron` (`neutron-db-manage upgrade head` for neutron and each enabled subproject): in 2023.1 it runs on every deploy **and reconfigure**, whatever `neutron_enable_rolling_upgrade` (`roles/neutron/tasks/reconfigure.yml:2`, `deploy.yml:20`, `bootstrap.yml:38`, `bootstrap_service.yml:1-21`, no `when`) | number of computes |
 | `-t openvswitch reconfigure` | network, **all computes** | openvswitch_db/vswitchd | – | number of computes |
@@ -35,7 +35,7 @@ also say what the examples assume: "Can restart" is the **Restarts** convention,
 | `-t chrony reconfigure` | none: no `chrony` role or play in 2023.1 (only the `always`-tagged plays run) | – | – | – |
 | `-t common reconfigure` | **all hosts** of the `common` group (`site.yml:86-97`) | fluentd, cron, kolla_toolbox (all three on drift, loop-notify) | – | number of hosts |
 | `-t mariadb reconfigure` | haproxy, mariadb | mariadb (restart play with `serial: "33%"`: one host per batch with 3 nodes, `mariadb.yml:14-26`; ansible-core 2.14.18 `lib/ansible/utils/helpers.py:32`), clustercheck, haproxy | – | Galera sync |
-| `-t rabbitmq reconfigure` | haproxy, rabbitmq (+outward) | rabbitmq one by one (`serial: "33%"`, each node drained first: `rabbitmq.yml:26-38`, `roles/rabbitmq/tasks/restart_services.yml:9-17`), haproxy | – | broker start |
+| `-t rabbitmq reconfigure` | haproxy, rabbitmq (+outward) | rabbitmq one by one (`serial: "33%"`, each node drained first: `rabbitmq.yml:26-38`, `roles/rabbitmq/tasks/restart_services.yml:9-17`), haproxy | 1 (`rabbitmq_version_check`, on the first RabbitMQ host, only when the container exists: `roles/rabbitmq/tasks/deploy.yml:2`, `version-check.yml:18-34,46-49`) | broker start |
 | `reconfigure` (no tag) | all | everything that drifted | db sync of every enabled service, neutron included (see the neutron row) | number of hosts × tasks |
 | `deploy-containers -t X` | X's hosts | X (drifted only) | none | small per host |
 | `genconfig -t X` | X's hosts (+haproxy) | none | none | templating |
