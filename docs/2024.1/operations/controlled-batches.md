@@ -252,6 +252,11 @@ New in 2024.1 [CODE]:
 
 Caveats:
 
+- **HAProxy frontends are not applied by this pattern.** `genconfig` also re-renders
+  `/etc/kolla/haproxy/services.d/` (the loadbalancer block runs for `config`, `site.yml:324-326`), while every loadbalancer
+  handler is skipped under `config` (`roles/loadbalancer/handlers/main.yml:17`), and `deploy-containers` runs no
+  haproxy work. A frontend change written this way reaches HAProxy only through `-t haproxy reconfigure` or a run
+  without tags [CODE]; copy `services.d` before `genconfig` if you want to diff it.
 - Between steps 1 and 3, **any other Kolla run that reaches the nova-cell check on those hosts applies the pending
   drift in files listed in `config_files`**: an untagged run, `-t nova` or `-t nova-cell` (the tags of the nova-cell
   play, `nova.yml:135-139`). Unrelated tags do not do it through common: common runs only for an untagged run or
