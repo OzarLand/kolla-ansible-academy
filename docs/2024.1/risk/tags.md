@@ -486,7 +486,7 @@ Handlers run in **definition order** after `meta: flush_handlers` (end of `deplo
 ## Related
 
 - [Operations](../operations/index.md) (impact of each scenario, commands)
-- [Risk register](risk-register.md) (risks [R1–R25](risk-register.md#r1))
+- [Risk register](risk-register.md) (risks [R1–R30](risk-register.md#r1))
 - [Components](../components/index.md)
 - [Tag index](tag-index.md) (tag index)
 - [Ansible listings](../reference/listings/index.md) (ansible-core 2.16.20 `--list-tags` and `--list-tasks`)

@@ -34,7 +34,7 @@ tags: [reconfigure, deploy, tags, risk, evidence, unknowns]
 
     ---
 
-    Risk and impact: the 25 rated risks (R25 does not apply to 2024.1), what a tag really executes, and why a small
+    Risk and impact: the 30 rated risks (R25 does not apply to 2024.1), what a tag really executes, and why a small
     change creates a large workload.
 
 - **[I want to understand how a run works](concepts/index.md)**

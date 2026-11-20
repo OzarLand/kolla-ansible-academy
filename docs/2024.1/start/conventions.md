@@ -78,8 +78,8 @@ is used only where the corpus supports it:
 | `pulls-images` | The command downloads images; running containers do not change. | `pull` never changes running containers [CODE]: every role's `pull.yml` except swift's and ceph-rgw's imports `service-images-pull`, whose only task runs `kolla_container` `pull_image` for each enabled container mapped to the host and notifies no handler (`roles/service-images-pull/tasks/main.yml:2-18`); swift's `pull.yml` runs `pull_image` directly, one task per image (`roles/swift/tasks/pull.yml:2-74`), and ceph-rgw's is empty. See [Update container images §1.1](../operations/update-container-images.md#11-images), row `pull` of [Execution flow §4](../concepts/deployment-execution-flow.md#4-action-matrix-what-each-kolla_action-does) and [R11](../risk/risk-register.md#r11). |
 | `restarts-on-drift` | The command can restart containers, only if drift is detected. | The "Restarts" convention of the [command sections](../operations/index.md#conventions-used-by-the-command-sections) and the definition of [drift](../operations/index.md#drift); the "Containers that can restart" column of [Tags §3](../risk/tags.md#3-what-a-tag-really-executes-master-table). The drift test is `compare_container`, the same for the Docker and the Podman worker (`module_utils/kolla_container_worker.py:58-65`, `module_utils/kolla_podman_worker.py:294-301`) [CODE]. |
 | `recreates-containers` | The command recreates containers (stop, rm, create, start) when their image or parameters differ. | The entry "restart vs recreate" of the [Glossary](../reference/glossary.md); [Update container images §2](../operations/update-container-images.md#2-how-image-pulling-and-recreation-work-code); [R12](../risk/risk-register.md#r12). The recreate branch is `module_utils/kolla_docker_worker.py:353-362` (Docker) and `module_utils/kolla_podman_worker.py:516-521` (Podman) [CODE]. |
-| `critical` | The page covers an operation rated Critical in the risk register. | The Severity column of the [Risk register](../risk/risk-register.md#matrix): a page carries the class when one of its risks is rated Critical there. |
-| `maintenance-window` | The corpus asks to plan the operation as a maintenance. | The Precautions of the risks of the [Risk register](../risk/risk-register.md#matrix) that ask to plan the operation as a maintenance or in a maintenance window. |
+| `critical` | The page covers an operation rated Critical in the risk register. | The Severity column of the [Risk register](../risk/risk-register.md#matrix): R7, R12, R14, R15 and R16. |
+| `maintenance-window` | The corpus asks to plan the operation as a maintenance. | The Precautions of [R3](../risk/risk-register.md#r3) ("Plan as a maintenance") and of [R10](../risk/risk-register.md#r10) ("Maintenance window"). |
 | `recovery` | The page is a backup or recovery procedure. | `mariadb_backup` and `mariadb_recovery`, two commands of the wrapper that run their own playbooks (`tools/kolla-ansible:448-456`; `ansible/mariadb_backup.yml`, `ansible/mariadb_recovery.yml`) [CODE]: [Database operations](../operations/database-operations.md), [fact sheet E §9](../reference/factsheets/e-host-bootstrap-ops-playbooks.md#9-mariadb_backupyml-and-mariadb_recoveryyml-playbook-level-only) and the rows "backup" and "recovery" of [fact sheet B §1.3](../reference/factsheets/b-mariadb-rabbitmq-keystone.md#13-task-flow-per-kolla_action). |
 
 ## How pages are built
@@ -89,7 +89,7 @@ is used only where the corpus supports it:
 - **Callouts** are the five GitHub alerts: note, tip, important, warning and caution.
 - **Operation pages:** the commands come first, in section 1 or directly under the introduction, and follow the
   [conventions of the command sections](../operations/index.md#conventions-used-by-the-command-sections). The impact
-  classes are shown under the title. Risks are cited by number (R1 to R25) and link to the [Risk
+  classes are shown under the title. Risks are cited by number (R1 to R30) and link to the [Risk
   register](../risk/risk-register.md). R25 ("`-t common` believed to reconfigure fluentd/cron") does not apply to
   2024.1: `common` is a play of its own, tagged `common` (`site.yml:88-103`), so `-t common` runs it [CODE]. Risks and
   verification steps, when a page has them, are in its last numbered sections.
@@ -101,5 +101,5 @@ is used only where the corpus supports it:
 - [What is not known](../troubleshooting/what-is-not-known.md) — everything marked [NOT AVAILABLE], by topic
 - [Glossary](../reference/glossary.md) — the terms the study uses, with the place where each is defined
 - [Operations](../operations/index.md) — the operation pages, each with its impact classes and risks
-- [Risk register](../risk/risk-register.md) — the 25 risks, with their likelihood and severity (R25 does not apply to
+- [Risk register](../risk/risk-register.md) — the 30 risks, with their likelihood and severity (R25 does not apply to
   2024.1)

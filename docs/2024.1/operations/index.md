@@ -136,7 +136,7 @@ that establishes it:
 ## Related
 
 - [Tags §3](../risk/tags.md#3-what-a-tag-really-executes-master-table) (what each tag executes)
-- [Risk register](../risk/risk-register.md) (risks [R1–R25](../risk/risk-register.md#r1))
+- [Risk register](../risk/risk-register.md) (risks [R1–R30](../risk/risk-register.md#r1))
 - [Technical findings](../reference/findings.md) (the 2024.1 findings [F16](../reference/findings.md#f16) and
   [F17](../reference/findings.md#f17) behind the first 2024.1 run)
 - [Nova deep dive §5](../components/nova-deep-dive.md#5-nova-libvirt-why-its-restart-is-special) (nova-libvirt restarts)

@@ -50,6 +50,6 @@ tables, the per-role fact sheets, the Ansible listings, and the method and limit
 - [Known bugs and limitations](../troubleshooting/known-bugs-and-limitations.md) — implementation limitations and bugs
   found in `2024.1-eom`
 - [Open questions](../troubleshooting/open-questions.md) — the open questions
-  [Q1–Q14](../troubleshooting/open-questions.md#q1)
+  [Q1–Q21](../troubleshooting/open-questions.md#q1)
 - [What is not known](../troubleshooting/what-is-not-known.md) — everything marked [NOT AVAILABLE], by topic
 - [Find it fast](../start/find-it-fast.md) — typical operator questions and the section that answers them

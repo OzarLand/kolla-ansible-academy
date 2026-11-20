@@ -114,5 +114,5 @@ the tool cannot resolve shows "–" (see the introduction for the three cards co
 - [Per-role fact sheets](../reference/factsheets/index.md) — the per-role evidence behind the component pages
 - [Generated inventory](../reference/generated-inventory.md) — every play, container, role and handler
 - [Kolla images §5](../concepts/kolla-images.md#5-per-image-start-behaviour) — what each image does on every start
-- [Risk register](../risk/risk-register.md) — the 25 risks that the "Risks" bullets point to (R25 does not apply to
+- [Risk register](../risk/risk-register.md) — the 30 risks that the "Risks" bullets point to (R25 does not apply to
   2024.1)

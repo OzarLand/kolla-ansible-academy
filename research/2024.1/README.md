@@ -28,17 +28,14 @@ Follow CONTRIBUTING.md "Making a release available": `docs/2024.1.toml` with the
 and `tag = "2024.1-eom"` in `versions.toml`, the learning blocks and the journey challenges for 2024.1, then
 `make docs-check docs-build STRICT=1` with no error before merging into `main`.
 
-## Review notes to close before release
+## Review notes (closed)
 
-- method-and-limits: re-read phase 6 once all pages exist; add the service cards to "Generated material" once
-  `tools/service_cards.py` has been run on the 2024.1 component pages; restore the counts of "Related" (findings,
-  fact sheets, open questions) once verified.
-- conventions: restore the list of Critical risks in the `critical` class and the R3/R10 references in
-  `maintenance-window` once the 2024.1 risk register is written.
-- glossary: check the anchor `concepts/compute-scaling-and-performance.md#1-how-ansible-core-216-spends-time-in-kolla-ansible`
-  and the R/F/Q identifier ranges once those pages exist.
-- impact classes: in 2024.1 `genconfig` and `-t common` can pull the fluentd image (`roles/common/tasks/config.yml:42-51`).
-  Decide whether the `writes-config` class text ("restarts no container") needs a note about that pull before release.
-- components: openvswitch and ovn carry a "Key answers" note that the other component pages do not have; harmonise (keep on all or none) before release.
-- fact sheets: A carries a "Key answers" note that the 2023.1 fact sheets do not; harmonise across A–E.
-- risk/tag-index and risk/index: fill the risk column of the new rows (letsencrypt, etcd, removed services) and the risk count once the 2024.1 register is written.
+- method-and-limits: service cards added to "Generated material"; counts of "Related" restored (F1–F17, A–E, Q1–Q21).
+- conventions: the Critical list (R7, R12, R14, R15, R16) and the R3/R10 maintenance references restored.
+- glossary and other pages: identifier ranges updated to R1–R30, F1–F17, Q1–Q21; the compute-scaling §1 anchor exists.
+- impact classes: the `writes-config` row of conventions already says, with evidence, that `genconfig` can pull the
+  fluentd image; the class name is kept.
+- "Key answers" notes: kept where a page has one (component pages openvswitch and ovn, fact sheets A, C and E); a
+  Key answers note is optional on any page, so no harmonisation is needed.
+- risk/tag-index and risk/index: the new rows (letsencrypt, etcd, removed services) have no risk in the 2024.1
+  register, so "–" is correct; the risk index names R26–R30.

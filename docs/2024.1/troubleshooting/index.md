@@ -446,7 +446,7 @@ cases it offers the dependencies and the restarts read from the code, and marks 
   `openvswitch_agent.ini` merge) still do not hold; [F16](../reference/findings.md#f16) (the first 2024.1 check
   restarts a container whose unit 2023.1 wrote) and [F17](../reference/findings.md#f17) (RabbitMQ quorum queues on by
   default) are new [CODE] (rows above)
-- [Open questions](open-questions.md) — [Q1–Q14](open-questions.md#q1), with their status in 2024.1. In the rows of
+- [Open questions](open-questions.md) — [Q1–Q21](open-questions.md#q1), with their status in 2024.1. In the rows of
   this page, [Q14](open-questions.md#q14) is answered from the source [CODE] and the control-flow part of
   [Q6](open-questions.md#q6) is answered from the source with ansible-core 2.16.20 [CODE]
   ([MariaDB/Galera](../components/mariadb.md)).
