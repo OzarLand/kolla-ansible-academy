@@ -9,7 +9,7 @@ stages for beginners. The study rests only on reading source code; nothing was r
 of the study](docs/2023.1/reference/method-and-limits.md)).
 
 The repository is organised by release of OpenStack and Kolla-Ansible. Each release is a separate study, with its own
-pages under `docs/<release>/` and its own site in the portal. Two releases are studied today, Ussuri and 2023.1.
+pages under `docs/<release>/` and its own site in the portal. Three releases are studied today, Ussuri, 2023.1 and 2024.1.
 
 This repository was named `kolla-ansible-day2` until 2026-11. GitHub redirects the old repository address; the old site
 address `https://ozarland.github.io/kolla-ansible-day2/` is not redirected by GitHub.
@@ -20,6 +20,7 @@ address `https://ozarland.github.io/kolla-ansible-day2/` is not redirected by Gi
 |---|---|---|---|---|
 | `ussuri` | Ussuri | 10.x, tag `ussuri-eol` | [docs/ussuri/](docs/ussuri/index.md) | <https://ozarland.github.io/kolla-ansible-academy/ussuri/> |
 | `2023.1` | 2023.1 Antelope | 16.x, tag `2023.1-eol` | [docs/2023.1/](docs/2023.1/index.md) | <https://ozarland.github.io/kolla-ansible-academy/2023.1/> |
+| `2024.1` | 2024.1 Caracal | 18.x, tag `2024.1-eom` | [docs/2024.1/](docs/2024.1/index.md) | <https://ozarland.github.io/kolla-ansible-academy/2024.1/> |
 
 These are the available releases of [versions.toml](versions.toml), the registry that every tool reads. The registry
 also lists the planned releases, from Victoria (Kolla-Ansible 11.x) onwards. A planned release has no content: the
@@ -51,6 +52,20 @@ All conclusions come from the Ussuri implementation, not from newer releases.
 The 2023.1 pages were re-studied from the Ussuri study: every Ussuri citation was looked up in the 2023.1 sources and
 every statement re-checked against them; [Method and limits](docs/2023.1/reference/method-and-limits.md) says what
 does not carry over.
+
+## Versions studied: 2024.1
+
+| Component | Version |
+|---|---|
+| OpenStack release | 2024.1 Caracal (`openstack_release: "2024.1"`, `ansible/group_vars/all.yml:679`) |
+| Kolla-Ansible | 18.x series: tag `2024.1-eom`, commit `890396f` |
+| Kolla (images) | tag `2024.1-eom` of `openstack/kolla`, commit `ed7a36a` |
+| ansible-collection-kolla | tag `2024.1-eom`, commit `82a0f5c` (`requirements.yml` pins `stable/2024.1`) |
+| Ansible | ansible-core 2.16.20 (`tools/kolla-ansible:10-11` accepts 2.15 to 2.16) |
+
+The 2024.1 pages were re-studied from the 2023.1 study in the same way: every 2023.1 citation was looked up in the
+2024.1 sources and every statement re-checked against them; [Method and limits](docs/2024.1/reference/method-and-limits.md)
+says what changed, and [research/2024.1/](research/2024.1/README.md) keeps the change map used for the re-study.
 
 ## Portal
 

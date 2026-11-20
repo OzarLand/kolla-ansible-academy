@@ -15,17 +15,14 @@ The 2024.1 (Caracal, Kolla-Ansible 18.x, tag `2024.1-eom`) study is being writte
 - Every page is passed through a citation checker (each `path:line` must exist in the 2024.1 tree; a citation copied
   from 2023.1 whose lines changed is re-checked by hand) and `tools/site/check_learning.py`.
 
-## Progress (lots of change-map.md §3)
+## Progress
 
-| Lot | Pages | Status |
-|---|---|---|
-| 1. Method and foundations | method-and-limits, repository-architecture, glossary, conventions | repository-architecture done; others in progress |
-| 2. Regenerated material | listings, generated-inventory, service cards, tag index | listings and generated-inventory done |
-| 3. Execution model | deployment-execution-flow, tags, controlled-batches, compute-scaling, findings | deployment-execution-flow done; others in progress |
-| 4. Images and start path | kolla-images, open-questions | kolla-images done |
-| 5–10 | shared infrastructure, stateful services, Nova and Neutron, other services, host and ops playbooks, synthesis | to do |
+All 69 pages of the 2024.1 study are written (lots 1 to 10 of change-map.md §3), every page passed the citation
+checker with 0 errors (each "suspect" citation was re-read in the 2024.1 tree), the learning blocks and the five stage
+challenges pass `check_learning.py`, and `make docs-check docs-build STRICT=1` passes with 2024.1 registered as
+available.
 
-## To make the release available (last step)
+## Release steps (done)
 
 Follow CONTRIBUTING.md "Making a release available": `docs/2024.1.toml` with the navigation, `status = "available"`
 and `tag = "2024.1-eom"` in `versions.toml`, the learning blocks and the journey challenges for 2024.1, then

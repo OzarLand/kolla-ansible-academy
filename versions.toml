@@ -81,9 +81,10 @@ kolla_ansible = "17.x"
 
 [[release]]
 id = "2024.1"
-status = "planned"
+status = "available"
 openstack = "2024.1 Caracal"
 kolla_ansible = "18.x"
+tag = "2024.1-eom"
 
 [[release]]
 id = "2024.2"
