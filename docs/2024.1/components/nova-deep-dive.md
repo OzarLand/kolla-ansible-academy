@@ -213,7 +213,8 @@ reaches every compute. The nova-cell template renders it in `[service_user]` for
 `nova_compute` included (`roles/nova-cell/templates/nova.conf.j2:283-294`), as the API-level template does for
 `nova_api`, `nova_scheduler` and `nova_super_conductor` (`roles/nova/templates/nova.conf.j2:112-127,224-235`).
 Rotating it therefore restarts `nova_compute`, and through loop-notify `nova_libvirt` and `nova_ssh`, on every compute.
-It also reaches computes through the `[nova]` section of `neutron.conf` (`roles/neutron/templates/neutron.conf.j2:80-88`),
+It also reaches computes through the `[nova]` section of `neutron.conf`
+(`roles/neutron/templates/neutron.conf.j2:80-88`),
 which the neutron role renders for its agents, `neutron-openvswitch-agent` among them
 (`roles/neutron/tasks/config.yml:87-121`).
 
@@ -302,7 +303,8 @@ Plays 2, 9 and 10 set `any_errors_fatal: true` instead (`:79,270,295`); play 9 d
 default 100 the setting changes nothing. A lower value is compared with the failures of the current batch only:
 ansible-core 2.16.20 runs `TaskQueueManager.run()` once per batch and clears the failed hosts at its start
 (`lib/ansible/executor/playbook_executor.py:184-190`, `lib/ansible/executor/task_queue_manager.py:330-338`), and the
-linear strategy breaks the play when `failed / batch_size` exceeds the ratio (`lib/ansible/plugins/strategy/linear.py:336-350`)
+linear strategy breaks the play when `failed / batch_size` exceeds the ratio
+(`lib/ansible/plugins/strategy/linear.py:336-350`)
 ([Controlled batches §1.3](../operations/controlled-batches.md#13-stop-a-rolling-run-on-failures-max_fail_percentage)).
 
 **Bootstrap one-shots.** `nova_api_bootstrap` and `nova_cell_bootstrap` run with `KOLLA_UPGRADE` set on deploy,
@@ -358,7 +360,8 @@ Facts [CODE]:
   `kolla_copy_cacerts` and the nova-libvirt `extend_start.sh`, then `exec`s `/usr/sbin/libvirtd --listen` (kolla
   `docker/base/start.sh:11-24`; `templates/nova-libvirt.json.j2:2`). `kolla_set_configs` deletes and rewrites only the
   `dest` paths of `nova-libvirt.json.j2`, which are all config files, and merges `/etc/libvirt/secrets` (kolla
-  `docker/base/set_configs.py:146-156`; [Kolla images §5.1](../concepts/kolla-images.md#51-nova-libvirt-the-start-path-is-passive)).
+  `docker/base/set_configs.py:146-156`;
+  [Kolla images §5.1](../concepts/kolla-images.md#51-nova-libvirt-the-start-path-is-passive)).
   `extend_start.sh` only mounts xenfs if that module is loaded and creates the log file (kolla
   `docker/nova/nova-libvirt/extend_start.sh:3-16`); `/dev/kvm` ownership comes from a host udev rule
   (`roles/nova-cell/tasks/config-host.yml:30-53`). None of these steps touches cgroups, QEMU processes,
@@ -384,7 +387,8 @@ Facts [CODE]:
   `dumb-init --single-child -- kolla_start` (kolla `docker/base/Dockerfile.j2:370,399`; `use-dumb-init` defaults to
   True, kolla `kolla/common/config.py:156`). `kolla_start` `exec`s libvirtd (kolla `docker/base/start.sh:24`), so
   libvirtd is dumb-init's direct child. The container runs under the systemd unit
-  `kolla-nova_libvirt-container.service`, whose `ExecStop` is now `/usr/bin/<engine> stop nova_libvirt -t <graceful_timeout>`
+  `kolla-nova_libvirt-container.service`, whose `ExecStop` is now
+  `/usr/bin/<engine> stop nova_libvirt -t <graceful_timeout>`
   (`module_utils/kolla_systemd_worker.py:32,71,74`); `graceful_timeout` is `docker_graceful_timeout`, 60 s by default
   (`group_vars/all.yml:139,151`). A restart goes through systemd `RestartUnit`, a recreate through `StopUnit`
   (`module_utils/kolla_systemd_worker.py:106-125`; `module_utils/kolla_docker_worker.py:415-431,439-459`).

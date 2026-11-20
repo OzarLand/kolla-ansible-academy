@@ -10,7 +10,8 @@ This page was the starting point for chrony, the `chrony` role of Ussuri. **2023
 `ansible/roles/` has no `chrony` directory, `site.yml` has no chrony play (its first service play is "Apply role
 common", `site.yml:86-97`), `inventory/multinode` has no `chrony` or `chrony-server` group, and kolla 2023.1 has no
 `docker/chrony` image. Kolla-Ansible no longer deploys a time service. Time sync is left to the host, and the only code
-that deals with it is a precheck ([Before and after a run](#before-and-after-a-run)). The page keeps its sections so that
+that deals with it is a precheck ([Before and after a run](#before-and-after-a-run)). The page keeps its sections so
+that
 links to it still resolve; each says what still applies.
 
 ## Where to look
@@ -53,7 +54,8 @@ links to it still resolve; each says what still applies.
 - **Image side:** [Kolla images §5](../concepts/kolla-images.md#5-per-image-start-behaviour): no chrony image in kolla
   2023.1.
 - **Host side:** ansible-collection-kolla (`bootstrap-servers`) neither installs nor configures an NTP daemon (no
-  `chrony` or `ntp` in its `roles/`), and no longer removes the host `chrony` package ([R14](../risk/risk-register.md#r14))
+  `chrony` or `ntp` in its `roles/`), and no longer removes the host `chrony` package
+  ([R14](../risk/risk-register.md#r14))
   [CODE].
 
 ### Before and after a run
@@ -72,7 +74,8 @@ links to it still resolve; each says what still applies.
 
 ### Known limits and open points
 
-- The fact sheet items on the Ussuri role ([fact sheet A §4.7](../reference/factsheets/a-infra-lb-ovn.md#47-dependencies),
+- The fact sheet items on the Ussuri role
+  ([fact sheet A §4.7](../reference/factsheets/a-infra-lb-ovn.md#47-dependencies),
   [§4.8](../reference/factsheets/a-infra-lb-ovn.md#48-operationally-notable); [fact sheet D
   §5.12](../reference/factsheets/d-barbican-octavia-swift-manila-compute-roles.md#512-chrony)): the VIP as internal time
   source, `ip_nonlocal_bind` on the chrony servers, the public pool default, a chrony restart stepping the clock. None

@@ -15,7 +15,8 @@ The page uses the definition of [drift](index.md#drift) of the Operations hub.
 > [!NOTE]
 > **Key answers**
 >
-> - **`-t common reconfigure` reconfigures every common host** [CODE] ([§2](#2-the-tag-does-nothing)). `common` reaches a
+> - **`-t common reconfigure` reconfigures every common host** [CODE] ([§2](#2-the-tag-does-nothing)). `common` reaches
+>   a
 >   host only through the "Apply role common" play: a run without tags, or a run whose tags include `common`
 >   ([§3](#3-how-common-actually-reaches-hosts)). `-t nova` or `-t neutron` no longer bring it along.
 

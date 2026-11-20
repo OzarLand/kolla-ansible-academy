@@ -201,7 +201,8 @@ marked [NOT AVAILABLE]:
    conductor.
 3. **Keystone + memcached.** The API-side `nova.conf` has `[keystone_authtoken]` with memcached as token cache
    (`roles/nova/templates/nova.conf.j2:106-127`); nova-compute's `[cinder]`, `[neutron]`, `[placement]` and
-   `[service_user]` sections carry Keystone credentials (`roles/nova-cell/templates/nova.conf.j2:115,131,223,272`). [NOT AVAILABLE] Whether API
+   `[service_user]` sections carry Keystone credentials (`roles/nova-cell/templates/nova.conf.j2:115,131,223,272`). [NOT
+   AVAILABLE] Whether API
    requests, and nova-compute's calls to those services, fail without Keystone.
 4. **Placement.** The scheduler's allocation candidates and nova-compute's resource-provider updates.
    [NOT AVAILABLE] Whether scheduling stops and computes log errors without it.
@@ -278,7 +279,8 @@ Facts [CODE]:
   `kolla_copy_cacerts` and the nova-libvirt `extend_start.sh`, then `exec`s `/usr/sbin/libvirtd --listen` (kolla
   `docker/base/start.sh:11-24`; `templates/nova-libvirt.json.j2:2`). `kolla_set_configs` deletes and rewrites only the
   `dest` paths of `nova-libvirt.json.j2`, which are all config files, and merges `/etc/libvirt/secrets` (kolla
-  `docker/base/set_configs.py:151-156`; [Kolla images §5.1](../concepts/kolla-images.md#51-nova-libvirt-the-start-path-is-passive)).
+  `docker/base/set_configs.py:151-156`;
+  [Kolla images §5.1](../concepts/kolla-images.md#51-nova-libvirt-the-start-path-is-passive)).
   `extend_start.sh` only mounts xenfs if that module is loaded and creates the log file (kolla
   `docker/nova/nova-libvirt/extend_start.sh:3-16`); the Ussuri `/dev/kvm` ownership fix is gone from the image and
   replaced by a host udev rule (`roles/nova-cell/tasks/config-host.yml:30-53`). None of these steps touches cgroups,
@@ -338,7 +340,8 @@ What happens to running VMs is **not established by these sources** [NOT AVAILAB
   host's systemd-machined over D-Bus to put each QEMU process in its own `machine.slice` scope on the *host* cgroup
   tree, or, without machined, write the cgroups directly. [CODE] Four settings give the container the host's view:
   the host `/run` bind mount (`defaults/main.yml:374`), `pid_mode: host` (`:8`, QEMU PIDs are host PIDs),
-  `cgroupns_mode: host` (`:9`, the host cgroup namespace) and `/sys/fs/cgroup` mounted rw (`:376`). [NOT AVAILABLE] Whether, on start, libvirtd re-attaches to running domains
+  `cgroupns_mode: host` (`:9`, the host cgroup namespace) and `/sys/fs/cgroup` mounted rw (`:376`). [NOT AVAILABLE]
+  Whether, on start, libvirtd re-attaches to running domains
   from the status XML under `/var/run/libvirt/qemu` (on the host `/run` only if `/var/run` is that symlink, see above)
   and the monitor sockets under `/var/lib/libvirt/qemu` (the `libvirtd` volume, `:378`) rather than from the
   persistent definitions in `/etc/libvirt/qemu`, and whether it stops a domain whose monitor it cannot reconnect to.
@@ -389,7 +392,8 @@ nova-compute restart [NOT AVAILABLE: upstream Nova behaviour is not in these sou
 Impact of a Kolla run on these:
 
 - A run that restarts `nova_libvirt` (any nova-compute change, by loop-notify) does so on every affected compute.
-  With `serial: 0` (`kolla_serial` unset, `nova.yml:132`), that is every compute at once. [NOT AVAILABLE] Whether this **interrupts every live migration in
+  With `serial: 0` (`kolla_serial` unset, `nova.yml:132`), that is every compute at once. [NOT AVAILABLE] Whether this
+  **interrupts every live migration in
   progress** there ([§5](#5-nova-libvirt-why-its-restart-is-special)).
 - [NOT AVAILABLE] Whether a `nova_ssh` restart interrupts resizes or cold migrations that are copying disks.
 - Every `deploy`/`reconfigure` with `-t nova` or no tag SIGHUPs the schedulers and runs `discover_hosts`

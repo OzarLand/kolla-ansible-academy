@@ -275,7 +275,8 @@ Runtime facts [CODE]:
   hosts (and computes with `computes_need_external_bridge`), the bridges are ensured by the `openvswitch_bridge` module
   (`fail_mode: standalone`) and their ports by `openvswitch_port` (`roles/openvswitch/tasks/post-config.yml:25-53`).
   **Changed in 2024.1:** the image script `kolla_ensure_openvswitch_configured` is no longer called. The same file first
-  sets `external_ids:system-id`, the new `external_ids:hostname` (the host's FQDN, `roles/openvswitch/defaults/main.yml:106`)
+  sets `external_ids:system-id`, the new `external_ids:hostname` (the host's FQDN,
+  `roles/openvswitch/defaults/main.yml:106`)
   and `other_config:hw-offload`; a change there notifies `Restart openvswitch-vswitchd container`
   (`post-config.yml:3-23`) [CODE] ([Open vSwitch](openvswitch.md)).
 

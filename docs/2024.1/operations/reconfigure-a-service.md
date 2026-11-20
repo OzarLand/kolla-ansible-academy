@@ -79,8 +79,10 @@ dependence](index.md#code-guarantees-and-environment-dependence).
 > **Key answers**
 >
 > - **What restarts ([§1.1](#11-reconfigure-a-single-service)):** on each host where any container of the service
->   drifted, all its containers; all such hosts in parallel, unless `ANSIBLE_SERIAL` is set. HAProxy restarts only if the service's rendered frontend
->   changed, backups first and the VIP holder last ([§3](#3-sequence-impact-risks-and-verification-of--t-svc-reconfigure)).
+>   drifted, all its containers; all such hosts in parallel, unless `ANSIBLE_SERIAL` is set. HAProxy restarts only if
+> the service's rendered frontend
+>   changed, backups first and the VIP holder last
+> ([§3](#3-sequence-impact-risks-and-verification-of--t-svc-reconfigure)).
 > - **First 2024.1 run on a 2023.1 cloud:** a service that `kolla-ansible upgrade` has not reached drifts on every
 >   host: its image tag changes, and the reconfigure skips the role's upgrade tasks; the systemd unit text changed
 >   ([F16](../reference/findings.md#f16)); quorum queues are on by default in every service that talks to RabbitMQ
@@ -191,7 +193,8 @@ For an API service such as keystone, glance, cinder, heat or placement:
    (`roles/loadbalancer/handlers/main.yml:9-34`); HAProxy stops and starts on all backups together and the play waits
    for `haproxy_monitor_port` (`:54-68`, `:90-118`); then it stops and starts on the VIP holder and waits again
    (`:179-193`, `:224-252`) ([R8](../risk/risk-register.md#r8); [HAProxy +
-   Keepalived](../components/haproxy-keepalived.md#before-and-after-a-run)). **Corrected in 2024.1:** the 2023.1 page said "on
+   Keepalived](../components/haproxy-keepalived.md#before-and-after-a-run)). **Corrected in 2024.1:** the 2023.1 page
+   said "on
    all loadbalancer hosts at once"; the handlers stage it, and this order is unchanged from 2023.1 apart from the
    module rename. Whether the VIP moves meanwhile is [NOT AVAILABLE].
 3. Service play, on the service hosts: Keystone registration (`run_once`) → config → check-containers →
@@ -208,7 +211,8 @@ For an API service such as keystone, glance, cinder, heat or placement:
   handler recreates the container on the 2024.1 image (`module_utils/kolla_docker_worker.py:353-361`), through the
   deploy path, without the role's upgrade tasks (e.g. `roles/keystone/tasks/upgrade.yml:23-31`). Upgrade it first.
 - Every container whose unit no 2024.1 run has recreated or restarted yet drifts: `compare_container` also compares
-  the systemd unit text (`module_utils/kolla_container_worker.py:58-65`, `module_utils/kolla_systemd_worker.py:154-167`),
+  the systemd unit text (`module_utils/kolla_container_worker.py:58-65`,
+  `module_utils/kolla_systemd_worker.py:154-167`),
   and the 2024.1 unit template differs from the one 2023.1 wrote; with Docker only the start-limit line differs
   ([F16](../reference/findings.md#f16)). A `kolla-ansible upgrade` that recreated the service's containers already
   wrote the new units. The services that talk to RabbitMQ
@@ -235,7 +239,8 @@ For an API service such as keystone, glance, cinder, heat or placement:
 - **VM impact:** these services restart none of the containers that [Tags
   §3.1](../risk/tags.md#31-per-tag-answers-files-vms-apis-networkingstorage-safety-prerequisites) traces to running VMs
   [CODE]; any other effect on VMs is [NOT AVAILABLE]. In-flight glance or cinder transfers are SIGKILLed if still
-  running `docker_graceful_timeout` (60 s by default) after SIGTERM ([R24](../risk/risk-register.md#r24)). Of the tags in
+  running `docker_graceful_timeout` (60 s by default) after SIGTERM ([R24](../risk/risk-register.md#r24)). Of the tags
+  in
   Tags §3.1, the ones that can restart those containers are `nova`, `nova-cell`, `neutron`, `openvswitch`, `ovn` (with
   `ovn-controller` and `ovn-db`, `site.yml:653, :669`), `iscsi` and `baremetal` (run by `bootstrap-servers` through
   `openstack.kolla.baremetal`, `kolla-host.yml:4-14`, not `reconfigure`; Docker restart,

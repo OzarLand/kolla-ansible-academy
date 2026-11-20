@@ -13,7 +13,8 @@ tables, the per-role fact sheets, the Ansible listings, and the method and limit
 
 <div class="grid cards" markdown>
 
-- **[Technical findings](findings.md)** — Seventeen headline findings (F1–F17), each with its evidence, its 2024.1 status
+- **[Technical findings](findings.md)** — Seventeen headline findings (F1–F17), each with its evidence, its 2024.1
+  status
   and why it matters. F2, F3 and F11 still no longer hold in 2024.1; F16 (the changed systemd unit template) and F17
   (RabbitMQ quorum queues on by default) are new in 2024.1.
 - **[Glossary](glossary.md)** — The terms the study uses, read for 2024.1, with the place where each is defined.

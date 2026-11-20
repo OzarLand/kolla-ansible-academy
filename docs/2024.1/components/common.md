@@ -28,7 +28,8 @@ follows them.
 ### Impact and risk
 
 - **What the tag executes (`common`):** [Tags §3](../risk/tags.md#3-what-a-tag-really-executes-master-table) and [Tags
-  §3.1](../risk/tags.md#31-per-tag-answers-files-vms-apis-networkingstorage-safety-prerequisites), rows `common`; why the
+  §3.1](../risk/tags.md#31-per-tag-answers-files-vms-apis-networkingstorage-safety-prerequisites), rows `common`; why
+  the
   tag reaches the included tasks: [Tags §2.1](../risk/tags.md#21-dynamic-include_tasks-and-tag-inheritance-code)
 - **Risks:** [R2](../risk/risk-register.md#r2); [R25](../risk/risk-register.md#r25) does not apply to 2024.1 (the
   risk register keeps the entry and says why)
@@ -113,7 +114,8 @@ Read in the 2024.1 sources and compared with 2023.1 [CODE]:
 - [Q10](../troubleshooting/open-questions.md#q10) compares Ansible 2.8.20 and 2.9.27 and does not cover
   ansible-core 2.16.20; for 2024.1, F1 and F2 are settled by the code cited in the items above.
 - [F6](../reference/findings.md#f6), "Global inputs are rendered into per-host files": for `common`, the
-  `enable_*` flags of the OpenStack services (`fluentd_input_openstack_services`, `roles/common/defaults/main.yml:154-210`)
+  `enable_*` flags of the OpenStack services (`fluentd_input_openstack_services`,
+  `roles/common/defaults/main.yml:154-210`)
   and the logrotate services list (`roles/common/tasks/config.yml:212-261`) end up in `td-agent.conf` and
   `logrotate.conf` on every common host [CODE]. New flags in 2024.1:
   - `enable_redis` (default `no`, `group_vars/all.yml:840`) changes `logrotate.conf` on every cron host
@@ -136,7 +138,8 @@ Read in the 2024.1 sources and compared with 2023.1 [CODE]:
   the control-plane services) affect running VMs, APIs or traffic another way.
 - [What is not known](../troubleshooting/what-is-not-known.md#signals-the-container-runtime-and-image-start-behaviour),
   row "fluentd": the sources do not establish whether the tail read positions (in `/var/run/fluentd/` with the 2024.1
-  image, on no volume, `roles/common/templates/conf/input/00-global.conf.j2:12`, `roles/common/defaults/main.yml:118-124`)
+  image, on no volume, `roles/common/templates/conf/input/00-global.conf.j2:12`,
+  `roles/common/defaults/main.yml:118-124`)
   survive a config-only restart, and whether they are lost on a recreate.
 - Journal input: with `enable_fluentd_systemd`, `config.json` asks `kolla_set_configs` to chown `/var/log/journal`
   recursively to the fluentd user (`roles/common/templates/fluentd.json.j2:27-33`), while the volume is mounted

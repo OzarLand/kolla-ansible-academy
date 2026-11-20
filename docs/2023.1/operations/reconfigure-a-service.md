@@ -82,7 +82,8 @@ kolla-ansible -i multinode -t keystone reconfigure
     that host restart (`keystone`, `keystone_ssh` and `keystone_fernet`; in 2023.1 all three are `enabled: true`
     unconditionally, `roles/keystone/defaults/main.yml:6, :44, :57`, and `keystone_token_provider` no longer exists;
     `roles/keystone/tasks/check-containers.yml:2-17`). Hosts without drift
-    do not restart. Without `ANSIBLE_SERIAL`, drifted hosts restart in parallel, so a change common to all hosts (globals, `keystone.conf`, a
+    do not restart. Without `ANSIBLE_SERIAL`, drifted hosts restart in parallel, so a change common to all hosts
+    (globals, `keystone.conf`, a
     new image) restarts keystone on all keystone hosts at once.
 - **One-shot:** keystone db sync. Fernet keys are re-distributed.
 - **Impact:** if restarted, keystone restarts on all drifted hosts at once; [NOT AVAILABLE] whether authentication fails
@@ -142,12 +143,14 @@ For an API service such as keystone, glance, cinder, heat or placement:
    (`roles/loadbalancer/handlers/main.yml:9-34, :54-68`) [CODE] ([R8](../risk/risk-register.md#r8)).
 3. Service play, on the service hosts: Keystone registration (`run_once`) → config → check-containers →
    DB/user creation and the DB-sync container on the first host → flush. Every drifted host restarts all of the
-   service's containers (loop-notify), all such hosts in parallel unless `ANSIBLE_SERIAL` batches the play. Keystone is the exception: it registers last
+   service's containers (loop-notify), all such hosts in parallel unless `ANSIBLE_SERIAL` batches the play. Keystone is
+   the exception: it registers last
    ([§1.1](#11-reconfigure-a-single-service)).
 
 - **Interruption:** the service API is unavailable while its containers restart (stop with up to
   `docker_graceful_timeout`, 60 s by default, before SIGKILL, then start) on all its hosts at once
-  (`group_vars/all.yml:140, :152`; `module_utils/kolla_docker_worker.py:436-452`; `module_utils/kolla_systemd_worker.py:33`).
+  (`group_vars/all.yml:140, :152`; `module_utils/kolla_docker_worker.py:436-452`;
+  `module_utils/kolla_systemd_worker.py:33`).
   Add the HAProxy restart window if the frontend changed.
 - **VM impact:** these services restart none of the containers that [Tags
   §3.1](../risk/tags.md#31-per-tag-answers-files-vms-apis-networkingstorage-safety-prerequisites) traces to running VMs
@@ -168,7 +171,8 @@ For an API service such as keystone, glance, cinder, heat or placement:
     block also runs for `config`, `site.yml:341`) while every loadbalancer handler is skipped under `config`
     (`roles/loadbalancer/handlers/main.yml:17`), so after `genconfig` a `-t <svc>` run finds the file unchanged and
     does not restart HAProxy; a frontend change then reaches HAProxy only through `-t haproxy reconfigure` or a run
-    without tags [CODE]. Then `kolla-ansible -t <svc> genconfig`, then `docker exec -u root <c> /usr/local/bin/kolla_set_configs --check;
+    without tags [CODE]. Then `kolla-ansible -t <svc> genconfig`, then `docker exec -u root <c>
+    /usr/local/bin/kolla_set_configs --check;
     echo $?` in each `<svc>` container (without `-u root` it exits 2 in images that run as a service user, e.g.
     glance-api; [Kolla images §3.4](../concepts/kolla-images.md#34-running-it-by-hand-needs-root)) and a diff of
     `/etc/kolla/haproxy/services.d/<svc>*.cfg` against the previous version;

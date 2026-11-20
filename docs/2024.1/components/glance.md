@@ -133,7 +133,8 @@ card follows them.
   60 s (`docker_graceful_timeout`, `group_vars/all.yml:139`; [R24](../risk/risk-register.md#r24)).
 - **First run after the upgrade from 2023.1** [CODE]: expect `glance_api` to restart for the quorum-queue option and
   the new `[cors]` section of `glance-api.conf`, and on a Ceph cloud for the new `config.json` and `ceph/` files
-  ([What changed in 2024.1](#what-changed-in-20241), [F17](../reference/findings.md#f17)). A container that no 2024.1 run
+  ([What changed in 2024.1](#what-changed-in-20241), [F17](../reference/findings.md#f17)). A container that no 2024.1
+  run
   has recreated or restarted yet is also flagged by the changed systemd unit text ([F16](../reference/findings.md#f16)).
 - [R20](../risk/risk-register.md#r20), precautions for a Glance reconfigure or deploy: avoid during image-heavy
   operations.
@@ -261,6 +262,7 @@ The rows of the card are explained on the [Components](index.md#how-to-read-a-se
 - [Cinder](cinder.md) — enabling its iSCSI/LVM or Ceph backend flips glance-api to privileged, so glance-api is
   recreated; Cinder has the same per-cluster Ceph layout in 2024.1
 - [Nova](nova.md) — Nova needs Glance for image-backed boots
-- [RabbitMQ](rabbitmq.md) — the quorum-queue default that changes `glance-api.conf` ([F17](../reference/findings.md#f17))
+- [RabbitMQ](rabbitmq.md) — the quorum-queue default that changes `glance-api.conf`
+  ([F17](../reference/findings.md#f17))
 - [Pre-execution checklist](../operations/pre-execution-checklist.md) — the checks before every production run
 - [Components](index.md) — the other component pages

@@ -54,7 +54,8 @@ The scenario section is written for the [assumed deployment](index.md#assumed-de
 - **Plus:** RabbitMQ and Galera cluster joins, which need their own plays (`-t rabbitmq`, `-t mariadb`), now in the
   separate playbooks `rabbitmq.yml` and `mariadb.yml` (`site.yml:385, :438`). Galera membership changes restart all DB
   nodes (`galera.cnf` lists all nodes, `roles/mariadb/templates/galera.cnf.j2:29`); existing members restart in a play
-  with `serial: "33%"` (`roles/mariadb/handlers/main.yml:56-73`, `mariadb.yml:14-26`) ([fact sheet B §1.4][sheet-b-14] and
+  with `serial: "33%"` (`roles/mariadb/handlers/main.yml:56-73`, `mariadb.yml:14-26`) ([fact sheet B §1.4][sheet-b-14]
+  and
   [§1.8](../reference/factsheets/b-mariadb-rabbitmq-keystone.md#18-operationally-notable-behaviour-risks-and-oddities)
   item 11).
 

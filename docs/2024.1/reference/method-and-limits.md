@@ -91,7 +91,8 @@ between the two releases was made.
   - signal delivery to services behind a shell wrapper that does not `exec` them: [NOT AVAILABLE]
     ([R24](../risk/risk-register.md#r24), [Kolla images §2.6](../concepts/kolla-images.md#26-signals-and-pid-1));
   - `kolla_set_configs` and `kolla_container` behaviour (check exit codes, restart and recreate): code-only
-    ([F14](findings.md#f14), [Kolla images §3](../concepts/kolla-images.md#3-kolla_set_configs---check-what-it-compares-and-its-exit-codes),
+    ([F14](findings.md#f14),
+    [Kolla images §3](../concepts/kolla-images.md#3-kolla_set_configs---check-what-it-compares-and-its-exit-codes),
     [F3](findings.md#f3));
   - libvirt/QEMU and Open vSwitch behaviour across container restarts: [NOT AVAILABLE]
     ([Q1](../troubleshooting/open-questions.md#q1), [Q2](../troubleshooting/open-questions.md#q2),
@@ -134,7 +135,8 @@ between the two releases was made.
 - [Conventions and evidence labels](../start/conventions.md) — the definition of [CODE] and [NOT AVAILABLE]
 - [What is not known](../troubleshooting/what-is-not-known.md) — everything marked [NOT AVAILABLE], by topic
 - [Open questions](../troubleshooting/open-questions.md) — the open questions Q1–Q21 (Q15–Q21 new in 2024.1)
-- [Technical findings](findings.md) — the seventeen headline findings F1–F17 (F16 and F17 new in 2024.1), each with its evidence and its 2024.1 status
+- [Technical findings](findings.md) — the seventeen headline findings F1–F17 (F16 and F17 new in 2024.1), each with its
+  evidence and its 2024.1 status
 - [Per-role fact sheets](factsheets/index.md) — the five fact sheets A–E and how they were checked
 - [Ansible listings](listings/index.md) — the `--list-tags` and `--list-tasks` listings used in the validation phase
 - [Generated inventory](generated-inventory.md) — the plays and containers generated from the 2024.1 tree

@@ -29,8 +29,10 @@ systemd, Galera or libvirt behaviour that is not in them.
    `lib/ansible/plugins/action/copy.py:288,363-383` and `lib/ansible/module_utils/basic.py:1186,1234-1235`). The restart
    is a plain task, not a handler. It runs at the same moment on every host in the batch, and the batch is all hosts by
    default: `kolla_serial` defaults to `0` (`kolla-host.yml:6`) and the CLI never passes it for `bootstrap-servers`.
-2. **The systemd drop-in is never applied.** `docker_custom_option` is written to `/etc/systemd/system/docker.service.d/kolla.conf`.
-   Adding, changing or removing it does **not** restart Docker (`post-install.yml:147-180`, the template is not registered, and the
+2. **The systemd drop-in is never applied.** `docker_custom_option` is written to
+   `/etc/systemd/system/docker.service.d/kolla.conf`.
+   Adding, changing or removing it does **not** restart Docker (`post-install.yml:147-180`, the template is not
+   registered, and the
    daemon-reload never reports changed). No Kolla task applies the new flags; when they take effect is NOT AVAILABLE
    (systemd behaviour).
 3. **Docker is masked on Debian/Ubuntu during a run.** `install.yml:54-69` symlinks
@@ -41,39 +43,54 @@ systemd, Galera or libvirt behaviour that is not in them.
    PyPI pip installs, package removals, user creation, daemon.json), **the unmask at `post-install.yml:224-229` does
    not run** ([§2.3](#23-the-debianubuntu-mask-window)).
    NOT AVAILABLE: whether docker then starts at the next reboot.
-4. **`/etc/hosts` lists every host.** The block loops over **all `groups['baremetal']` hosts** (`pre-install.yml:25-42`). So:
+4. **`/etc/hosts` lists every host.** The block loops over **all `groups['baremetal']` hosts**
+   (`pre-install.yml:25-42`). So:
    (a) adding one host changes `/etc/hosts` on every host that bootstrap-servers runs on;
    (b) every baremetal host's facts are required: a baremetal host outside `bifrost` without gathered facts (for
    example unreachable during fact gathering, with no fact cache) makes `kolla_address` raise on **every** host
    (`kolla_ansible/kolla_address.py:88-95`), which fails the task on every host and ends the play for them
    ([§3](#3-etchosts-generation)); (c) the per-run template work is O(N) per host, O(N²) in total.
-5. **Fact gathering with `--limit` is serial per limited host.** With `--limit` covering L of N hosts, the second play of
+5. **Fact gathering with `--limit` is serial per limited host.** With `--limit` covering L of N hosts, the second play
+   of
    `gather-facts.yml` makes each limited host loop over about N/L other hosts **in sequence** (`gather-facts.yml:34-49`;
    loop items run one after another, ansible 2.9.27 `lib/ansible/executor/task_executor.py:317,367`). With
    `--limit one-compute` on a 1000-host inventory, one worker runs about 999 `setup` calls one after another.
    Fact caching (documented in `doc/source/user/ansible-tuning.rst:34-63`) is the only way to avoid this.
 6. **Re-running `bootstrap-servers` changes the host.** It disables ufw/firewalld (`install.yml:9-38`, default
-   `disable_firewall: True`), sets SELinux permissive (`post-install.yml:289-296`), unloads AppArmor profiles, **removes host
+   `disable_firewall: True`), sets SELinux permissive (`post-install.yml:289-296`), unloads AppArmor profiles, **removes
+   host
    packages** `open-iscsi`/`iscsi-initiator-utils`, `libvirt*`, `lxd`/`lxc` and `chrony` (`install.yml:150-162`,
-   `defaults/main.yml:62-73`), and runs `apt-get update` twice (Debian). None of this restarts containers. But it is not a
+   `defaults/main.yml:62-73`), and runs `apt-get update` twice (Debian). None of this restarts containers. But it is not
+   a
    no-op on a hardened production host.
-7. **`kolla_serial` reaches only some commands.** The CLI injects `-e kolla_serial=${ANSIBLE_SERIAL}` **only for `upgrade` and
-   `reconfigure`** (`tools/kolla-ansible:430,439`). It does this *after* user `-e` options, so a user `-e kolla_serial=30%` is
+7. **`kolla_serial` reaches only some commands.** The CLI injects `-e kolla_serial=${ANSIBLE_SERIAL}` **only for
+   `upgrade` and
+   `reconfigure`** (`tools/kolla-ansible:430,439`). It does this *after* user `-e` options, so a user
+   `-e kolla_serial=30%` is
    **silently overridden to `0`** for those two commands. You must set the environment variable `ANSIBLE_SERIAL`. For
    `bootstrap-servers`, `deploy`, `prune-images` and the others, `-e kolla_serial=...` does work (as the docs suggest:
    `bootstrap-servers.rst:83`).
-8. **CLI bugs.** `--ask-vault-pass` overwrites `VERBOSITY` with `$EXTRA_OPTS --ask-vault-pass` (`tools/kolla-ansible:320-323`).
-   This drops earlier `-v` flags and duplicates the extra options given so far. `--include-dev` is declared as taking an argument
-   (`include-dev:` at `:216`) but is handled as a flag (`:284-287`). `$CMD` is run unquoted (`:116`), so it is word-split and
+8. **CLI bugs.** `--ask-vault-pass` overwrites `VERBOSITY` with `$EXTRA_OPTS --ask-vault-pass`
+   (`tools/kolla-ansible:320-323`).
+   This drops earlier `-v` flags and duplicates the extra options given so far. `--include-dev` is declared as taking an
+   argument
+   (`include-dev:` at `:216`) but is handled as a flag (`:284-287`). `$CMD` is run unquoted (`:116`), so it is
+   word-split and
    glob-expanded.
-9. **No `ansible.cfg` is shipped for users.** The only ones are the CI template `tests/templates/ansible.cfg.j2` and a vagrant
-   heredoc. The docs recommend pipelining, `forks` (20 in the tuning guide, 100 in the quickstart), `gathering = smart` with jsonfile
+9. **No `ansible.cfg` is shipped for users.** The only ones are the CI template `tests/templates/ansible.cfg.j2` and a
+   vagrant
+   heredoc. The docs recommend pipelining, `forks` (20 in the tuning guide, 100 in the quickstart), `gathering = smart`
+   with jsonfile
    fact caching, `inject_facts_as_vars = False`, `kolla_ansible_setup_filter: "ansible_[!qt]*"` and
-   `kolla_ansible_setup_gather_subset`. **They say nothing about ControlPersist, mitogen, strategy or `serial` for scale**
+   `kolla_ansible_setup_gather_subset`. **They say nothing about ControlPersist, mitogen, strategy or `serial` for
+   scale**
    (grep is empty).
-10. **`destroy` acts on `hosts: all`, including the deploy host** (`localhost` is in `[deployment]`, `ansible/inventory/multinode:32-33`).
-    `tools/cleanup-host` deletes **every** network namespace and every link whose line matches `tap`, `brq` or `vxlan`, and
-    `rm -rf`s `/etc/kolla/*` except six names (`tools/cleanup-host:5-23,76-95`). `prune-images` removes **only dangling**
+10. **`destroy` acts on `hosts: all`, including the deploy host** (`localhost` is in `[deployment]`,
+    `ansible/inventory/multinode:32-33`).
+    `tools/cleanup-host` deletes **every** network namespace and every link whose line matches `tap`, `brq` or `vxlan`,
+    and
+    `rm -rf`s `/etc/kolla/*` except six names (`tools/cleanup-host:5-23,76-95`). `prune-images` removes **only
+    dangling**
     kolla-labelled images (`docker_prune` default, `prune_images.yml:4-8`), so old release tags are not reclaimed.
 
 ---
@@ -91,17 +108,23 @@ systemd, Galera or libvirt behaviour that is not in them.
     - { role: baremetal, tags: baremetal }
 ```
 
-- FACT: the CLI maps `bootstrap-servers` to `kolla-host.yml` with `-e kolla_action=bootstrap-servers` (`tools/kolla-ansible:397-401`).
-  `baremetal/tasks/main.yml:2` runs `include_tasks: "{{ kolla_action }}.yml"`, which resolves to `bootstrap-servers.yml`. That file
+- FACT: the CLI maps `bootstrap-servers` to `kolla-host.yml` with `-e kolla_action=bootstrap-servers`
+  (`tools/kolla-ansible:397-401`).
+  `baremetal/tasks/main.yml:2` runs `include_tasks: "{{ kolla_action }}.yml"`, which resolves to
+  `bootstrap-servers.yml`. That file
   runs pre-install, then install, then post-install, then optionally Zun containerd (`bootstrap-servers.yml:1-11`).
-- FACT: the target is `hosts: baremetal`, which in the sample inventories is control, network, compute, storage and monitoring
+- FACT: the target is `hosts: baremetal`, which in the sample inventories is control, network, compute, storage and
+  monitoring
   (`ansible/inventory/multinode:35-40`). The deploy host (`[deployment]`) is **not** bootstrapped.
-- FACT: there are no task-level tags inside the role. `--tags` can only select `baremetal` plus the `always`-tagged gather-facts
+- FACT: there are no task-level tags inside the role. `--tags` can only select `baremetal` plus the `always`-tagged
+  gather-facts
   plays. A subset of bootstrap tasks cannot be chosen with tags.
 - FACT: the default `serial` is `"0"`, meaning one batch of all hosts. Parallelism is limited only by `--forks`.
-- FACT: `kolla-host.yml` does **not** run the "Check CentOS variant" slurp (`site.yml:97-105`). That is irrelevant here because
+- FACT: `kolla-host.yml` does **not** run the "Check CentOS variant" slurp (`site.yml:97-105`). That is irrelevant here
+  because
   no images are used.
-- CI coverage: `bootstrap-servers` runs **once, on fresh hosts** (`tests/setup_gate.sh:113`). Re-running it against a live
+- CI coverage: `bootstrap-servers` runs **once, on fresh hosts** (`tests/setup_gate.sh:113`). Re-running it against a
+  live
   deployment is **not exercised in CI**. The re-run hazards below are read from the code; runtime effects that the
   code does not show are marked NOT AVAILABLE.
 
@@ -119,7 +142,8 @@ systemd, Galera or libvirt behaviour that is not in them.
 | 86-122 (Debian, `enable_docker_repo`) | `apt update_cache` (88-91); `ca-certificates`, `apt-transport-https`, `gnupg` **`state: latest`** (93-101); apt_key from `download.docker.com` (110-115); apt repo `deb https://download.docker.com/linux/<distro> <release> stable` (117-121) | Upgrades those 3 packages on **every** run. Needs network access to the Docker repo. | per host. N hosts hit mirrors at once (bounded by forks). | Mostly yes. Upgrading `ca-certificates` and `gnupg` is low risk. Fails without internet or proxy. |
 | 124-159 (RedHat) | yum repo `docker` (132-139), `module_hotfixes = True` (145-151), rpm_key (153-158) | Repo config | per host | Yes |
 
-Defaults: `enable_docker_repo: true`, `customize_etc_hosts: True`, `create_kolla_user: True` (`ansible/roles/baremetal/defaults/main.yml:3,19,21`).
+Defaults: `enable_docker_repo: true`, `customize_etc_hosts: True`, `create_kolla_user: True`
+(`ansible/roles/baremetal/defaults/main.yml:3,19,21`).
 
 ### 1.2 Task-by-task: `install.yml`
 
@@ -161,13 +185,16 @@ Defaults: `enable_docker_repo: true`, `customize_etc_hosts: True`, `create_kolla
 | 246-287 | `enable_host_ntp` (default **False**, `defaults/main.yml:27`): stop ntp/ntpd, then **`ntpd -gq` (task 'Synchronizing time one-time', no `changed_when`, runs every time)**, then start and enable ntp | With `enable_host_ntp: true`, every re-run runs `ntpd -gq` on every host (`post-install.yml:264-267`). Whether that steps the clock, harms Galera and RabbitMQ, or clashes with the default `enable_chrony: yes` container, is NOT AVAILABLE. |
 | 289-296 | `selinux: policy=targeted state={{ selinux_state }}` (default `permissive`, `change_selinux: True`) on RedHat | Runtime `setenforce` plus config. No reboot is done by the role. |
 
-`configure-containerd-for-zun.yml` (only `containerd_configure_for_zun` **and** host in `zun-cni-daemon`, `bootstrap-servers.yml:8-11`):
+`configure-containerd-for-zun.yml` (only `containerd_configure_for_zun` **and** host in `zun-cni-daemon`,
+`bootstrap-servers.yml:8-11`):
 it writes the CNI config and script and **overwrites `/etc/containerd/config.toml`** with only `[grpc] gid = ...`
-(`templates/containerd_config.toml.j2:1-2`). It **restarts containerd** when either file changed (`configure-containerd-for-zun.yml:45-50`).
+(`templates/containerd_config.toml.j2:1-2`). It **restarts containerd** when either file changed
+(`configure-containerd-for-zun.yml:45-50`).
 NOT AVAILABLE: whether container shims survive a containerd restart.
 
 Kernel modules: the baremetal role loads **none**. Modules and sysctls are applied during `deploy`/`reconfigure` by
-`config-host.yml` in service roles (`openvswitch`, `neutron`, `nova-cell`, `iscsi`, `haproxy`, `multipathd`, `ironic`, and the
+`config-host.yml` in service roles (`openvswitch`, `neutron`, `nova-cell`, `iscsi`, `haproxy`, `multipathd`, `ironic`,
+and the
 `module-load` role).
 
 ---
@@ -176,7 +203,8 @@ Kernel modules: the baremetal role loads **none**. Modules and sysctls are appli
 
 ### 2.1 What goes into `/etc/docker/daemon.json`
 
-Base dict (`ansible/roles/baremetal/vars/main.yml:2-5`): `log-opts: {max-file: docker_log_max_file, max-size: docker_log_max_size}`
+Base dict (`ansible/roles/baremetal/vars/main.yml:2-5`):
+`log-opts: {max-file: docker_log_max_file, max-size: docker_log_max_size}`
 (defaults `"5"` / `"50m"`, `group_vars/all.yml:130-131`). Keys merged in by `post-install.yml`:
 
 | Key | Source / condition | Default | Line |
@@ -205,7 +233,8 @@ if module.params['daemon_reload'] and not module.check_mode:
     (rc, out, err) = module.run_command("%s daemon-reload" % (systemctl))
     if rc != 0: module.fail_json(...)
 ```
-`changed` is set to True only by the `masked`, `enabled` and `state` branches (lines 472/515/547). The task at `post-install.yml:175-180`
+`changed` is set to True only by the `masked`, `enabled` and `state` branches (lines 472/515/547). The task at
+`post-install.yml:175-180`
 passes only `name` and `daemon_reload`, so `docker_reloaded.changed` is always False. Ansible 2.8.20 has the same code:
 `changed=False` at `lib/ansible/modules/system/systemd.py:374-378`, `daemon-reload` at `:380-384`, and `changed` set to
 True only at `:434,477,509` (the same three branches).
@@ -216,13 +245,16 @@ write of daemon.json reports changed (rendered content differs from the file on 
 - first bootstrap of a host (the file does not exist yet), or any hand-edited daemon.json;
 - changing `docker_registry` (because `insecure-registries` follows it automatically), `docker_registry_insecure`,
   `docker_log_max_file`, `docker_log_max_size`, `docker_storage_driver`, `docker_runtime_directory`,
-  `docker_disable_default_iptables_rules`, `docker_disable_default_network`, `docker_disable_ip_forward` or `docker_custom_config`;
-- on **Zun compute hosts** with `docker_configure_for_zun`: **adding or removing an etcd host** (changes `cluster-store`);
+  `docker_disable_default_iptables_rules`, `docker_disable_default_network`, `docker_disable_ip_forward` or
+  `docker_custom_config`;
+- on **Zun compute hosts** with `docker_configure_for_zun`: **adding or removing an etcd host** (changes
+  `cluster-store`);
 - a **package change** does not trigger the restart task by itself. What a docker-ce package upgrade does to the daemon
   is NOT AVAILABLE; the role's comment says it "may cause containers to stop" (`install.yml:40-41`). Kolla then runs
   `docker start` on previously running containers (`install.yml:99-127`).
 
-**Not** triggers (latent changes): adding, changing or removing `docker_custom_option`, and the Zun `docker_zun_options` systemd
+**Not** triggers (latent changes): adding, changing or removing `docker_custom_option`, and the Zun `docker_zun_options`
+systemd
 drop-in (`post-install.yml:147-173`). These are written to disk and daemon-reloaded, and no Kolla task restarts Docker
 for them. When dockerd picks them up is NOT AVAILABLE (systemd behaviour). NOT AVAILABLE: whether dockerd refuses to
 start if the same option ends up both as a dockerd flag in the drop-in and in daemon.json.
@@ -246,7 +278,8 @@ Check after any failed run: `ls -l /etc/systemd/system/docker.service` should **
 
 ### 2.4 Blast radius of a restart
 
-- FACT: restart is `systemd state=restarted` on each host of the current batch. With default `serial: 0`, **all baremetal hosts
+- FACT: restart is `systemd state=restarted` on each host of the current batch. With default `serial: 0`, **all
+  baremetal hosts
   restart Docker in the same task** (subject to forks). That includes all controllers at once.
 - FACT: Kolla service containers use `restart_policy: unless-stopped` (`group_vars/all.yml:134`). NOT AVAILABLE: whether
   they come back after the daemon restarts (Docker behaviour). FACT: `kolla_docker` sets no container `StopTimeout`
@@ -261,7 +294,8 @@ Check after any failed run: `ls -l /etc/systemd/system/docker.service` should **
   [Kolla images §5.4](../../concepts/kolla-images.md#54-mariadb-what-the-image-does-not-do)). NOT AVAILABLE: whether
   Galera re-forms the cluster by itself or `kolla-ansible mariadb_recovery` is needed. With a single MariaDB host,
   `gcomm://` is empty (`galera.cnf.j2:29`); whether that host comes back without recovery is NOT AVAILABLE.
-- Compute nodes: `nova_libvirt` runs with `pid_mode: host` and bind-mounts `/sys/fs/cgroup` (`nova-cell/defaults/main.yml:8,244`).
+- Compute nodes: `nova_libvirt` runs with `pid_mode: host` and bind-mounts `/sys/fs/cgroup`
+  (`nova-cell/defaults/main.yml:8,244`).
   NOT AVAILABLE: whether running QEMU processes survive the container restart; the sources do not show whether the
   guests sit in machined slices or in the container cgroup. Note `tools/cleanup-containers:5-11`: "Docker will not be
   able to stop the nova_libvirt container with those [qemu processes] running".
@@ -270,8 +304,10 @@ Check after any failed run: `ls -l /etc/systemd/system/docker.service` should **
   `libvirt-guests.sh shutdown` (`tools/kolla-libvirt-guests.service:6,18-19`). NOT AVAILABLE: whether systemd propagates
   a restart of `docker.service` to units that `Requires=` it, and so whether, on hosts where an operator installed this
   unit, **a Docker restart shuts down or managed-saves every guest**.
-- Documented mitigations (`doc/source/reference/deployment-and-bootstrapping/bootstrap-servers.rst:59-93`): `--limit` batches
-  keeping quorum, `-e kolla_serial=30%`, or Docker `live-restore` ("issues reported ... use it at your own risk"). The way to
+- Documented mitigations (`doc/source/reference/deployment-and-bootstrapping/bootstrap-servers.rst:59-93`): `--limit`
+  batches
+  keeping quorum, `-e kolla_serial=30%`, or Docker `live-restore` ("issues reported ... use it at your own risk"). The
+  way to
   set live-restore in a supported way is `docker_custom_config: {"live-restore": true}`. FACT: adding it changes the
   rendered daemon.json, so that run restarts Docker ([§2.2](#22-why-docker_reloaded-never-triggers-a-restart)); if the
   file on disk already matches the rendered content, the restart task does not run. NOT AVAILABLE: whether containers
@@ -300,9 +336,11 @@ Check after any failed run: `ls -l /etc/systemd/system/docker.service` should **
 {% set hostnames = [hostvars[host].ansible_facts.nodename, hostvars[host].ansible_facts.hostname] %}
 {{ 'api' | kolla_address(host) }} {{ hostnames | unique | join(' ') }}
 ```
-- FACT: **it loops over all baremetal hosts**. Adding a host changes the managed block on **every** host bootstrap-servers runs
+- FACT: **it loops over all baremetal hosts**. Adding a host changes the managed block on **every** host
+  bootstrap-servers runs
   against. No handler or restart is attached, so a change restarts nothing by itself.
-- FACT: it needs facts for **all** baremetal hosts. `kolla_address` raises `FilterError("Interface ... not present on host ...")`
+- FACT: it needs facts for **all** baremetal hosts. `kolla_address` raises
+  `FilterError("Interface ... not present on host ...")`
   when `hostvars[host]['ansible_facts']` lacks the interface (`kolla_ansible/kolla_address.py:88-95`). A host whose
   facts were never gathered (for example unreachable during fact gathering, with no fact cache) has an empty
   `ansible_facts` (ansible 2.9.27 `lib/ansible/vars/manager.py:305-306`, `lib/ansible/vars/clean.py:170-179`). So
@@ -311,10 +349,13 @@ Check after any failed run: `ls -l /etc/systemd/system/docker.service` should **
   `lib/ansible/executor/task_executor.py:179-180,592`). Those hosts then run no further task of the play
   (`lib/ansible/executor/play_iterator.py:436-450,468-474`), so nothing after this task runs. In practice every
   baremetal host must be reachable, or have cached facts, for bootstrap-servers.
-- Minor bug: the template checks `api_interface in hostvars[host].ansible_facts` without the `-`→`_` replacement that the `when:`
+- Minor bug: the template checks `api_interface in hostvars[host].ansible_facts` without the `-`→`_` replacement that
+  the `when:`
   clause uses (line 42 uses `| replace('-', '_')`).
-- With `--limit new-hosts`, only the limited hosts get the full list. **Existing hosts never learn the new names.** The docs
-  require including all controllers in the limit for RabbitMQ (`doc/source/user/adding-and-removing-hosts.rst:22-29`). For
+- With `--limit new-hosts`, only the limited hosts get the full list. **Existing hosts never learn the new names.** The
+  docs
+  require including all controllers in the limit for RabbitMQ (`doc/source/user/adding-and-removing-hosts.rst:22-29`).
+  For
   computes, without `libvirt_tls` the libvirt connection and migration addresses are IPs
   (`nova.conf.d/libvirt.conf.j2:7-8`). **Exception:** with
   `libvirt_tls`, `live_migration_inbound_addr = migration_hostname = ansible_facts.nodename`
@@ -323,7 +364,8 @@ Check after any failed run: `ls -l /etc/systemd/system/docker.service` should **
   on the old computes, re-run bootstrap-servers on all computes (or use DNS).
 - NOT AVAILABLE: whether running host-network containers see new `/etc/hosts` entries before they are recreated (the
   task edits the host's `/etc/hosts` only).
-- Disable the whole mechanism with `customize_etc_hosts: false` (`defaults/main.yml:19`) when DNS is authoritative. At large N,
+- Disable the whole mechanism with `customize_etc_hosts: false` (`defaults/main.yml:19`) when DNS is authoritative. At
+  large N,
   this also removes the O(N²) templating.
 
 ---
@@ -343,17 +385,23 @@ vars:
 setup: ... delegate_facts: True, delegate_to: "{{ item }}", with_items: "{{ delegate_hosts }}"
 when: not hostvars[item].ansible_facts
 ```
-Cost model, with N = |groups['all']| (this **includes `localhost`** from `[deployment]`) and L = hosts selected by `--limit`:
+Cost model, with N = |groups['all']| (this **includes `localhost`** from `[deployment]`) and L = hosts selected by
+`--limit`:
 - **No limit, serial 0:** play 1 runs N `setup` calls in parallel (forks). Play 2 is empty.
-- **`--limit` with L hosts:** play 1 runs L parallel `setup` calls. Play 2 runs on the same L hosts. Limited host *i* loops
-  **sequentially** over `groups['all'][i::L]`, about N/L items, each a delegated `setup` (SSH from the deploy host to the
+- **`--limit` with L hosts:** play 1 runs L parallel `setup` calls. Play 2 runs on the same L hosts. Limited host *i*
+  loops
+  **sequentially** over `groups['all'][i::L]`, about N/L items, each a delegated `setup` (SSH from the deploy host to
+  the
   *item* host, facts stored on the item). The items of one host's loop run one after another (ansible 2.9.27
   `lib/ansible/executor/task_executor.py:317,367`). Total is N−L delegated setups, but only **L run at the same time**.
   The resulting wall time is NOT AVAILABLE. **L=1 means fully serial fact gathering of the whole inventory.**
-- **With `kolla_serial` (no limit):** each batch is smaller than N, so every host joins `all_using_limit_True`. But by the time
+- **With `kolla_serial` (no limit):** each batch is smaller than N, so every host joins `all_using_limit_True`. But by
+  the time
   play 2 runs, play 1 has gathered all facts, so every item is skipped (loop evaluation only, no SSH).
-- **With fact caching** (`gathering = smart` + `fact_caching`, `ansible-tuning.rst:34-63`): `when: not ansible_facts` is false
-  for cached hosts, so both plays skip `setup`. This is the only documented way to make `--limit` runs cheap at scale. Stale-cache
+- **With fact caching** (`gathering = smart` + `fact_caching`, `ansible-tuning.rst:34-63`): `when: not ansible_facts` is
+  false
+  for cached hosts, so both plays skip `setup`. This is the only documented way to make `--limit` runs cheap at scale.
+  Stale-cache
   risk: IP or interface changes will not be seen until the cache expires (`fact_caching_timeout`).
 - FACT: an unreachable *other* host without cached facts makes its delegated item in play 2 return `unreachable`
   (ansible 2.9.27 `lib/ansible/executor/task_executor.py:670-671`). One unreachable item makes the whole task result
@@ -361,8 +409,10 @@ Cost model, with N = |groups['all']| (this **includes `localhost`** from `[deplo
   removed from the play (`lib/ansible/plugins/strategy/__init__.py:593-597`) and from every later play
   (`strategy/__init__.py:311-314`, `lib/ansible/executor/playbook_executor.py:154,193`). So `--limit newnode` can fail
   because an unrelated node is down.
-- FACT: `kolla_ansible_setup_filter` and `kolla_ansible_setup_gather_subset` apply **only** in `gather-facts.yml`. Playbooks that do
-  not import it (`destroy.yml`, `mariadb_backup.yml`, `mariadb_recovery.yml`, `post-deploy.yml`, and `certificates.yml` when TLS
+- FACT: `kolla_ansible_setup_filter` and `kolla_ansible_setup_gather_subset` apply **only** in `gather-facts.yml`.
+  Playbooks that do
+  not import it (`destroy.yml`, `mariadb_backup.yml`, `mariadb_recovery.yml`, `post-deploy.yml`, and `certificates.yml`
+  when TLS
   backend is off) use implicit full play-level fact gathering.
 - FACT: the documented filter `"ansible_[!qt]*"` (`ansible-tuning.rst:96`, aimed at "virtual interfaces beginning with q
   or t", :91-92) also hides real interfaces whose names start with `q` or `t` (for example `team0`, `trunk0`, `tun0`).
@@ -376,29 +426,39 @@ Cost model, with N = |groups['all']| (this **includes `localhost`** from `[deplo
 
 ## 5. `ansible/roles/prechecks` (`kolla-ansible prechecks`)
 
-- FACT: `prechecks` runs `site.yml` with `-e kolla_action=precheck` (`tools/kolla-ansible:360-363`). The common `prechecks` role
-  runs on `hosts: kolla_action_precheck`, which is **all** hosts (`site.yml:107-112`). Each service play then runs its own
+- FACT: `prechecks` runs `site.yml` with `-e kolla_action=precheck` (`tools/kolla-ansible:360-363`). The common
+  `prechecks` role
+  runs on `hosts: kolla_action_precheck`, which is **all** hosts (`site.yml:107-112`). Each service play then runs its
+  own
   `<role>/tasks/precheck.yml` (73 files, about 3.3k lines in total).
 - The common role (`ansible/roles/prechecks/tasks/main.yml:1-17`) checks:
-  - host OS (`host_os_checks.yml`): CentOS 8, Debian buster, RHEL 8, Ubuntu bionic (`vars/main.yml:11-19`). Can be skipped with
+  - host OS (`host_os_checks.yml`): CentOS 8, Debian buster, RHEL 8, Ubuntu bionic (`vars/main.yml:11-19`). Can be
+    skipped with
     `prechecks_enable_host_os_checks: false`.
   - `/etc/localtime` exists, plus `/etc/timezone` on Debian (`datetime_checks.yml`).
   - `api_interface` present, active, with an address (`port_checks.yml`; skipped for `deployment` group hosts).
-  - `docker --version` ≥ 1.10.0 and Docker SDK ≥ 2.0.0 (baremetal only), Ansible 2.8–2.9 (`package_checks.yml`, `service_checks.yml:2-9`).
-  - empty values in passwords.yml (`grep`, `delegate_to: localhost`, `run_once`) (`service_checks.yml:14-21`; passes vacuously
+  - `docker --version` ≥ 1.10.0 and Docker SDK ≥ 2.0.0 (baremetal only), Ansible 2.8–2.9 (`package_checks.yml`,
+    `service_checks.yml:2-9`).
+  - empty values in passwords.yml (`grep`, `delegate_to: localhost`, `run_once`) (`service_checks.yml:14-21`; passes
+    vacuously
     if the vault is encrypted, per the note at 11-13).
   - fails if `nscd` is running (`service_checks.yml:23-36`).
   - TLS VIP consistency and `enable_ceph` removed (`service_checks.yml:38-53`).
   - `config_owner_user` and group exist; passwordless sudo works (`user_checks.yml`).
   - external DB reachable when `enable_mariadb` is false (`database_checks.yml`).
-- Service prechecks use `kolla_container_facts`, `wait_for ... state: stopped timeout: 1` port checks (skipped when the owning
-  container already exists, for example `nova-cell/tasks/precheck.yml:8-17,85-98`), `stat`, `getent`, `vgs`, `ping` of the VIP,
+- Service prechecks use `kolla_container_facts`, `wait_for ... state: stopped timeout: 1` port checks (skipped when the
+  owning
+  container already exists, for example `nova-cell/tasks/precheck.yml:8-17,85-98`), `stat`, `getent`, `vgs`, `ping` of
+  the VIP,
   `ip addr`, and a read-only HAProxy `show stat` via `docker exec` (`haproxy/tasks/precheck.yml:155-160`).
-- **Does it change anything?** FACT: no module that modifies state was found. Every `command`/`shell` has `changed_when: false`
-  or is read-only, and there are no `template`/`copy`/`file`/`kolla_docker` tasks in the precheck files. It is **safe on a
+- **Does it change anything?** FACT: no module that modifies state was found. Every `command`/`shell` has
+  `changed_when: false`
+  or is read-only, and there are no `template`/`copy`/`file`/`kolla_docker` tasks in the precheck files. It is **safe on
+  a
   running production cloud**.
 - **Cost:** O(1) tasks per host per enabled service, plus full `gather-facts.yml`. Loops over other hosts exist only for
-  `rabbitmq`/`qdrouterd` hostname resolution (`rabbitmq/tasks/precheck.yml:61-72`, for the rabbitmq group only). There is no
+  `rabbitmq`/`qdrouterd` hostname resolution (`rabbitmq/tasks/precheck.yml:61-72`, for the rabbitmq group only). There
+  is no
   N² behaviour. The dominant cost at scale is Ansible's per-task overhead across about 70 plays. Prechecks plays inherit
   `serial: kolla_serial` from site.yml where it is set.
 
@@ -412,19 +472,25 @@ Cost model, with N = |groups['all']| (this **includes `localhost`** from `[deplo
   hosts: all          # includes localhost/[deployment] in the sample multinode inventory
   roles: [destroy]    # no serial, implicit gather_facts, no gather-facts.yml import
 ```
-- CLI: needs `--yes-i-really-really-mean-it` spelled in full (`tools/kolla-ansible:378-396`; `RAW_ARGS` check at 271-277).
+- CLI: needs `--yes-i-really-really-mean-it` spelled in full (`tools/kolla-ansible:378-396`; `RAW_ARGS` check at
+  271-277).
   `--include-images` sets `destroy_include_images=yes`. `--include-dev` sets `destroy_include_dev=yes`, **but see the
   bug in [§11](#11-toolskolla-ansible-cli)**.
-- Role flow (`destroy/tasks/main.yml:1-8`): `validate-docker-execute.sh` (`sudo docker ps`), then `cleanup-containers`, then
+- Role flow (`destroy/tasks/main.yml:1-8`): `validate-docker-execute.sh` (`sudo docker ps`), then `cleanup-containers`,
+  then
   `cleanup-images --all` (only if `destroy_include_images`, default `enable_destroy_images: "no"`, `all.yml:730`), then
-  `cleanup-host` (`become: true`, env vars passed in `cleanup_host.yml:5-17`). The role ignores `kolla_action` and has no tags.
+  `cleanup-host` (`become: true`, env vars passed in `cleanup_host.yml:5-17`). The role ignores `kolla_action` and has
+  no tags.
 - `tools/cleanup-containers`:
   - Safety guard (5-11): **aborts if `nova_libvirt` is running and non-Xen-dom0 qemu processes exist**.
-  - If both `openvswitch_vswitchd` and `neutron_openvswitch_agent` are present: `neutron-ovs-cleanup --ovs_all_ports`, then
+  - If both `openvswitch_vswitchd` and `neutron_openvswitch_agent` are present: `neutron-ovs-cleanup --ovs_all_ports`,
+    then
     **delete every OVS bridge** (24-30). NOT AVAILABLE: whether the `docker exec -it` at line 29 fails without a TTY
     under Ansible's `script`, and so whether bridges survive.
-  - Stops (`-t 2`) and `rm -v -f` **all kolla-labelled containers**, then `docker volume rm` **every volume mounted by them**.
-    That includes `mariadb`, `rabbitmq`, `nova_compute` (instance disks when the default volume is used), `libvirtd`, `kolla_logs`
+  - Stops (`-t 2`) and `rm -v -f` **all kolla-labelled containers**, then `docker volume rm` **every volume mounted by
+    them**.
+    That includes `mariadb`, `rabbitmq`, `nova_compute` (instance disks when the default volume is used), `libvirtd`,
+    `kolla_logs`
     and so on (14-44). It also removes the `/var/log/kolla` link.
 - `tools/cleanup-host`:
   - **Deletes ALL network namespaces** (`ip netns list`, 5-8). This is not limited to kolla's. NOT AVAILABLE: whether
@@ -432,18 +498,24 @@ Cost model, with N = |groups['all']| (this **includes `localhost`** from `[deplo
     words to `ip netns delete`.
   - Deletes every link whose `ip -o link` line matches `/tap/`, `/brq/` or `/vxlan/` (10-23).
   - Removes the VIPs from interfaces when `enable_haproxy == yes` (27-35).
-  - Swift: `cat /etc/fstab | grep "/srv/node/d*" | xargs umount` (42). This **feeds whole fstab lines to umount** (bug), then
+  - Swift: `cat /etc/fstab | grep "/srv/node/d*" | xargs umount` (42). This **feeds whole fstab lines to umount** (bug),
+    then
     deletes those fstab lines.
   - `rm -rfv` of custom datadirs when they differ from the default volume names (46-74). For example
     `nova_instance_datadir_volume` set to a host path means **instance storage is wiped**.
-  - **`rm -rfv /etc/kolla/*` except `passwords.yml`, `globals.yml`, `kolla-build.conf`, `config`, `kolla-cli`, `certificates`**
-    (76-95). The path is hard-coded and ignores `node_config_directory`. Because `localhost` is in `hosts: all`, this also runs on
-    the **deploy host** unless `--limit` excludes it, which deletes `admin-openrc.sh` and anything else stored under `/etc/kolla`.
-- `tools/cleanup-images`: `REAL_PATH=$(python -c "import os;print os.path.realpath('$0')")` (line 4) is **Python 2 syntax**.
+  - **`rm -rfv /etc/kolla/*` except `passwords.yml`, `globals.yml`, `kolla-build.conf`, `config`, `kolla-cli`,
+    `certificates`**
+    (76-95). The path is hard-coded and ignores `node_config_directory`. Because `localhost` is in `hosts: all`, this
+    also runs on
+    the **deploy host** unless `--limit` excludes it, which deletes `admin-openrc.sh` and anything else stored under
+    `/etc/kolla`.
+- `tools/cleanup-images`: `REAL_PATH=$(python -c "import os;print os.path.realpath('$0')")` (line 4) is **Python 2
+  syntax**.
   Under Python 3 the line fails; which `python` the hosts have is NOT AVAILABLE. FACT: no later line uses `REAL_PATH`
   or a relative path, and the script has no `set -e`, so lines 4-5 do not change what it removes. `--all` runs
   `docker rmi -f` on every kolla-labelled image.
-- Scale and safety: per host, all hosts in parallel (forks), **no serial and no batch protection**. Never run it on production
+- Scale and safety: per host, all hosts in parallel (forks), **no serial and no batch protection**. Never run it on
+  production
   without `--limit`. For decommissioning, the docs use `stop` plus inventory removal, **not** `destroy`
   (`doc/source/user/adding-and-removing-hosts.rst:144-172,203-224`).
 - CI: no Ussuri CI job runs `destroy` (grep of `tests/*.sh`).
@@ -475,13 +547,17 @@ docker_prune: {images: yes, images_filters: {label: kolla_version}, timeout: "{{
 
 ## 8. `post-deploy` (`ansible/post-deploy.yml`)
 
-- `hosts: localhost`, implicit fact gathering, `become: true`. It templates `roles/common/templates/admin-openrc.sh.j2` to
-  `{{ node_config }}/admin-openrc.sh` (`node_config` = `CONFIG_DIR`, default `/etc/kolla`, `all.yml:10`), owned by the invoking
+- `hosts: localhost`, implicit fact gathering, `become: true`. It templates `roles/common/templates/admin-openrc.sh.j2`
+  to
+  `{{ node_config }}/admin-openrc.sh` (`node_config` = `CONFIG_DIR`, default `/etc/kolla`, `all.yml:10`), owned by the
+  invoking
   user's uid/gid, mode `0600` (`post-deploy.yml:1-11`).
-- Contents: `OS_PASSWORD={{ keystone_admin_password }}` in plaintext, `OS_AUTH_URL={{ keystone_admin_url }}/v3` (the **admin**
+- Contents: `OS_PASSWORD={{ keystone_admin_password }}` in plaintext, `OS_AUTH_URL={{ keystone_admin_url }}/v3` (the
+  **admin**
   endpoint, `all.yml:822`), `OS_INTERFACE=internal`, and optional `OS_CACERT` from `kolla_admin_openrc_cacert`
   (`admin-openrc.sh.j2:1-25`).
-- No `kolla_action` is passed (`tools/kolla-ansible:420-423`). Cost is O(1) and it is safe to re-run. **`destroy` deletes this
+- No `kolla_action` is passed (`tools/kolla-ansible:420-423`). Cost is O(1) and it is safe to re-run. **`destroy`
+  deletes this
   file on the deploy host** ([§6](#6-destroy-ansibledestroyyml-role-destroy-toolscleanup-)).
 
 ## 9. `mariadb_backup.yml` and `mariadb_recovery.yml` (playbook level only)
@@ -497,11 +573,15 @@ docker_prune: {images: yes, images_filters: {label: kolla_version}, timeout: "{{
   roles: [{ role: mariadb, tags: mariadb, when: enable_mariadb | bool }]
   vars: { mariadb_recover: true }
 ```
-- CLI: `mariadb_backup` passes `-e kolla_action=backup -e mariadb_backup_type={full|incremental} -e common_run=true`. `mariadb_recovery`
-  passes `-e kolla_action=deploy -e common_run=true` (`tools/kolla-ansible:368-377`). `common_run=true` stops the `common` role
+- CLI: `mariadb_backup` passes `-e kolla_action=backup -e mariadb_backup_type={full|incremental} -e common_run=true`.
+  `mariadb_recovery`
+  passes `-e kolla_action=deploy -e common_run=true` (`tools/kolla-ansible:368-377`). `common_run=true` stops the
+  `common` role
   meta-dependency (fluentd, kolla-toolbox, cron) from running (`roles/common/tasks/main.yml:1-10`).
-- Neither playbook imports `gather-facts.yml`, and neither has `serial`. Implicit full fact gathering covers the **mariadb hosts only**.
-- Backup runs only on `mariadb_backup_host` = `groups['mariadb'][0]` (`roles/mariadb/defaults/main.yml:109`, `backup.yml:21-22`). It
+- Neither playbook imports `gather-facts.yml`, and neither has `serial`. Implicit full fact gathering covers the
+  **mariadb hosts only**.
+- Backup runs only on `mariadb_backup_host` = `groups['mariadb'][0]` (`roles/mariadb/defaults/main.yml:109`,
+  `backup.yml:21-22`). It
   requires `enable_mariabackup: yes` (default `no`, `all.yml:661`). Otherwise every task is skipped silently.
 - **Image-tag pitfall (FACT; outcome NOT AVAILABLE):** `mariabackup_tag: "{{ openstack_tag }}"`
   (`mariadb/defaults/main.yml:105-106`), and `openstack_tag_suffix` gives `-centos8s` only when `kolla_centos_release`
@@ -510,7 +590,8 @@ docker_prune: {images: yes, images_filters: {label: kolla_version}, timeout: "{{
   `lib/ansible/template/__init__.py:243-245`), and the suffix expression then goes through Jinja2's `default()`, which
   is outside the sources read. NOT AVAILABLE: whether on CentOS **Stream** hosts these two commands use `...:ussuri`
   instead of `...:ussuri-centos8s` (unless `openstack_tag`/`openstack_tag_suffix` is pinned in globals.yml).
-- CI: `mariadb_recovery` is tested with `--tags mariadb --skip-tags common` (`tests/test-mariadb.sh:21-25`). `mariadb_backup` is
+- CI: `mariadb_recovery` is tested with `--tags mariadb --skip-tags common` (`tests/test-mariadb.sh:21-25`).
+  `mariadb_backup` is
   not tested in CI.
 
 ## 10. `certificates.yml` (playbook level)
@@ -523,9 +604,11 @@ docker_prune: {images: yes, images_filters: {label: kolla_version}, timeout: "{{
   hosts: localhost
   roles: [certificates]
 ```
-- It runs on the deploy host only. Facts of all hosts are needed only for the backend certificate's SAN list, which loops over
+- It runs on the deploy host only. Facts of all hosts are needed only for the backend certificate's SAN list, which
+  loops over
   `groups['tls-backend']` with `kolla_address` (`roles/certificates/templates/openssl-kolla-backend.cnf.j2:16-18`).
-- FACT: every openssl step is guarded with `creates:` (for example `generate-backend.yml:21,32,46`; `generate.yml:28,39,53,96,107,121`),
+- FACT: every openssl step is guarded with `creates:` (for example `generate-backend.yml:21,32,46`;
+  `generate.yml:28,39,53,96,107,121`),
   so re-runs never regenerate. **FACT:** after adding a `tls-backend` (controller) host, the backend cert keeps its old
   SANs until `backend.csr`/`backend.crt` are deleted by hand. The SAN config is re-templated
   (`generate-backend.yml:8-14`), but the CSR and certificate steps are skipped while those files exist (`:31-32,45-46`;
@@ -538,36 +621,49 @@ docker_prune: {images: yes, images_filters: {label: kolla_version}, timeout: "{{
 ## 11. `tools/kolla-ansible` CLI
 
 - **`--tags`, `--skip-tags`, `--limit`, `--forks`, `-e`, `--vault-*`** are global options appended to `EXTRA_OPTS`
-  (`tools/kolla-ansible:251-259,295-298,305-318`), so **every subcommand accepts `--tags`**. Whether they mean anything depends on
-  the playbook: `kolla-host.yml` only has the `baremetal` tag, and `destroy`/`prune-images`/`post-deploy` have no role tags. The
+  (`tools/kolla-ansible:251-259,295-298,305-318`), so **every subcommand accepts `--tags`**. Whether they mean anything
+  depends on
+  the playbook: `kolla-host.yml` only has the `baremetal` tag, and `destroy`/`prune-images`/`post-deploy` have no role
+  tags. The
   extra environment variable `EXTRA_OPTS` is honoured (`:228`), for example `EXTRA_OPTS="--check --diff"`.
-- **`kolla_serial`:** `ANSIBLE_SERIAL=${ANSIBLE_SERIAL:-0}` (`:234-236`, comment: "Serial is not recommended and disabled by
-  default"). It is passed **only** by `upgrade` (`:430`) and `reconfigure` (`:439`) as `-e kolla_serial=${ANSIBLE_SERIAL}`.
+- **`kolla_serial`:** `ANSIBLE_SERIAL=${ANSIBLE_SERIAL:-0}` (`:234-236`, comment: "Serial is not recommended and
+  disabled by
+  default"). It is passed **only** by `upgrade` (`:430`) and `reconfigure` (`:439`) as
+  `-e kolla_serial=${ANSIBLE_SERIAL}`.
   Because that `-e` is appended **after** the user's `--extra` options, Ansible's last-wins rule for extra-vars
   (ansible 2.9.27 `lib/ansible/utils/vars.py:125,139`) means
-  **`kolla-ansible reconfigure -e kolla_serial=1` silently runs with `0`**. Use `ANSIBLE_SERIAL=1 kolla-ansible reconfigure`.
+  **`kolla-ansible reconfigure -e kolla_serial=1` silently runs with `0`**. Use
+  `ANSIBLE_SERIAL=1 kolla-ansible reconfigure`.
   `kolla-ansible upgrade -e kolla_serial=1` is overridden the same way (`:430`); use `ANSIBLE_SERIAL=1` there too.
   For every other command, `-e kolla_serial=...` works. Plays that **ignore** `kolla_serial` are listed below.
   - `site.yml`: "Group hosts", "Check CentOS variant", prechecks, mariadb, rabbitmq, rabbitmq-outward (no `serial` key),
     and cyborg, whose play reads `serial: '{{ serial|default("0") }}'` (`site.yml:1028`). The two imported
     gather-facts plays do use `kolla_serial` (`gather-facts.yml:7,31`).
-  - `destroy.yml`, `mariadb_backup.yml`, `mariadb_recovery.yml`, `post-deploy.yml`, `certificates.yml`, `bifrost.yml` (grep `serial:` count 0).
+  - `destroy.yml`, `mariadb_backup.yml`, `mariadb_recovery.yml`, `post-deploy.yml`, `certificates.yml`, `bifrost.yml`
+    (grep `serial:` count 0).
 - **Bug: `--ask-vault-pass`** (`:320-323`):
   ```bash
   (--ask-vault-pass)
           VERBOSITY="$EXTRA_OPTS --ask-vault-pass"
   ```
   It should append to `EXTRA_OPTS`. Effects: any `-v` given **before** it is lost, and all `EXTRA_OPTS` collected so far
-  (including the `EXTRA_OPTS` environment variable) are **repeated** after the playbook path (`:485`). Usually harmless, because
+  (including the `EXTRA_OPTS` environment variable) are **repeated** after the playbook path (`:485`). Usually harmless,
+  because
   the duplicated `-e`, `--tags` and `--limit` values are identical, but verbosity silently disappears.
-- **Bug: `--include-dev`** is declared `include-dev:` (requires an argument) in `LONG_OPTS` (`:216`) but handled as a flag with
-  `shift 1` (`:284-287`). getopt swallows the next word as its argument. `destroy --include-dev --yes-i-really-really-mean-it`
-  only works by accident (the swallowed word is then re-parsed). `destroy --include-dev -i inv` mis-parses, and a trailing
+- **Bug: `--include-dev`** is declared `include-dev:` (requires an argument) in `LONG_OPTS` (`:216`) but handled as a
+  flag with
+  `shift 1` (`:284-287`). getopt swallows the next word as its argument.
+  `destroy --include-dev --yes-i-really-really-mean-it`
+  only works by accident (the swallowed word is then re-parsed). `destroy --include-dev -i inv` mis-parses, and a
+  trailing
   `--include-dev` errors out.
-- **Bug/limitation:** `CMD="ansible-playbook -i $INVENTORY $CONFIG_OPTS $EXTRA_OPTS $PLAYBOOK $VERBOSITY"` runs unquoted (`:116,485`).
-  It is word-split (no spaces are possible inside `-e` JSON values) and pathname-expanded (for example `--limit compute[0-1]`
+- **Bug/limitation:** `CMD="ansible-playbook -i $INVENTORY $CONFIG_OPTS $EXTRA_OPTS $PLAYBOOK $VERBOSITY"` runs unquoted
+  (`:116,485`).
+  It is word-split (no spaces are possible inside `-e` JSON values) and pathname-expanded (for example
+  `--limit compute[0-1]`
   could glob-match a file in the current directory).
-- Environment check: refuses Ansible outside 2.8–2.9 (`:58-65`) and requires `kolla_ansible` importable by Ansible's Python (`:33-38`).
+- Environment check: refuses Ansible outside 2.8–2.9 (`:58-65`) and requires `kolla_ansible` importable by Ansible's
+  Python (`:33-38`).
 - Confirmation guard: `destroy`, `stop` and `prune-images` require `--yes-i-really-really-mean-it` (`:387,444,465`).
   `bootstrap-servers` (which can restart Docker everywhere) has **no** confirmation.
 
@@ -576,8 +672,10 @@ docker_prune: {images: yes, images_filters: {label: kolla_version}, timeout: "{{
 ## 12. Ansible configuration and documented tuning
 
 - FACT: **no `ansible.cfg` ships for users.** Repo-wide search found only:
-  - `tests/templates/ansible.cfg.j2:1-13` (CI): `host_key_checking = False`; `inject_facts_as_vars = False` **except** for upgrade
-    jobs whose previous release is train, ussuri, victoria or wallaby (lines 4-9); `[ssh_connection] pipelining = True`, `retries = 3`.
+  - `tests/templates/ansible.cfg.j2:1-13` (CI): `host_key_checking = False`; `inject_facts_as_vars = False` **except**
+    for upgrade
+    jobs whose previous release is train, ussuri, victoria or wallaby (lines 4-9); `[ssh_connection] pipelining = True`,
+    `retries = 3`.
   - `contrib/dev/vagrant/bootstrap.sh:250-258` (dev): `forks=100`, `remote_user = root`, `scp_if_ssh=True`.
 - Documentation recommendations:
   - `doc/source/user/quickstart.rst:251-267`: `/etc/ansible/ansible.cfg` with `[defaults] host_key_checking=False`,
@@ -588,22 +686,29 @@ docker_prune: {images: yes, images_filters: {label: kolla_version}, timeout: "{{
   - `doc/source/user/ansible-tuning.rst`:
     - SSH pipelining `[ssh_connection] pipelining = True` (8-17).
     - `forks = 20` as an example; "experiment to find out the CPU, memory and IO limits" (19-32).
-    - Fact caching: `gathering = smart`, `fact_caching = jsonfile`, `fact_caching_connection = /tmp/ansible-facts`, and an
+    - Fact caching: `gathering = smart`, `fact_caching = jsonfile`, `fact_caching_connection = /tmp/ansible-facts`, and
+      an
       optional `fact_caching_timeout` (34-63).
-    - `inject_facts_as_vars = False` (65-81). FACT: Ussuri's playbooks and filters reference facts only through `ansible_facts`
-      (grep for `ansible_[a-z_]+` other than `ansible_facts` returns only magic and connection vars), so this is safe for this tree.
+    - `inject_facts_as_vars = False` (65-81). FACT: Ussuri's playbooks and filters reference facts only through
+      `ansible_facts`
+      (grep for `ansible_[a-z_]+` other than `ansible_facts` returns only magic and connection vars), so this is safe
+      for this tree.
     - Fact filtering `kolla_ansible_setup_filter: "ansible_[!qt]*"`, "reported to be as large as 18x" (83-106).
     - `kolla_ansible_setup_gather_subset: "all,!facter"` (108-118).
-  - **Not documented anywhere in `doc/source`:** ControlPersist/`ssh_args`, mitogen, `strategy` (free/linear), `ANSIBLE_SERIAL`
-    or `serial` for scale. The only `kolla_serial` mention is `bootstrap-servers.rst:83`. Large-scale guidance amounts to
+  - **Not documented anywhere in `doc/source`:** ControlPersist/`ssh_args`, mitogen, `strategy` (free/linear),
+    `ANSIBLE_SERIAL`
+    or `serial` for scale. The only `kolla_serial` mention is `bootstrap-servers.rst:83`. Large-scale guidance amounts
+    to
     `--limit` per cell (`doc/source/reference/compute/nova-cells-guide.rst:376-400,419-457`) and the tuning page above.
 
 ---
 
 ## 13. Day-2 and scale knobs: `etc/kolla/globals.yml` and `ansible/group_vars/all.yml`
 
-Defaults live in `all.yml`. `globals.yml` shows commented examples. **Several Docker knobs are not listed in globals.yml at all**
-(`docker_log_max_*`, `docker_disable_*`, `docker_custom_config`, `docker_graceful_timeout`, `docker_restart_policy`), but they can
+Defaults live in `all.yml`. `globals.yml` shows commented examples. **Several Docker knobs are not listed in globals.yml
+at all**
+(`docker_log_max_*`, `docker_disable_*`, `docker_custom_config`, `docker_graceful_timeout`, `docker_restart_policy`),
+but they can
 still be overridden there.
 
 | Knob | Default (file:line) | Day-2 / scale relevance |
@@ -669,15 +774,19 @@ still be overridden there.
    (`EXTRA_OPTS="--check --diff" ... --limit <one host>`; whether check mode makes this safe is NOT AVAILABLE, H14).
    If it differs, run with `-e kolla_serial=1`, or with `--limit` per controller and in compute batches, keeping Galera
    and RabbitMQ quorum.
-2. Do not rely on `docker_custom_option`. Put options in `docker_custom_config` (daemon.json) so changes are applied, and are
+2. Do not rely on `docker_custom_option`. Put options in `docker_custom_config` (daemon.json) so changes are applied,
+   and are
    applied visibly.
 3. After any failed or interrupted run on Debian/Ubuntu, check for a masked `docker.service`.
-4. Set `disable_firewall: false`, `change_selinux: false` and the package-removal lists explicitly if the hosts are managed by
+4. Set `disable_firewall: false`, `change_selinux: false` and the package-removal lists explicitly if the hosts are
+   managed by
    other tooling. Check `open-iscsi` and `iscsi-initiator-utils` before the first run on hosts that use host iSCSI.
-5. At scale, enable jsonfile fact caching with `gathering = smart`, `inject_facts_as_vars = False` and a setup filter. Without
+5. At scale, enable jsonfile fact caching with `gathering = smart`, `inject_facts_as_vars = False` and a setup filter.
+   Without
    them, `--limit` runs gather facts for the whole inventory, one host at a time per limited host.
 6. Use `ANSIBLE_SERIAL` (not `-e kolla_serial`) for `reconfigure` and `upgrade`.
-7. Never run `destroy` without `--limit`. Exclude the deploy host (`--limit '!localhost'`) unless you want its `/etc/kolla` wiped.
+7. Never run `destroy` without `--limit`. Exclude the deploy host (`--limit '!localhost'`) unless you want its
+   `/etc/kolla` wiped.
 
 ## Related
 

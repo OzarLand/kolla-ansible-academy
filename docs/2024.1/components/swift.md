@@ -12,7 +12,8 @@ container and object containers (18 in all; the three `*_replication_server` con
 `roles/swift/tasks/start.yml:97,176,256`, `roles/swift/defaults/main.yml:66`, `group_vars/all.yml:288-289`), on the
 control nodes (proxy, `inventory/multinode:122-123`, `inventory/multinode:327-328`) and storage nodes (account,
 container and object servers, `inventory/multinode:330-337`) of the example inventory, selected by the tag `swift`
-(`site.yml:511-526`). The rings are operator-built ([Component dependencies §3](dependencies.md#3-control-plane-services)),
+(`site.yml:511-526`). The rings are operator-built
+([Component dependencies §3](dependencies.md#3-control-plane-services)),
 and `deploy` does not apply swift config or ring changes to running containers: no task of the role notifies a handler,
 and its only handler, `Restart swift-proxy-server container`, is a `debug` no-op (`roles/swift/handlers/main.yml:2-4`)
 ([fact sheet D §3.4](../reference/factsheets/d-barbican-octavia-swift-manila-compute-roles.md#34-task-flow)). Still
@@ -36,11 +37,14 @@ the evidence, what to check around a run and what stays open; the service card f
     `unless-stopped` policy (`group_vars/all.yml:117`, `group_vars/all.yml:139`,
     `module_utils/kolla_systemd_worker.py:56-58`, `module_utils/kolla_systemd_worker.py:69-79`). Without
     `common_options`, the module falls back to a 10 s graceful timeout (`library/kolla_container.py:370`) and passes no
-    restart policy, which the unit writes as `Restart=no` (`module_utils/kolla_systemd_worker.py:56`). The same fallbacks
+    restart policy, which the unit writes as `Restart=no` (`module_utils/kolla_systemd_worker.py:56`). The same
+    fallbacks
     existed in the 2023.1 module (2023.1 tree: `library/kolla_docker.py`, lines 357 and 360;
-    `module_utils/kolla_systemd_worker.py`, line 51), so a swift container restarted by the 2023.1 reconfigure may carry such a unit; what a
+    `module_utils/kolla_systemd_worker.py`, line 51), so a swift container restarted by the 2023.1 reconfigure may carry
+    such a unit; what a
     given host holds is [NOT AVAILABLE].
-- **External frontend** [CODE]: the external HAProxy entry now carries `external_fqdn` (`roles/swift/defaults/main.yml:16`),
+- **External frontend** [CODE]: the external HAProxy entry now carries `external_fqdn`
+  (`roles/swift/defaults/main.yml:16`),
   used by the single external frontend map (`roles/haproxy-config/tasks/main.yml:25-53`). Unlike most services, Swift
   has no public port variable: the public endpoint keeps `swift_proxy_server_port`, 8080
   (`group_vars/all.yml:623`, `group_vars/all.yml:1315`).
@@ -48,7 +52,8 @@ the evidence, what to check around a run and what stays open; the service card f
   `max_fail_percentage`, default 100 (`site.yml:520-523`), which never stops the play early ([Controlled batches
   §1.3](../operations/controlled-batches.md#13-stop-a-rolling-run-on-failures-max_fail_percentage)).
 - **Not affected by [F16](../reference/findings.md#f16)** [CODE]: the swift role has no `check-containers.yml` and never
-  calls `compare_container` (grep of `roles/swift/`). `deploy` runs `start_container` (`roles/swift/tasks/deploy.yml:6-8`),
+  calls `compare_container` (grep of `roles/swift/`). `deploy` runs `start_container`
+  (`roles/swift/tasks/deploy.yml:6-8`),
   which recreates a container only when its parameters differ (image, volumes, environment and the other
   `check_container_differs` items) and writes the unit only when the container is not running
   (`module_utils/kolla_docker_worker.py:365-389`, `module_utils/kolla_container_worker.py:67-89`). So the changed unit

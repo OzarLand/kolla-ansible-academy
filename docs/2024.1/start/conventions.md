@@ -54,7 +54,8 @@ code; nothing was run against a host, and no run is used as evidence.
 - **[CODE]** shown by the sources, with a `path:line` citation nearby: kolla-ansible `2024.1-eom` (commit `890396f`;
   unprefixed paths, relative to `ansible/`, plus `tools/...`), the kolla image repository `2024.1-eom` when the path
   has a `kolla` prefix (e.g. kolla `docker/base/set_configs.py:556-559`), ansible-collection-kolla `2024.1-eom` when
-  the path has an `ansible-collection-kolla` prefix (e.g. ansible-collection-kolla `roles/baremetal/tasks/main.yml:2-3`),
+  the path has an `ansible-collection-kolla` prefix (e.g. ansible-collection-kolla
+  `roles/baremetal/tasks/main.yml:2-3`),
   the Ansible source when the path has an `ansible-core 2.16.20` prefix or starts with `lib/ansible/`, and the
   `--list-tags` and `--list-tasks` listings in [Ansible listings](../reference/listings/index.md) (ansible-core
   2.16.20's own parse of the playbooks).

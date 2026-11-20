@@ -122,11 +122,13 @@ In 2023.1 the dict is `loadbalancer_services` (`roles/loadbalancer/defaults/main
 - **Keepalived default.** `enable_keepalived: "{{ enable_haproxy | bool }}"` (`ansible/group_vars/all.yml:623`) and
   `enable_haproxy: "yes"` (622).
 - **Shared socket volume.** The `haproxy_socket` volume is shared between haproxy and keepalived. The haproxy stats
-  socket is `stats socket /var/lib/kolla/haproxy/haproxy.sock` (`roles/loadbalancer/templates/haproxy/haproxy_main.cfg.j2:15`).
+  socket is `stats socket /var/lib/kolla/haproxy/haproxy.sock`
+  (`roles/loadbalancer/templates/haproxy/haproxy_main.cfg.j2:15`).
   - **Changed in 2023.1:** the keepalived health check is rendered by kolla-ansible. `config.yml` writes one
     `check_alive_<service>.sh` per enabled haproxy/proxysql service into `/etc/kolla/keepalived/checks/`
     (`roles/loadbalancer/tasks/config.yml:91-108`) and removes those of disabled services (74-89); keepalived's
-    `config.json` copies that directory to `/checks` (`templates/keepalived/keepalived.json.j2:10-15`). The haproxy check
+    `config.json` copies that directory to `/checks` (`templates/keepalived/keepalived.json.j2:10-15`). The haproxy
+    check
     runs `echo "show info" | socat unix-connect:/var/lib/kolla/haproxy/haproxy.sock stdio`
     (`templates/keepalived/check_alive_haproxy.sh.j2:6`); the proxysql check asks the ProxySQL admin socket
     (`check_alive_proxysql.sh.j2:6`). The image's `/check_alive.sh` runs every file under `/checks` and fails if one
@@ -156,7 +158,8 @@ In 2023.1 the dict is `loadbalancer_services` (`roles/loadbalancer/defaults/main
     3-6, 26), `net.ipv4.tcp_retries2=<haproxy_host_ipv4_tcp_retries2>`, `net.unix.max_dgram_qlen=128` (8-26).
   - The value `KOLLA_UNSET` (the default, `roles/loadbalancer/defaults/main.yml:141-143`) means `state: absent`
     (`config-host.yml:10-15`); `KOLLA_SKIP` skips the item (25).
-  - Then `module-load` with `ip_vs` (28-33). This is loaded even when `enable_keepalived` is false, because it has no `when`.
+  - Then `module-load` with `ip_vs` (28-33). This is loaded even when `enable_keepalived` is false, because it has no
+    `when`.
 - **`roles/loadbalancer/tasks/check-containers.yml:2-18`.** `compare_container` for each enabled service, notifying
   `"Restart {{ item.key }} container"`.
 
@@ -218,7 +221,8 @@ connections before dropping the VIP by stopping keepalived. In definition order:
 5. **`Stop backup proxysql container`** (70-88): backups; all three topics (`ignore_missing`).
 6. **`Start backup haproxy container`** (90-113): `recreate_or_restart_container`; topics haproxy and keepalived;
    notifies `Wait for backup haproxy to start` (115-118: `wait_for api_interface_address:haproxy_monitor_port`).
-7. **`Start backup proxysql container`** (120-147), when enabled; notifies `Wait for backup proxysql to start` (149-152).
+7. **`Start backup proxysql container`** (120-147), when enabled; notifies `Wait for backup proxysql to start`
+   (149-152).
 8. **`Start backup keepalived container`** (154-175): topic keepalived; notifies `Wait for virtual IP to appear`.
 9. **`Stop master haproxy container`** (179-193), **`Stop master proxysql container`** (195-208), **`Stop master
    keepalived container`** (210-222, topic keepalived only).
@@ -240,7 +244,8 @@ Other properties:
 - With `kolla_serial=1`, Ansible runs the whole play, handler flushes included, once per one-host batch (ansible-core
   2.14.18 `lib/ansible/executor/playbook_executor.py:181-190`, `:274-300`; flush points
   `lib/ansible/playbook/play.py:329-335`).
-- No other role notifies these topics except through `haproxy-config` (`ansible/roles/haproxy-config/tasks/main.yml:22-23`)
+- No other role notifies these topics except through `haproxy-config`
+  (`ansible/roles/haproxy-config/tasks/main.yml:22-23`)
   and `proxysql-config` (`roles/proxysql-config/tasks/main.yml:10-11,21-22`), both imported by `loadbalancer-config`.
 
 ### 1.6 Bootstrap / DB / Keystone / RabbitMQ registration
@@ -278,7 +283,8 @@ None.
     Whether haproxy itself gets the SIGTERM of `docker stop` is NOT AVAILABLE; a container still running after 60 s
     is killed.
 - **(B) Whether a haproxy restart causes VIP failover or a VIP outage is NOT AVAILABLE.**
-  - keepalived tracks `check_alive` with `interval 2 fall 2 rise 10` (`roles/loadbalancer/templates/keepalived/keepalived.conf.j2:2-7`).
+  - keepalived tracks `check_alive` with `interval 2 fall 2 rise 10`
+    (`roles/loadbalancer/templates/keepalived/keepalived.conf.j2:2-7`).
   - NOT AVAILABLE: whether keepalived goes to FAULT and drops the VIP while haproxy is stopped on the VIP holder, and
     how long the VIP is then absent. The backups are already restarted at that point (1.5). The "Wait for master
     haproxy" handler checks `api_interface_address`, not the VIP (`roles/loadbalancer/handlers/main.yml:249-252`).
@@ -330,7 +336,8 @@ None.
     `roles/haproxy-config/templates/haproxy_single_service_split.cfg.j2:48`).
   - NOT AVAILABLE: whether haproxy starts on non-VIP nodes with `set_sysctl: no` and no manual sysctl.
 - **(I) VRRP router id collisions.** `keepalived_virtual_router_id` defaults to `51` with multicast. Two Kolla clouds on
-  the same L2 segment collide unless it is changed (`group_vars/all.yml:189`, `roles/loadbalancer/defaults/main.yml:50`).
+  the same L2 segment collide unless it is changed (`group_vars/all.yml:189`,
+  `roles/loadbalancer/defaults/main.yml:50`).
 
 ### 1.9 What exactly happens in the haproxy play for `-t <service>` and `-t haproxy`
 
@@ -347,7 +354,8 @@ How the tags combine (the mechanics):
    `lib/ansible/playbook/task_include.py:50`). So the tasks inside `keystone/tasks/loadbalancer.yml` would only carry
    the play tags, and would be filtered out under `-t keystone`.
 4. **The `tags: always` workaround.** Kolla works around this with `tags: always` on the
-   `import_role: loadbalancer-config` in every `loadbalancer.yml`, e.g. `ansible/roles/keystone/tasks/loadbalancer.yml:2-7`:
+   `import_role: loadbalancer-config` in every `loadbalancer.yml`, e.g.
+   `ansible/roles/keystone/tasks/loadbalancer.yml:2-7`:
    ```yaml
    - name: "Configure loadbalancer for {{ project_name }}"
      import_role:
@@ -457,7 +465,8 @@ under `-t haproxy`/`keepalived`/`loadbalancer` or no tags. The services.d includ
   - Global extras: `haproxy_frontend_http_extra: [option httplog, option forwardfor]` and
     `haproxy_frontend_tcp_extra: [option tcplog]` (`roles/haproxy-config/defaults/main.yml:5-11`).
   - Health check: `check inter 2000 rise 2 fall 5`, or with `check-ssl` (13-14).
-- **Backend list.** From the split template: `{% for host in groups[host_group] %} … server {{ host_name }} {{ host_ip }}:{{ listen_port }} …`
+- **Backend list.** From the split template:
+  `{% for host in groups[host_group] %} … server {{ host_name }} {{ host_ip }}:{{ listen_port }} …`
   with `host_name = hostvars[host].ansible_facts.hostname` and `host_ip = 'api'|kolla_address(host)`
   (`roles/haproxy-config/templates/haproxy_single_service_split.cfg.j2:96-105`).
   - `host_group` defaults to `service.group` (129). `custom_member_list` overrides the list (80-83, 121).
@@ -532,14 +541,17 @@ In 2023.1: `roles/memcached/defaults/main.yml:2-22`.
 - **deploy-containers** = check-containers.
 - **pull** = service-images-pull.
 - **stop** = service-stop.
-- **precheck** = `service-precheck` + free port on `api_interface_address:11211` when the container is absent (`roles/memcached/tasks/precheck.yml:2-26`).
+- **precheck** = `service-precheck` + free port on `api_interface_address:11211` when the container is absent
+  (`roles/memcached/tasks/precheck.yml:2-26`).
 - **check** = empty.
 - **config** = config.yml.
-- Loadbalancer part: `roles/memcached/tasks/loadbalancer.yml:2-7`, through the loadbalancer play (`site.yml:223-227`, tag `memcached`).
+- Loadbalancer part: `roles/memcached/tasks/loadbalancer.yml:2-7`, through the loadbalancer play (`site.yml:223-227`,
+  tag `memcached`).
 
 ### 3.4 Config files
 
-- **Only `/etc/kolla/memcached/config.json`** (`roles/memcached/tasks/config.yml:13-26`), which notifies `Restart memcached container`.
+- **Only `/etc/kolla/memcached/config.json`** (`roles/memcached/tasks/config.yml:13-26`), which notifies
+  `Restart memcached container`.
 - No custom-override path (there is no config file).
 - The directory task has no group guard (`roles/memcached/tasks/config.yml:2-11`).
 
@@ -558,15 +570,18 @@ None.
 - **Every service builds its memcache server list from `groups['memcached']`.**
   - 33 roles loop `for host in groups['memcached']` in their templates (grep over `ansible/roles`).
   - Keystone example: `backend = oslo_cache.memcache_pool` and
-    `memcache_servers = {% for host in groups['memcached'] %}…` (`ansible/roles/keystone/templates/keystone.conf.j2:48-51`).
+    `memcache_servers = {% for host in groups['memcached'] %}…`
+    (`ansible/roles/keystone/templates/keystone.conf.j2:48-51`).
   - Horizon uses memcached as the **session store** when `horizon_backend_database` is false
-    (`SESSION_ENGINE = 'django.contrib.sessions.backends.cache'`, `ansible/roles/horizon/templates/local_settings.j2:177-182`).
+    (`SESSION_ENGINE = 'django.contrib.sessions.backends.cache'`,
+    `ansible/roles/horizon/templates/local_settings.j2:177-182`).
     `horizon_backend_database` defaults to `enable_murano` (`group_vars/all.yml:1052`).
 
 ### 3.8 Operationally notable
 
 - **All memcached instances restart at once.** FACT: they restart simultaneously (serial 0); the container mounts no
-  data volume (`roles/memcached/defaults/main.yml:45-48`) and its command has no persistence option (`templates/memcached.json.j2:2`).
+  data volume (`roles/memcached/defaults/main.yml:45-48`) and its command has no persistence option
+  (`templates/memcached.json.j2:2`).
   - NOT AVAILABLE: whether a restart therefore empties every cache at the same time, whether Horizon users are logged
     out (cache session backend), and whether the cold Keystone and keystonemiddleware token-validation caches give a
     load spike on Keystone and the DB.
@@ -588,7 +603,8 @@ None.
 service play is "Apply role common", `site.yml:86-97`), the `group_by` list has no `enable_chrony` entry
 (`site.yml:20-77`), `group_vars/all.yml` has no `enable_chrony` or `external_ntp_servers`, `inventory/multinode` has
 no `chrony` or `chrony-server` group, and kolla 2023.1 has no `docker/chrony` image. Kolla-Ansible no longer deploys a
-time service; host time sync is only checked by `kolla-ansible prechecks` (`roles/prechecks/tasks/timesync_checks.yml:1-47`,
+time service; host time sync is only checked by `kolla-ansible prechecks`
+(`roles/prechecks/tasks/timesync_checks.yml:1-47`,
 see [Chrony](../../components/chrony.md)). The subsections below keep their headings so that links still resolve.
 
 ### 4.1 Play
@@ -715,9 +731,11 @@ configuration is on the command line:
   - **Changed in 2023.1:** `--db-nb-create-insecure-remote=yes` is gone. The client listener is set after the flush by
     `ovn-nbctl … set-connection ptcp:<6641>:0.0.0.0` (SB: `ovn-sbctl … ptcp:<6642>:0.0.0.0`) on the cluster leader
     (`roles/ovn-db/tasks/bootstrap-db.yml:18-23, :31-36`). Still plaintext TCP, no SSL, now on all IPv4 addresses.
-- **ovn-northd** (`roles/ovn-db/templates/ovn-northd.json.j2:2`): `--ovnnb-db={{ ovn_nb_connection }} --ovnsb-db={{ ovn_sb_connection }}`.
+- **ovn-northd** (`roles/ovn-db/templates/ovn-northd.json.j2:2`):
+  `--ovnnb-db={{ ovn_nb_connection }} --ovnsb-db={{ ovn_sb_connection }}`.
   - Those are lists of all DB hosts (`group_vars/all.yml:455-458`).
-- **ovn-controller** (`roles/ovn-controller/templates/ovn-controller.json.j2:2`): `ovn-controller … tcp:127.0.0.1:{{ ovsdb_port }}`, i.e. the local
+- **ovn-controller** (`roles/ovn-controller/templates/ovn-controller.json.j2:2`):
+  `ovn-controller … tcp:127.0.0.1:{{ ovsdb_port }}`, i.e. the local
   OVSDB on 6640 (`group_vars/all.yml:466`). The SB remote comes from `external_ids:ovn-remote` set by setup-ovs.
 
 ### 5.5 Handlers (`ansible/roles/ovn/handlers/main.yml`), in definition order
@@ -786,7 +804,8 @@ All handlers have `when: kolla_action != "config"`. There is no `run_once`, `ser
     then fails, `lookup_cluster.yml:73-77, :126-130`).
 - **(C) ovn-controller restarts.** They happen on image or container-parameter change (upgrade, `deploy-containers`) or
   when a deploy/reconfigure rewrites its `config.json`, and hit **all computes and network nodes in parallel**. The OVN
-  manifests have no `config_files` (`roles/ovn-db/templates/*.json.j2`, `roles/ovn-controller/templates/ovn-controller.json.j2`),
+  manifests have no `config_files` (`roles/ovn-db/templates/*.json.j2`,
+  `roles/ovn-controller/templates/ovn-controller.json.j2`),
   so `kolla_set_configs --check` always exits 0: a command-line change written by `genconfig` is applied neither by
   `deploy-containers` nor by a later run, until the container restarts for another reason ([Kolla images
   §3](../../concepts/kolla-images.md#3-kolla_set_configs---check-what-it-compares-and-its-exit-codes)).
@@ -796,7 +815,8 @@ All handlers have `when: kolla_action != "config"`. There is no `run_once`, `ser
   - NOT AVAILABLE: whether there is also an SB DB reconnect storm whose size scales with the number of computes.
 - **(D) Bootstrap cost scales with computes.** **Changed in 2023.1:** each ovn-controller host runs 2 tasks, i.e. 10
   `kolla_toolbox` module invocations (1 bridge + 9 `external_ids` keys, `setup-ovs.yml:2-40`), on every deploy,
-  reconfigure and upgrade, each a `docker exec kolla_toolbox ansible localhost …` (`library/kolla_toolbox.py:115-116,182`).
+  reconfigure and upgrade, each a `docker exec kolla_toolbox ansible localhost …`
+  (`library/kolla_toolbox.py:115-116,182`).
   - NOT AVAILABLE: whether the `openvswitch_db`/`openvswitch_bridge` modules report changed on an unchanged host, and
     whether a changed `ovn_sb_connection` makes every chassis reconnect.
 - **(E) Gateway options are clobbered.**
@@ -897,7 +917,8 @@ role tag `ovs-dpdk`.
      raises "The requested handler … was not found" while `ERROR_ON_MISSING_HANDLER` is true, its default
      (`strategy/__init__.py:650-656`; `lib/ansible/config/base.yml:1278-1285`; kolla-ansible ships no `ansible.cfg`
      that changes it). What a changed `Restart ovsdpdk-db container` then does to the run is NOT AVAILABLE.
-2. `Waiting the ovs db service to be ready` (24-34). `docker exec ovsdpdk_db ovs-vsctl --no-wait show`, retries 30 delay 2.
+2. `Waiting the ovs db service to be ready` (24-34). `docker exec ovsdpdk_db ovs-vsctl --no-wait show`, retries 30 delay
+   2.
 3. `Ensuring ovsdpdk bridges are properly setup indexed` (36-52). `ovs-dpdkctl.sh init`, only if
    `ovs_physical_port_policy == 'indexed'`.
 4. `Restart ovsdpdk-vswitchd container` (54-68).
@@ -913,7 +934,8 @@ role tag `ovs-dpdk`.
 
 ### 6.6 Bootstrap
 
-OVS DB init (`ovs-dpdkctl.sh init`: `other_config:dpdk-*`, bridges, DPDK ports, `roles/ovs-dpdk/files/ovs-dpdkctl.sh:164-216`) runs **only
+OVS DB init (`ovs-dpdkctl.sh init`: `other_config:dpdk-*`, bridges, DPDK ports,
+`roles/ovs-dpdk/files/ovs-dpdkctl.sh:164-216`) runs **only
 from handlers**, i.e. when `ovsdpdk-db` restarts. It is not re-asserted on a plain reconfigure.
 
 ### 6.7 Dependencies
@@ -1022,7 +1044,8 @@ In 2023.1 `roles/certificates/tasks/main.yml:2-8`: `generate-root.yml` → `gene
   `kolla_tls_backend_key` (`generate-backend.yml:16-21`).
   - If an operator pre-supplies `backend-key.pem`, keygen is skipped but the CSR step still needs `backend.key`.
 - **Distribution needs a separate run.** Certs only reach containers through `kolla-ansible -t haproxy reconfigure`
-  (pem files) or a per-service reconfigure (backend and CA). Each of those means a container restart (sections 1.4 and 7).
+  (pem files) or a per-service reconfigure (backend and CA). Each of those means a container restart (sections 1.4 and
+  7).
 
 ---
 

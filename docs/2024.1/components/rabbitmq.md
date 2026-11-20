@@ -95,7 +95,8 @@ follows them.
     With the 2024.1 defaults it therefore fails while classic queues exist; its message calls the migration a manual
     procedure. The HA block still asserts the `ha-all` policy when `om_enable_rabbitmq_high_availability` is on
     (`:107-129`). A cloud that kept the 2023.1 default (HA off) has no such policy, since 2023.1 runs removed it, and
-    the message of that assert calls the move to mirrored queues manual too (`:115-123`). Both blocks carry the tag `rabbitmq-ha-precheck` (`:129`, `:189`).
+    the message of that assert calls the move to mirrored queues manual too (`:115-123`). Both blocks carry the tag
+    `rabbitmq-ha-precheck` (`:129`, `:189`).
   - These checks run only for `kolla_action` `precheck`, set by `kolla-ansible prechecks`
     (`tools/kolla-ansible:444-447`; the prechecks play, `site.yml:77-86`; the role entry point includes
     `<kolla_action>.yml`, `roles/rabbitmq/tasks/main.yml:2-3`). `deploy`, `reconfigure` and `upgrade` do not run them.
@@ -166,7 +167,8 @@ follows them.
 - [fact sheet B
   §2.8](../reference/factsheets/b-mariadb-rabbitmq-keystone.md#28-operationally-notable-behaviour-risks-and-oddities),
   "Operationally notable behaviour, risks and oddities". Checked against 2024.1 [CODE]: reconfigure with a config
-  change is a drained restart in `serial: "33%"` batches (`roles/rabbitmq/tasks/reconfigure.yml:2`, `rabbitmq.yml:30-49`);
+  change is a drained restart in `serial: "33%"` batches (`roles/rabbitmq/tasks/reconfigure.yml:2`,
+  `rabbitmq.yml:30-49`);
   `upgrade` is not a full outage of the message bus: `roles/rabbitmq/tasks/upgrade.yml:1-12` has no cluster-wide stop
   ([R10](../risk/risk-register.md#r10)); uncontrolled full stop (the brokers come back through the same batched
   restart play; which node starts first is [NOT AVAILABLE], `group_by` order); scaling the rabbitmq group changes

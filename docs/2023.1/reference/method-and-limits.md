@@ -89,7 +89,8 @@ statement about 2023.1 rests on them.
   - signal delivery to services behind a shell wrapper that does not `exec` them: [NOT AVAILABLE]
     ([R24](../risk/risk-register.md#r24), [Kolla images §2.6](../concepts/kolla-images.md#26-signals-and-pid-1));
   - `kolla_set_configs` and `kolla_docker` behaviour (check exit codes, restart and recreate): code-only
-    ([F14](findings.md#f14), [Kolla images §3](../concepts/kolla-images.md#3-kolla_set_configs---check-what-it-compares-and-its-exit-codes),
+    ([F14](findings.md#f14),
+    [Kolla images §3](../concepts/kolla-images.md#3-kolla_set_configs---check-what-it-compares-and-its-exit-codes),
     [F3](findings.md#f3));
   - libvirt/QEMU and Open vSwitch behaviour across container restarts: [NOT AVAILABLE]
     ([Q1](../troubleshooting/open-questions.md#q1), [Q2](../troubleshooting/open-questions.md#q2),

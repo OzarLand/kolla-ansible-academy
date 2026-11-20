@@ -13,7 +13,8 @@ storage nodes of the example inventory, selected by the tag `iscsi`. Its play ru
 `iscsid` runs on `compute`, `cinder-volume` and `cinder-backup` hosts for cinder, and on `ironic-conductor` hosts when
 `enable_ironic` is set; `tgtd` runs only with the LVM backend and `cinder_target_helper: tgtadm`
 (`roles/iscsi/defaults/main.yml:6, :15, :61-72`) [CODE]. The lists below say where the study covers how to operate
-it, its impact, its dependencies and the evidence, what to check around a run and what stays open; the service card follows them.
+it, its impact, its dependencies and the evidence, what to check around a run and what stays open; the service card
+follows them.
 
 ## Where to look
 

@@ -321,7 +321,8 @@ For any other role, the fact sheets list the notable behaviour in these sections
 which of them still hold in 2023.1):
 
 - Fact sheet A: [§1.8](../reference/factsheets/a-infra-lb-ovn.md#18-operationally-notable-behaviour) (haproxy and
-  keepalived; the `loadbalancer` role in 2023.1), [§2.4](../reference/factsheets/a-infra-lb-ovn.md#24-notable) (haproxy-config),
+  keepalived; the `loadbalancer` role in 2023.1), [§2.4](../reference/factsheets/a-infra-lb-ovn.md#24-notable)
+  (haproxy-config),
   [§3.8](../reference/factsheets/a-infra-lb-ovn.md#38-operationally-notable) (memcached),
   [§4.8](../reference/factsheets/a-infra-lb-ovn.md#48-operationally-notable) (chrony: the Ussuri role, which 2023.1 no
   longer has),

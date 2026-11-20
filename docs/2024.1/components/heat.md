@@ -43,9 +43,11 @@ open; the service card follows them.
 - **The play** [CODE]: it still takes `serial` from `kolla_serial`, default `0` (`site.yml:731`), and now also sets
   `max_fail_percentage`, default 100 (`site.yml:732-735`), which never stops the play early ([Controlled batches
   §1.3](../operations/controlled-batches.md#13-stop-a-rolling-run-on-failures-max_fail_percentage)).
-- **Still holds in 2024.1** [CODE]: the image side of the bootstrap is unchanged: kolla `docker/heat/heat-api/extend_start.sh`
+- **Still holds in 2024.1** [CODE]: the image side of the bootstrap is unchanged: kolla
+  `docker/heat/heat-api/extend_start.sh`
   is the same file in both tags (`docker/heat/heat-api/extend_start.sh:5-17`). The only kolla change for Heat is that
-  the base image now copies `heat_api_audit_map.conf` into `/etc/heat/` (kolla `docker/heat/heat-base/Dockerfile.j2:30`).
+  the base image now copies `heat_api_audit_map.conf` into `/etc/heat/` (kolla
+  `docker/heat/heat-base/Dockerfile.j2:30`).
 
 ## Where to look
 
@@ -112,7 +114,8 @@ destroy](../operations/stop-and-destroy.md) uses `-t heat`. For Heat, `reconfigu
 
 - [Known bugs and limitations](../troubleshooting/known-bugs-and-limitations.md), row `heat`: `bootstrap_heat` creates
   `heat_user_domain`/`heat_domain_admin` only when the domain is absent: a changed `heat_domain_admin_password` reaches
-  `heat.conf` but never Keystone. Status: [CODE], still holds in 2024.1 (kolla `docker/heat/heat-api/extend_start.sh:8-14`,
+  `heat.conf` but never Keystone. Status: [CODE], still holds in 2024.1 (kolla
+  `docker/heat/heat-api/extend_start.sh:8-14`,
   `roles/heat/tasks/bootstrap_service.yml:22`); impact [NOT AVAILABLE].
 - [Q14](../troubleshooting/open-questions.md#q14), answered from the source [CODE]: Heat creates
   `heat_user_domain`/`heat_domain_admin` only if the domain is absent, so a changed `heat_domain_admin_password` is

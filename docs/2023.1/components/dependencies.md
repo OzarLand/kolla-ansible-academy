@@ -49,7 +49,8 @@ implicit: play order in `site.yml`, a variable, a template, or a `delegate_to`.
 >   every messaging service, including `nova-compute` and the neutron agents on every compute
 >   ([§1](#1-the-shared-substrate-what-every-openstack-service-uses)).
 > - **A compute host's configuration depends on global state** (enabled services, the membership of the RabbitMQ,
->   memcached and etcd groups, the internal VIP, service passwords), not only on the compute host itself. That is why changes that look small trigger fleet-wide restarts [CODE]
+>   memcached and etcd groups, the internal VIP, service passwords), not only on the compute host itself. That is why
+> changes that look small trigger fleet-wide restarts [CODE]
 >   ([§5](#5-compute-node-dependency-summary)).
 > - **What lands on a compute host**, container by container, with the global config source of each
 >   ([§5](#5-compute-node-dependency-summary)).
@@ -279,7 +280,8 @@ of templates that loop over groups is in [Generated inventory
 §4](../reference/generated-inventory.md#4-templates-that-reference-inventory-groups).
 
 **Rule of thumb [CODE]:** a compute host's configuration depends on *global* state (enabled services, the membership of
-the RabbitMQ, memcached and etcd groups, the internal VIP, service passwords), not only on the compute host itself. That is why changes that look small trigger fleet-wide restarts ([Compute
+the RabbitMQ, memcached and etcd groups, the internal VIP, service passwords), not only on the compute host itself. That
+is why changes that look small trigger fleet-wide restarts ([Compute
 scaling](../concepts/compute-scaling-and-performance.md), [Operations](../operations/index.md)).
 
 ---

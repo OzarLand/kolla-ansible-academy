@@ -228,11 +228,13 @@ Facts about the structure [CODE, `ansible/site.yml`]:
      index-modulo-4 waves, then the leader (`roles/etcd/handlers/main.yml:40-65`); on `upgrade` a handler loops
      over the `etcd` group for the non-leaders without using the loop item, so each non-leader includes the restart
      tasks once per etcd member (`:28-36`); its comment says "one by one", but whether the members really restart one
-     after another depends on how ansible-core orders those includes across hosts, which is [NOT AVAILABLE]. MariaDB and RabbitMQ are not single plays: their *apply* and
+     after another depends on how ansible-core orders those includes across hosts, which is [NOT AVAILABLE]. MariaDB and
+     RabbitMQ are not single plays: their *apply* and
      *post-configuration* plays have no `serial` key (all members in one batch), while their *restart* plays use a
      fixed `serial: "33%"` that `ANSIBLE_SERIAL` does not change (`mariadb.yml:18-52`, `rabbitmq.yml:30-49`). The
      handlers only sort hosts into the `mariadb_restart`/`rabbitmq_restart` groups; the restart itself happens in
-     those plays ([fact sheet B §1–2](../reference/factsheets/b-mariadb-rabbitmq-keystone.md#1-mariadb-ansiblerolesmariadb);
+     those plays
+     ([fact sheet B §1–2](../reference/factsheets/b-mariadb-rabbitmq-keystone.md#1-mariadb-ansiblerolesmariadb);
      [Tags](../risk/tags.md)).
    - **Bug: `cyborg` (`site.yml:876`)** uses `serial|default("0")`, not `kolla_serial`, so `ANSIBLE_SERIAL` has no
      effect on cyborg. Still present in 2024.1.

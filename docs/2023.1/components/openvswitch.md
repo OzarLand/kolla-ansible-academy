@@ -89,7 +89,8 @@ check around a run and what stays open; the service card follows them.
 - [Q14](../troubleshooting/open-questions.md#q14), answered from the source [CODE]: agent, OVS and OVN images have no
   one-shot branch (no `KOLLA_BOOTSTRAP`/`KOLLA_UPGRADE` in kolla `docker/openvswitch/*`).
 - [F13](../reference/findings.md#f13), "The Nova deploy order" puts nova-compute before OVS and the Neutron agents on
-  new computes (`site.yml:544` imports `nova.yml` before the openvswitch play at `:546`) [CODE]; [NOT AVAILABLE] whether instances can be scheduled on such a compute before the later plays
+  new computes (`site.yml:544` imports `nova.yml` before the openvswitch play at `:546`) [CODE]; [NOT AVAILABLE] whether
+  instances can be scheduled on such a compute before the later plays
   finish.
 - [fact sheet A §6.8](../reference/factsheets/a-infra-lb-ovn.md#68-operationally-notable), "Operationally notable" for
   the `ovs-dpdk` role (no fact sheet covers `openvswitch`): any `ovsdpdk-db` restart also restarts `ovs-vswitchd`; NIC

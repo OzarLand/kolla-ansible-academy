@@ -11,7 +11,8 @@ This page is the starting point for Barbican, the `barbican` role: the container
 `barbican` (`site.yml:765`; group `barbican` is a child of `control`, `inventory/multinode:146-147`). Its DB sync
 (`bootstrap_barbican`, `run_once`, `roles/barbican/tasks/bootstrap_service.yml:2-20`) runs on every deploy and
 reconfigure, and `barbican_crypto_key` comes from `passwords.yml` (`etc/kolla/passwords.yml:56`, rendered as `kek` in
-`roles/barbican/templates/barbican.conf.j2:45`) [CODE] ([Component dependencies §3](dependencies.md#3-control-plane-services)). The lists below say where the study covers how
+`roles/barbican/templates/barbican.conf.j2:45`) [CODE]
+([Component dependencies §3](dependencies.md#3-control-plane-services)). The lists below say where the study covers how
 to operate it, its impact, its dependencies and the evidence, what to check around a run and what stays open; the
 service card follows them.
 

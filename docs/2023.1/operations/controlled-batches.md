@@ -77,7 +77,8 @@ kolla-ansible -i multinode -t nova-cell deploy-containers --limit 'compute[10:19
   §2.4](../risk/tags.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code)].
 
   Through `kolla_set_configs --check` it sees only drift in the files listed in `config.json`'s `config_files` (content,
-  owner, perm) [CODE kolla `docker/base/set_configs.py:165-198, :220-242, :556-559`]. It does not see changes to `config.json`'s own
+  owner, perm) [CODE kolla `docker/base/set_configs.py:165-198, :220-242, :556-559`]. It does not see changes to
+  `config.json`'s own
   `command`/`permissions` (e.g. memcached: empty `config_files`), and no later `deploy`/`reconfigure` restarts for those
   either, because the `config.json` template task is then unchanged; they take effect at the next restart for another
   reason.
@@ -112,9 +113,11 @@ ANSIBLE_SERIAL=10 kolla-ansible -i multinode -t nova reconfigure
   (`nova_cell_bootstrap`) is not `run_once`: it is gated on the first nova-conductor and runs once at any serial value.
   Compute discovery runs on the first compute of each nova-cell batch, so it repeats once per batch that contains
   computes [CODE, [Tags §2.5](../risk/tags.md#25-run_once-with-serial-code) and
-  `nova.yml:29-39, :56-67`, `roles/nova-cell/tasks/bootstrap_service.yml:21`: with `kolla_serial=1` and the three `multinode` controllers,
+  `nova.yml:29-39, :56-67`, `roles/nova-cell/tasks/bootstrap_service.yml:21`: with `kolla_serial=1` and the three
+  `multinode` controllers,
   `nova_api_bootstrap` ×3, `nova_cell_bootstrap` ×1, discovery once per compute].
-- Batches apply per play: the whole fleet passes the nova-cell play before the next play starts [CODE ansible-core 2.14.18
+- Batches apply per play: the whole fleet passes the nova-cell play before the next play starts [CODE ansible-core
+  2.14.18
   `lib/ansible/executor/playbook_executor.py:126, :181-190`].
 
 ## 2. Separate "write config" from "apply" (recommended pattern)
@@ -141,7 +144,8 @@ ANSIBLE_SERIAL=10 kolla-ansible -i multinode -t nova reconfigure
 Caveats:
 
 - **HAProxy frontends are not applied by this pattern.** `genconfig` also re-renders
-  `/etc/kolla/haproxy/services.d/` (the loadbalancer block runs for `config`, `site.yml:339-341`), while every loadbalancer
+  `/etc/kolla/haproxy/services.d/` (the loadbalancer block runs for `config`, `site.yml:339-341`), while every
+  loadbalancer
   handler is skipped under `config` (`roles/loadbalancer/handlers/main.yml:17`), and `deploy-containers` runs no
   haproxy work. A frontend change written this way reaches HAProxy only through `-t haproxy reconfigure` or a run
   without tags [CODE]; copy `services.d` before `genconfig` if you want to diff it.

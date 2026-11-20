@@ -7,7 +7,8 @@ impact: [restarts-on-drift, critical]
 
 # Reconfigure Neutron
 
-What `kolla-ansible -t neutron reconfigure` does: it runs the loadbalancer play (neutron-server frontend) and the neutron
+What `kolla-ansible -t neutron reconfigure` does: it runs the loadbalancer play (neutron-server frontend) and the
+neutron
 play on `neutron-server`, every agent group, every compute and `manila-share`. The page gives the restart set per change
 and what is known of the impact on networking.
 
@@ -65,7 +66,8 @@ kolla_toolbox, run_once, delegated to neutron-server[0], skipped only with `use_
 now read only by `upgrade.yml:5, :8`. The separate SFC bootstrap container is gone: the container runs
 `neutron-db-manage --subproject neutron upgrade head`, then the same for each enabled subproject in
 `NEUTRON_BOOTSTRAP_SERVICES` (networking-sfc with `enable_neutron_sfc`, neutron-dynamic-routing, neutron-vpnaas,
-vmware-nsx) (`roles/neutron/defaults/main.yml:656-664, :705`; `kolla docker/neutron/neutron-server/extend_start.sh:5-13`).
+vmware-nsx) (`roles/neutron/defaults/main.yml:656-664, :705`;
+`kolla docker/neutron/neutron-server/extend_start.sh:5-13`).
 What a no-op `upgrade head` does to a running neutron-server is [NOT AVAILABLE].
 
 ## 3. What restarts [CODE]
@@ -97,7 +99,8 @@ What a no-op `upgrade head` does to a running neutron-server is [NOT AVAILABLE].
   - identify the network nodes that host HA router masters;
   - render with `genconfig -t neutron` and diff `openvswitch_agent.ini` on a compute. If it changed, **every compute
     will restart its agent**;
-  - expect the `bootstrap_neutron` DB-sync container on neutron-server[0] even with no change ([§2](#2-execution-and-targets)).
+  - expect the `bootstrap_neutron` DB-sync container on neutron-server[0] even with no change
+    ([§2](#2-execution-and-targets)).
 - **Apply:** network nodes one by one (`--limit network01`, then `network02`). Computes in batches.
 - **After:**
   - agent list;
@@ -107,7 +110,8 @@ What a no-op `upgrade head` does to a running neutron-server is [NOT AVAILABLE].
 ## Related
 
 - [Risk register](../risk/risk-register.md) — the risks this page names: [R5](../risk/risk-register.md#r5)
-  (`ml2_conf.ini` override meant for neutron-server; in 2023.1 it no longer reaches the agents, [§3](#3-what-restarts-code)), [R6](../risk/risk-register.md#r6) (restart of
+  (`ml2_conf.ini` override meant for neutron-server; in 2023.1 it no longer reaches the agents,
+  [§3](#3-what-restarts-code)), [R6](../risk/risk-register.md#r6) (restart of
   `neutron_l3_agent` with `enable_neutron_agent_ha: yes`) and [R7](../risk/risk-register.md#r7)
   (`openvswitch_vswitchd` restart or recreate)
 - [Neutron](../components/neutron.md) — service card and where to look

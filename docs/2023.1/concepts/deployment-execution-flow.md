@@ -40,7 +40,8 @@ batching, and how `deploy`, `reconfigure`, `upgrade`, `deploy-containers`, `genc
 > - **What each action does** (`deploy`, `reconfigure`, `upgrade`, `deploy-containers`, `genconfig`, `pull`, `stop`,
 >   `precheck`, `validate-config`; the wrapper no longer offers `check`): the action matrix
 >   ([§4](#4-action-matrix-what-each-kolla_action-does)). `genconfig`, then `deploy-containers --limit <batch>`, is the
->   only built-in way to separate "write the config" from "apply it" ([§4](#4-action-matrix-what-each-kolla_action-does)).
+>   only built-in way to separate "write the config" from "apply it"
+> ([§4](#4-action-matrix-what-each-kolla_action-does)).
 > - **Batching:** a batch runs the complete play, handler restarts included, before the next batch starts, but each play
 >   is still traversed batch by batch for the whole fleet before the next play starts. MariaDB and RabbitMQ apply their
 >   role to all hosts in one batch, then restart the notified hosts in separate plays with `serial: "33%"`
@@ -165,8 +166,10 @@ flowchart TB
   P1 --> P2 --> P3 --> P4 --> P5 --> P6
 ```
 
-[CODE `nova.yml:29-156`; `roles/nova/tasks/bootstrap.yml:49-56`, `map_cell0.yml:2-67`; `roles/nova-cell/tasks/bootstrap.yml:37-43`,
-`rabbitmq.yml:2-24`, `create_cells.yml:2-55`; `roles/nova-cell/tasks/deploy.yml:5-39`, `wait_discover_computes.yml:27-28,42-43,87-90`,
+[CODE `nova.yml:29-156`; `roles/nova/tasks/bootstrap.yml:49-56`, `map_cell0.yml:2-67`;
+`roles/nova-cell/tasks/bootstrap.yml:37-43`,
+`rabbitmq.yml:2-24`, `create_cells.yml:2-55`; `roles/nova-cell/tasks/deploy.yml:5-39`,
+`wait_discover_computes.yml:27-28,42-43,87-90`,
 `discover_computes.yml:5,16-21`, `post-config.yml:3-7`; handler order `roles/nova/handlers/main.yml:2,20,38`,
 `roles/nova-cell/handlers/main.yml:2-151`; `roles/nova/tasks/refresh_scheduler_cell_cache.yml:10`]
 
@@ -269,7 +272,8 @@ Typical `deploy.yml` (Nova shown; Neutron adds `config-host` and runs its bootst
 | 6. Flush handlers | `meta: flush_handlers` | notified hosts, in handler definition order | yes |
 | 7. Post steps | e.g. openvswitch `post-config.yml`, nova-cell discovery and `post-config.yml` | varies | yes |
 
-[CODE `roles/nova/tasks/deploy.yml:2-9`; `roles/neutron/tasks/deploy.yml:2-23`; `module_utils/kolla_container_worker.py:59-66`]
+[CODE `roles/nova/tasks/deploy.yml:2-9`; `roles/neutron/tasks/deploy.yml:2-23`;
+`module_utils/kolla_container_worker.py:59-66`]
 
 Order caveats:
 
@@ -314,7 +318,8 @@ unchanged. Such changes take effect only at the next restart for another reason.
 
 An `optional` file that newly appears, and whose destination does not exist in the container yet, now counts as drift:
 `--check` exits 1 and the restart copies the file. In Ussuri the same case made the check exit 2 and the task fail
-[CODE kolla `docker/base/set_configs.py:36-39,165-171,220-242,576-578`, `module_utils/kolla_docker_worker.py:178-190`]. See
+[CODE kolla `docker/base/set_configs.py:36-39,165-171,220-242,576-578`, `module_utils/kolla_docker_worker.py:178-190`].
+See
 [Write config first, apply in controlled batches
 §2](../operations/controlled-batches.md#2-separate-write-config-from-apply-recommended-pattern) and [Kolla images
 §3](kolla-images.md#3-kolla_set_configs---check-what-it-compares-and-its-exit-codes).
@@ -348,7 +353,8 @@ The bar lengths are illustrative only; no duration is known from the code.
   handlers only add the hosts to restart groups, and the next plays restart those groups with `serial: "33%"`
   (`mariadb.yml:14-40`, `rabbitmq.yml:26-41,82-98`). With three nodes that is one node per batch (ansible-core 2.14.18
   `lib/ansible/utils/helpers.py:32`). Each RabbitMQ node is put into maintenance mode before its restart
-  (`roles/rabbitmq/tasks/restart_services.yml:9-17`) ([fact sheet B](../reference/factsheets/b-mariadb-rabbitmq-keystone.md)).
+  (`roles/rabbitmq/tasks/restart_services.yml:9-17`)
+  ([fact sheet B](../reference/factsheets/b-mariadb-rabbitmq-keystone.md)).
   cyborg is not batched by `kolla_serial` either: its play reads `serial` instead.
 - **How `kolla_serial` is set depends on the action.** For `reconfigure` and `upgrade` the wrapper sets it from
   `ANSIBLE_SERIAL` (`tools/kolla-ansible:290,508,517`), after your own `-e` (`tools/kolla-ansible:360-362`), so use
@@ -379,9 +385,11 @@ Handlers create ordering that is not visible in task files:
 1. **Within a role, restart order = handler definition order, not notification order.**
    - nova-cell restarts `nova_ssh` → `nova_libvirt` (→ libvirt ready check, SASL user) → `nova_compute`
      (`roles/nova-cell/handlers/main.yml:74-151`).
-   - openvswitch restarts `openvswitch_db` → waits → `openvswitch_vswitchd` (`roles/openvswitch/handlers/main.yml:2-29`).
+   - openvswitch restarts `openvswitch_db` → waits → `openvswitch_vswitchd`
+     (`roles/openvswitch/handlers/main.yml:2-29`).
    - [CODE] ansible-core 2.14.18 copies the play's handler list in definition order into each host's state and walks it
-     in that order, running the handlers notified for the host (`lib/ansible/executor/play_iterator.py:192-197,430-452`).
+     in that order, running the handlers notified for the host
+     (`lib/ansible/executor/play_iterator.py:192-197,430-452`).
 2. **Handlers of a play run on all notified hosts in parallel** (ansible-core 2.14.18: the linear strategy puts all
    hosts in lockstep on the same handler, `lib/ansible/plugins/strategy/linear.py:84-123`). With `serial: 0`, every
    compute restarts `nova_compute` (and, through loop-notify, `nova_libvirt` and `nova_ssh`) in the same step.

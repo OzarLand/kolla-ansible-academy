@@ -70,7 +70,8 @@ is used only where the corpus supports it:
 - **Callouts** are the five GitHub alerts: note, tip, important, warning and caution.
 - **Operation pages:** the commands come first, in section 1 or directly under the introduction, and follow the
   [conventions of the command sections](../operations/index.md#conventions-used-by-the-command-sections). The impact
-  classes are shown under the title. Risks are cited by number (R1 to R25; R25 does not apply to 2023.1) and link to the [Risk
+  classes are shown under the title. Risks are cited by number (R1 to R25; R25 does not apply to 2023.1) and link to the
+  [Risk
   register](../risk/risk-register.md). Risks and verification steps, when a page has them, are in its last numbered
   sections.
 

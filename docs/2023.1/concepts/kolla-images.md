@@ -58,7 +58,8 @@ matched against Kolla-Ansible `2023.1-eol` (`4891a21`). The images were read, no
 > - **Day-2 consequences:** 19 items ([§6](#6-day-2-consequences)). **What is not available from the sources:**
 >   [§7](#7-what-is-not-available-from-the-sources).
 
-Citation convention: kolla image paths carry a `kolla` prefix (kolla `docker/base/start.sh:11`). Kolla-Ansible paths have
+Citation convention: kolla image paths carry a `kolla` prefix (kolla `docker/base/start.sh:11`). Kolla-Ansible paths
+have
 no prefix and are relative to its `ansible/` directory (`roles/nova/tasks/bootstrap_service.yml:11`,
 `module_utils/kolla_docker_worker.py:155-190`, `nova.yml:45-61`), except `tools/...`. Ansible source paths carry an
 `ansible-core 2.14.18` prefix. Evidence labels are those of [Conventions and evidence
@@ -299,7 +300,8 @@ changed healthcheck recreates the container (`module_utils/kolla_docker_worker.p
 `module_utils/kolla_container_worker.py:89,479-525`) [CODE]. No Kolla-Ansible task or handler reads the resulting
 health status (grep of `roles/*/tasks`, `roles/*/handlers`, `library/`, `module_utils/` for `healthy`) [CODE].
 [NOT AVAILABLE: Docker semantics] What Docker does with an unhealthy container beyond reporting it. The mariadb image's
-own `healthcheck_mariadb` now exits 1 when the node is not synced (kolla `docker/mariadb/mariadb-server/healthcheck_mariadb:10-19`);
+own `healthcheck_mariadb` now exits 1 when the node is not synced (kolla
+`docker/mariadb/mariadb-server/healthcheck_mariadb:10-19`);
 Kolla-Ansible does not use it.
 
 ---
@@ -367,7 +369,8 @@ In an image with a service `USER` (e.g. `USER nova`, kolla `docker/nova/nova-com
 ([§2.1](#21-image-wiring)). The bifrost reconfigure omits `-u root` (`roles/bifrost/tasks/reconfigure.yml:17`), but its
 check cannot work anyway: it execs into `bifrost-deploy`, while the container is `bifrost_deploy`
 (`roles/bifrost/tasks/start.yml:8`), which runs `/sbin/init` and mounts no `config.json` ([§2.1](#21-image-wiring)). No
-`kolla-ansible` command runs that file: the bifrost role includes `<kolla_action>.yml` (`roles/bifrost/tasks/main.yml:2`)
+`kolla-ansible` command runs that file: the bifrost role includes `<kolla_action>.yml`
+(`roles/bifrost/tasks/main.yml:2`)
 and is reached only through `deploy-bifrost` (`tools/kolla-ansible:480`).
 
 ### 3.5 What a restart applies
@@ -539,7 +542,8 @@ The image is built from `base`, not `nova-base` (kolla `docker/nova/nova-libvirt
 except `/etc/libvirt/secrets`, which is merged rather than deleted first (`:46-52`); before that, the defaults
 handling of [§2.3](#23-kolla_set_configs-copy-and-permissions) deletes or restores each recorded destination. The
 manifest has no `permissions` block. `extend_start.sh` then mounts xenfs only if `lsmod` shows it and creates the log
-file (kolla `docker/nova/nova-libvirt/extend_start.sh:3-16`). The 2023.1 image no longer touches `/dev/kvm`: Kolla-Ansible
+file (kolla `docker/nova/nova-libvirt/extend_start.sh:3-16`). The 2023.1 image no longer touches `/dev/kvm`:
+Kolla-Ansible
 writes a host udev rule (`KERNEL=="kvm"`, group `qemu_user_gid`, mode 0660) and, on Ubuntu, masks `qemu-kvm.service`
 (`roles/nova-cell/tasks/config-host.yml:30-53`, `roles/nova-cell/templates/99-kolla-kvm.rules.j2:4`). Nothing touches
 cgroups, running QEMU processes, `/var/run/libvirt`, `/var/lib/libvirt` or `/etc/libvirt/qemu`, and no virtlogd or
@@ -617,7 +621,8 @@ also run the recursive `/var/lib/mysql` chown of [§5](#5-per-image-start-behavi
    file found on a volume when the container was created is restored rather than deleted
    ([§3.5](#35-what-a-restart-applies)). `--check` does not report them, so the removal waits for a restart. CA
    certificate files are purged and re-added on every start, but only from `/etc/kolla/<svc>/ca-certificates/`, where a
-   CA deleted from `kolla_certificates_dir/ca/` stays (the `copy` task never deletes, [§3.5](#35-what-a-restart-applies))
+   CA deleted from `kolla_certificates_dir/ca/` stays (the `copy` task never deletes,
+   [§3.5](#35-what-a-restart-applies))
    and is re-added; whether the generated bundle keeps the last custom CA once it is removed there by hand is not known
    ([§2.4](#24-kolla_copy_cacerts-and-kolla_httpd_setup)) [CODE; bundle and service effect NOT AVAILABLE] ([Repository
    architecture §7](repository-architecture.md#7-configuration-generation-and-overrides)).

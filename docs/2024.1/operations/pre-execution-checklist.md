@@ -78,7 +78,8 @@ quiz:
 # Pre-execution checklist
 
 What to check before running `kolla-ansible` against a production cloud, read in Kolla-Ansible `2024.1-eom`. The
-checklist of [§1](#1-the-checklist) applies to every production run; [§2](#2-first-20241-run-on-a-cloud-deployed-by-20231)
+checklist of [§1](#1-the-checklist) applies to every production run;
+[§2](#2-first-20241-run-on-a-cloud-deployed-by-20231)
 adds what the first 2024.1 run on a cloud deployed by 2023.1 needs.
 
 > [!NOTE]
@@ -138,7 +139,8 @@ adds what the first 2024.1 run on a cloud deployed by 2023.1 needs.
      `kolla_max_fail_percentage`, then 100 (e.g. `site.yml:96-99`). With 100 a failed host only drops out and the next
      batches run, unless every host of a batch fails: ansible-core then stops the playbook (ansible-core 2.16.20
      `lib/ansible/executor/playbook_executor.py:204-208`), so with `ANSIBLE_SERIAL=1`, or in the 33% restart plays of
-     a three-node mariadb or rabbitmq, one failed host ends the run. To stop a rolling run at the first bad batch, set `kolla_max_fail_percentage` lower ([Controlled
+     a three-node mariadb or rabbitmq, one failed host ends the run. To stop a rolling run at the first bad batch, set
+     `kolla_max_fail_percentage` lower ([Controlled
      batches §1.3](controlled-batches.md#13-stop-a-rolling-run-on-failures-max_fail_percentage)).
 4. **Pull first.** `kolla-ansible pull` (with the same tags, `tools/kolla-ansible:516-518`) before `upgrade`/`deploy`,
    so that restart windows do not include downloads.
@@ -204,17 +206,21 @@ upgraded. Add these checks to §1 [CODE]:
 2. **List the units that 2023.1 wrote** ([F16](../reference/findings.md#f16)). The check task compares the whole unit
    file with the 2024.1 template, which writes `StartLimitInterval=` and no longer `StartLimitIntervalSec=`
    (`module_utils/kolla_systemd_worker.py:20-39, :154-167`). On each host, `grep -l StartLimitIntervalSec
-   /etc/systemd/system/kolla-*-container.service` lists the containers that the next check will restart (Swift `deploy` has no such check), with the
+   /etc/systemd/system/kolla-*-container.service` lists the containers that the next check will restart (Swift `deploy`
+   has no such check), with the
    rest of their role on that host, even when `kolla_set_configs --check` exits 0. A container that a 2024.1 run
-   created, recreated or restarted (an upgrade that reached its role does one of these) already has the new unit; after a partial upgrade (`upgrade -t <svc>`), every other service
+   created, recreated or restarted (an upgrade that reached its role does one of these) already has the new unit; after
+   a partial upgrade (`upgrade -t <svc>`), every other service
    still has the old one. Plan those restarts in batches with `--limit` ([Controlled
    batches](controlled-batches.md)).
 3. **Expect the `hostnqn` restart on computes and cinder-volume hosts.** nova-cell and cinder render a new `hostnqn`
    file and notify the restart (`roles/nova-cell/tasks/config.yml:203-216`, `roles/cinder/tasks/config.yml:95-108`);
-   `config.json` copies it, not optional, to `/etc/nvme/hostnqn` (`roles/nova-cell/templates/nova-compute.json.j2:59-63`,
+   `config.json` copies it, not optional, to `/etc/nvme/hostnqn`
+   (`roles/nova-cell/templates/nova-compute.json.j2:59-63`,
    `roles/cinder/templates/cinder-volume.json.j2:23-27`). After `genconfig`, the check in `nova_compute` and
    `cinder_volume` exits 1. On a compute this restarts `nova_compute` and, by loop-notify, the other nova-cell
-   containers of that host ([Nova deep dive §2.4](../components/nova-deep-dive.md#24-operational-dependencies-what-restarts-what)).
+   containers of that host
+   ([Nova deep dive §2.4](../components/nova-deep-dive.md#24-operational-dependencies-what-restarts-what)).
 4. **Upgrade every service before any `deploy` or `reconfigure`.** `openstack_release` defaults to `2024.1`
    (`group_vars/all.yml:679-681`) and every image tag follows it (e.g. `roles/keystone/defaults/main.yml:96-100`). The
    check task compares the image (`module_utils/kolla_container_worker.py:75`), and the restart handler recreates a

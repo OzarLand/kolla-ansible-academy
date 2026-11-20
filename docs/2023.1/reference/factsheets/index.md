@@ -44,7 +44,8 @@ How the sheets were checked:
     (`mariadb_bootstrap_restart`, `mariadb_restart`, `mariadb_start`; `roles/mariadb/handlers/main.yml:51-73`), and
     separate plays restart them with `serial: "33%"` (`mariadb.yml:14-40`); no `% 4` remains in the role or the
     playbook;
-  - glance `log_bin_trust_function_creators` toggle: still there (`roles/glance/tasks/bootstrap_service.yml:2,12,39,49`);
+  - glance `log_bin_trust_function_creators` toggle: still there
+    (`roles/glance/tasks/bootstrap_service.yml:2,12,39,49`);
   - Docker restart gate in `bootstrap-servers`: moved to ansible-collection-kolla. `daemon.json` and the registry CA
     notify `Restart docker` (ansible-collection-kolla `roles/docker/tasks/config.yml:36-47,99-108`), which restarts the
     daemon, or reloads it when `docker_systemd_reload` is set (default `false`)
@@ -64,7 +65,8 @@ the merge takes the `common_options` values (`:351-382`): `docker_graceful_timeo
 `kolla-<name>-container.service` whose `ExecStop` is `docker stop <name> -t <graceful_timeout>`
 (`module_utils/kolla_systemd_worker.py:20-39,63-73`); a container without a unit file is stopped by the Docker client
 with the same timeout, 10 s only when none is passed (`module_utils/kolla_docker_worker.py:436-452`).
-`docker_client_timeout` is a working knob too: it is the Docker client timeout (`module_utils/kolla_docker_worker.py:38`)
+`docker_client_timeout` is a working knob too: it is the Docker client timeout
+(`module_utils/kolla_docker_worker.py:38`)
 and the time the module waits for a unit to reach its state (`module_utils/kolla_systemd_worker.py:59,98,107`). A sheet
 statement of 60 s therefore matches 2023.1, and one of 10 s describes Ussuri only ([F3](../findings.md#f3),
 [R24](../../risk/risk-register.md#r24)).
@@ -107,7 +109,8 @@ written. Re-read in kolla `2023.1-eol` [CODE]:
   `docker/glance/glance-api/extend_start.sh:5-9`). The heat bootstrap creates the heat domain and user only when the
   domain is absent (kolla `docker/heat/heat-api/extend_start.sh:5-17`). Horizon runs `collectstatic` only when its
   settings hash is missing or differs, a dashboard plugin is added or removed, or `FORCE_GENERATE=yes` (kolla
-  `docker/horizon/extend_start.sh:32-46,248-293`; [Kolla images §5.2](../../concepts/kolla-images.md#52-horizon-static-assets));
+  `docker/horizon/extend_start.sh:32-46,248-293`;
+  [Kolla images §5.2](../../concepts/kolla-images.md#52-horizon-static-assets));
 - sheet D: swift config and rings are copied into a container only at its start (kolla `docker/base/start.sh:11`,
   `docker/base/set_configs.py:535-551`). Only `swift_rsyncd` fixes `/srv/node` ownership at start (kolla
   `docker/swift/swift-rsyncd/extend_start.sh:3`).
@@ -121,7 +124,8 @@ statements in the sheets are **NOT AVAILABLE**. See [Kolla images](../../concept
 
 **Context the sheets do not repeat.** The Ussuri sheets were written before the Ansible source was read for looped
 tasks, and this still applies in ansible-core 2.14.18 [CODE]: when any item changes, Ansible notifies the handlers of
-*every* executed loop item. Every executed item carries the task's `notify` (`lib/ansible/executor/task_executor.py:804-805`),
+*every* executed loop item. Every executed item carries the task's `notify`
+(`lib/ansible/executor/task_executor.py:804-805`),
 skipped items return before it is set (`:453-455`), the task counts as changed when any item changed (`:124-128`), and
 the strategy then notifies the handlers named by each item (`lib/ansible/plugins/strategy/__init__.py:614-621`).
 Wherever a sheet says "restarts container X if its config changed", read it as "restarts **all containers of that role

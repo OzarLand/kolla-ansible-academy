@@ -25,7 +25,8 @@ deployment](index.md#assumed-deployment).
 >   Podman worker.
 > - **Changed in 2024.1** [CODE]: the module is `kolla_container`, which drives Docker or Podman
 >   (`kolla_container_engine`, default `docker`); the common play's config step now pulls the fluentd image when it is
->   absent, so `deploy`, `reconfigure` and `genconfig` can download that image ([§1.1](#11-images)); `prune-images` has a
+>   absent, so `deploy`, `reconfigure` and `genconfig` can download that image ([§1.1](#11-images)); `prune-images` has
+> a
 >   Podman branch ([§1.2](#12-prune-old-images)).
 
 > [!CAUTION]
@@ -60,7 +61,8 @@ ANSIBLE_SERIAL=20 kolla-ansible -i multinode -t nova upgrade
   `ensure_image` pulls the image only when it is absent (`module_utils/kolla_docker_worker.py:501-503`,
   `module_utils/kolla_podman_worker.py:675-677`). So after a tag change, `deploy`, `reconfigure`, `upgrade` and
   `genconfig` runs that include the common play download the new fluentd image before any handler runs; the running
-  fluentd container does not change at that step [CODE]. In `deploy`, `reconfigure` and `upgrade`, the RabbitMQ version check does the same for the
+  fluentd container does not change at that step [CODE]. In `deploy`, `reconfigure` and `upgrade`, the RabbitMQ version
+  check does the same for the
   rabbitmq image once the `rabbitmq` container exists: it starts a one-shot container from the configured image
   (`roles/rabbitmq/tasks/version-check.yml:18-36, :75`; `roles/rabbitmq/tasks/reconfigure.yml:2`), and
   `start_container` pulls an absent image first.

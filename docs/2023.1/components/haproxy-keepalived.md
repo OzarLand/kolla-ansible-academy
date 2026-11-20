@@ -71,7 +71,8 @@ the service card follows them.
   `ANSIBLE_SERIAL=1` for haproxy changes; `--skip-tags haproxy` when you don't intend to change frontends.
 - [R22](../risk/risk-register.md#r22), inventory reordering (loadbalancer, mariadb, glance, nova-conductor, keystone
   groups): keepalived priorities change (priority = position in `loadbalancer` + 1,
-  `roles/loadbalancer/templates/keepalived/keepalived.conf.j2:15`). Precautions: treat inventory order as configuration; never reorder casually.
+  `roles/loadbalancer/templates/keepalived/keepalived.conf.j2:15`). Precautions: treat inventory order as configuration;
+  never reorder casually.
 - [Reconfigure a single service
   §3](../operations/reconfigure-a-service.md#3-sequence-impact-risks-and-verification-of--t-svc-reconfigure),
   verification of `-t <svc> reconfigure`: before, a diff of `/etc/kolla/haproxy/services.d/<svc>*.cfg` against the
@@ -96,7 +97,8 @@ the service card follows them.
   metadata requests fail meanwhile; how HAProxy treats backends that are not up yet on a first deploy. The Ussuri
   haproxy upgrade bugs no longer exist in 2023.1 (above).
 - [F3](../reference/findings.md#f3), "`docker_graceful_timeout` and `docker_client_timeout` are ignored": no longer
-  holds as written in 2023.1; containers stop through their systemd unit with `docker_graceful_timeout` (60 s) ([R24](../risk/risk-register.md#r24))
+  holds as written in 2023.1; containers stop through their systemd unit with `docker_graceful_timeout` (60 s)
+  ([R24](../risk/risk-register.md#r24))
   [CODE]. Still [NOT AVAILABLE]: whether services started by a shell wrapper that does not `exec` them (e.g.
   `neutron-l3-agent`, `haproxy`: `haproxy_run.sh` ends in `xargs /usr/sbin/haproxy`,
   `roles/loadbalancer/templates/haproxy/haproxy_run.sh.j2:7-9`) receive SIGTERM at all.
@@ -116,7 +118,8 @@ the service card follows them.
   required; precedence.
 - [Kolla images §6](../concepts/kolla-images.md#6-day-2-consequences), item 15: the VIP follows the HAProxy stats
   socket, and the ProxySQL admin socket when ProxySQL is enabled (one `check_alive_<service>.sh` per enabled service,
-  `roles/loadbalancer/tasks/config.yml:74-105`) [CODE]; whether an HAProxy restart puts the node in FAULT, and for how long, is
+  `roles/loadbalancer/tasks/config.yml:74-105`) [CODE]; whether an HAProxy restart puts the node in FAULT, and for how
+  long, is
   [NOT AVAILABLE: keepalived semantics].
 
 ## Service card

@@ -34,7 +34,8 @@ tags: [reconfigure, deploy, tags, risk, evidence, unknowns]
 
     ---
 
-    Risk and impact: the 25 rated risks (R25 does not apply to 2023.1), what a tag really executes, and why a small change creates a large workload.
+    Risk and impact: the 25 rated risks (R25 does not apply to 2023.1), what a tag really executes, and why a small
+    change creates a large workload.
 
 - **[I want to understand how a run works](concepts/index.md)**
 
@@ -87,7 +88,8 @@ lookup by tag](operations/command-quick-lookup.md) has one row per command and t
 
 <div data-portal-recent="8" markdown>
 
-Every change is in the [commit history of the repository](https://github.com/OzarLand/kolla-ansible-academy/commits/main/docs/2023.1).
+Every change is in the
+[commit history of the repository](https://github.com/OzarLand/kolla-ansible-academy/commits/main/docs/2023.1).
 
 </div>
 

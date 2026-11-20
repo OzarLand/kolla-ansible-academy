@@ -26,7 +26,8 @@ kolla-ansible -i multinode destroy --yes-i-really-really-mean-it   # never on pr
 - `stop` honours `skip_stop_containers` (e.g. `-e '{"skip_stop_containers": ["nova_libvirt"]}'`) [CODE]
   (`roles/service-stop/tasks/main.yml:10-12`, default `[]` in `group_vars/all.yml:784`).
 - `destroy` also removes the images with `--include-images` (or `enable_destroy_images: yes`, default `no`), and the
-  dev-mode repositories under `kolla_dev_repos_directory` with `--include-dev` [CODE] (kolla-ansible `tools/kolla-ansible:455-460`;
+  dev-mode repositories under `kolla_dev_repos_directory` with `--include-dev` [CODE] (kolla-ansible
+  `tools/kolla-ansible:455-460`;
   `roles/destroy/defaults/main.yml:2-3`, `group_vars/all.yml:775`, `roles/destroy/tasks/cleanup_images.yml:5`;
   kolla-ansible `tools/cleanup-host:92-95`).
 

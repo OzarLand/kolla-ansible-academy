@@ -101,7 +101,8 @@ risk](#impact-and-risk) and in [fact sheet A §5.8](../reference/factsheets/a-in
   `kolla_container_engine` (`:14-17, :25-28, :37-40, :48-51`) [CODE]. What `set-connection` does to established
   client connections is [NOT AVAILABLE].
 - **First 2024.1 check after an upgrade from 2023.1:** the check compares the systemd unit too, and its text changed,
-  so an OVN container whose unit 2023.1 wrote, and that no 2024.1 run has recreated or restarted yet, is restarted by the first 2024.1
+  so an OVN container whose unit 2023.1 wrote, and that no 2024.1 run has recreated or restarted yet, is restarted by
+  the first 2024.1
   check ([F16](../reference/findings.md#f16)) [CODE]. For the DB containers, that is every member of the batch.
 - **Image start, new in 2024.1:** the ovn-base start script, which replaces the Open vSwitch one, now ends by sourcing
   `kolla_ovn_extend_start` (kolla `docker/ovn/ovn-base/Dockerfile.j2:23`, `docker/ovn/ovn-base/extend_start.sh:13`).

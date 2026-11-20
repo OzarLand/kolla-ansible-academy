@@ -48,13 +48,15 @@ How the sheets were checked:
     and separate plays restart them with `serial: "33%"` (`mariadb.yml:18-52`); no `% 4` remains in the role or the
     playbook. New in 2024.1, these plays set `max_fail_percentage`, default 100 (`mariadb.yml:25-28`), which never stops
     a play early ([Controlled batches](../../operations/controlled-batches.md));
-  - glance `log_bin_trust_function_creators` toggle: still there (`roles/glance/tasks/bootstrap_service.yml:2,12,39,49`);
+  - glance `log_bin_trust_function_creators` toggle: still there
+    (`roles/glance/tasks/bootstrap_service.yml:2,12,39,49`);
   - Docker restart gate in `bootstrap-servers`: still in ansible-collection-kolla. `daemon.json` and the registry CA
     notify `Restart docker` (ansible-collection-kolla `roles/docker/tasks/config.yml:9-53,104-115`), which restarts the
     daemon, or reloads it when `docker_systemd_reload` is set (default `false`)
     (`roles/docker/handlers/main.yml:10-15`, `roles/docker/defaults/main.yml:65`). New in 2024.1, `daemon.json` can also
     carry `docker_debug` (`roles/docker/tasks/config.yml:46`);
-  - keepalived priority from inventory index: still there (`roles/loadbalancer/templates/keepalived/keepalived.conf.j2:15`);
+  - keepalived priority from inventory index: still there
+    (`roles/loadbalancer/templates/keepalived/keepalived.conf.j2:15`);
   - compute-side memcached lists: still there (`roles/ceilometer/templates/ceilometer.conf.j2:69`).
 - **Ansible behaviours** that the sheets rely on are cited to the ansible-core 2.16.20 source where it shows them, and
   are marked NOT AVAILABLE where it does not. ansible-core 2.14.18, used for 2023.1, is not on disk, so no statement
@@ -91,7 +93,8 @@ vitrage. This includes horizon, whose settings template is now `_9998-kolla-sett
 `CACHES['default']['LOCATION']` uses the loop when `horizon_backend_database` is off
 (`roles/horizon/templates/_9998-kolla-settings.py.j2:19-23`). A 28th role, telegraf, names the group only to test
 whether the host itself runs memcached (`roles/telegraf/templates/telegraf.conf.j2:54-57`). The list still includes
-`neutron.conf` (`roles/neutron/templates/neutron.conf.j2:123`), which the neutron agents on compute hosts also read, so a
+`neutron.conf` (`roles/neutron/templates/neutron.conf.j2:123`), which the neutron agents on compute hosts also read, so
+a
 memcached membership change reaches computes ([Memcached](../../components/memcached.md)).
 
 **Erratum (sheet A, "`tags: always` on the `import_role: haproxy-config` in every `loadbalancer.yml`").** In 2024.1
@@ -102,7 +105,8 @@ ceph-rgw writes `role:` instead of `name:`, `roles/ceph-rgw/tasks/loadbalancer.y
 `roles/nova-cell/tasks/loadbalancer.yml` reaches it through a chain: `import_tasks: proxy_loadbalancer.yml`, then a
 looped `include_tasks: cell_proxy_loadbalancer.yml` (`roles/nova-cell/tasks/proxy_loadbalancer.yml:6`), then
 `import_role: loadbalancer-config` (`roles/nova-cell/tasks/cell_proxy_loadbalancer.yml:3-12`), with `tags: always` at
-every level. The effect is the same [CODE] ([Tags §2.3](../../risk/tags.md#23-include_role--tags-always-inside-the-haproxy-play-code)).
+every level. The effect is the same [CODE]
+([Tags §2.3](../../risk/tags.md#23-include_role--tags-always-inside-the-haproxy-play-code)).
 
 **Erratum (image-side statements, kolla read later).** The kolla image sources were read after the Ussuri sheets were
 written. Re-read in kolla `2024.1-eom` [CODE]:
@@ -120,7 +124,8 @@ written. Re-read in kolla `2024.1-eom` [CODE]:
   `docker/glance/glance-api/extend_start.sh:5-9`). The heat bootstrap creates the heat domain and user only when the
   domain is absent (kolla `docker/heat/heat-api/extend_start.sh:5-17`). Horizon runs `collectstatic` only when its
   settings hash is missing or differs, a dashboard plugin is added or removed, or `FORCE_GENERATE=yes` (kolla
-  `docker/horizon/extend_start.sh:32-46,215-258`; [Kolla images §5.2](../../concepts/kolla-images.md#52-horizon-static-assets));
+  `docker/horizon/extend_start.sh:32-46,215-258`;
+  [Kolla images §5.2](../../concepts/kolla-images.md#52-horizon-static-assets));
 - sheet D: swift config and rings are copied into a container only at its start (kolla `docker/base/start.sh:11`,
   `docker/base/set_configs.py:535-551`; both files are identical to 2023.1's). Only `swift_rsyncd` fixes `/srv/node`
   ownership at start (kolla `docker/swift/swift-rsyncd/extend_start.sh:3`).
@@ -134,7 +139,8 @@ statements in the sheets are **NOT AVAILABLE**. See [Kolla images](../../concept
 
 **Context the sheets do not repeat.** The Ussuri sheets were written before the Ansible source was read for looped
 tasks, and this still applies in ansible-core 2.16.20 [CODE]: when any item changes, Ansible notifies the handlers of
-*every* executed loop item. Every executed item carries the task's `notify` (`lib/ansible/executor/task_executor.py:819-820`),
+*every* executed loop item. Every executed item carries the task's `notify`
+(`lib/ansible/executor/task_executor.py:819-820`),
 an item whose `when` is false returns before it is set (`:483-484`), the task counts as changed when any item changed
 (`:124-130`), and the strategy then notifies the handlers named by each item
 (`lib/ansible/plugins/strategy/__init__.py:655-661`). Wherever a sheet says "restarts container X if its config

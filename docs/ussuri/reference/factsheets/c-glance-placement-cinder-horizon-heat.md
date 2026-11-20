@@ -6,11 +6,19 @@ tags: [glance, placement, cinder, horizon, heat, reconfigure, one-shot]
 
 # Fact sheet C
 
-All paths are relative to the repo root (`$SRC`). Every claim comes from reading source code only: kolla-ansible at the tag `ussuri-eol`, the kolla images repo, and, for Ansible semantics, the Ansible source (cited as ansible 2.9.27 `lib/ansible/...:N`, or ansible 2.8.20 for modules run inside the kolla-toolbox image).
+All paths are relative to the repo root (`$SRC`). Every claim comes from reading source code only: kolla-ansible at the
+tag `ussuri-eol`, the kolla images repo, and, for Ansible semantics, the Ansible source (cited as ansible 2.9.27
+`lib/ansible/...:N`, or ansible 2.8.20 for modules run inside the kolla-toolbox image).
 - **FACT** (the default, not written out): shown by the cited source lines.
-- **NOT AVAILABLE**: the sources do not establish it, for example upstream OpenStack runtime behaviour, durations, or what a restart does to work in progress.
+- **NOT AVAILABLE**: the sources do not establish it, for example upstream OpenStack runtime behaviour, durations, or
+  what a restart does to work in progress.
 
-Behaviour inside the images (what `KOLLA_BOOTSTRAP`, `KOLLA_UPGRADE`, `KOLLA_OSM`, `GLANCE_DB_EXPAND` and similar variables actually run) is defined in the separate `kolla` images repo. That repo is **not** in this checkout, but its `ussuri-eol` tag was read separately (see [Kolla images](../../concepts/kolla-images.md)). A statement that cites a kolla path, written as kolla `docker/...` (for example kolla `docker/glance/glance-api/extend_start.sh` or kolla `docker/base/set_configs.py`), is read from that source like any other code claim. Image-side behaviour without such a citation is NOT AVAILABLE.
+Behaviour inside the images (what `KOLLA_BOOTSTRAP`, `KOLLA_UPGRADE`, `KOLLA_OSM`, `GLANCE_DB_EXPAND` and similar
+variables actually run) is defined in the separate `kolla` images repo. That repo is **not** in this checkout, but its
+`ussuri-eol` tag was read separately (see [Kolla images](../../concepts/kolla-images.md)). A statement that cites a
+kolla path, written as kolla `docker/...` (for example kolla `docker/glance/glance-api/extend_start.sh` or kolla
+`docker/base/set_configs.py`), is read from that source like any other code claim. Image-side behaviour without such a
+citation is NOT AVAILABLE.
 
 ---
 
@@ -39,7 +47,9 @@ Behaviour inside the images (what `KOLLA_BOOTSTRAP`, `KOLLA_UPGRADE`, `KOLLA_OSM
 
 ### site.yml order (relevant slice)
 
-`haproxy` play (126) → … → **glance** (657) → ironic (668) → **cinder** (683) → **placement** (697) → `import_playbook: nova.yml` (710) → … → **heat** (793) → **horizon** (806). Placement is therefore (re)deployed before nova, and glance before cinder.
+`haproxy` play (126) → … → **glance** (657) → ironic (668) → **cinder** (683) → **placement** (697) →
+`import_playbook: nova.yml` (710) → … → **heat** (793) → **horizon** (806). Placement is therefore (re)deployed before
+nova, and glance before cinder.
 
 ---
 
@@ -75,9 +85,14 @@ glance_backend_swift: "{{ enable_swift | bool }}"
 glance_file_datadir_volume: "glance"
 glance_api_hosts: "{{ [groups['glance-api']|first] if glance_backend_file | bool and glance_file_datadir_volume == 'glance' else groups['glance-api'] }}"
 ```
-With the default file backend on a local named volume, glance-api runs **only on the first host of `glance-api`**. HAProxy members are built from `glance_api_hosts` too (`defaults/main.yml:69-70`), so glance has **no HA**. A glance-api restart is a full Image API outage. The docs confirm this: "By default when using file backend only one glance-api container can be running" (`doc/source/reference/shared-services/glance-guide.rst:27`).
+With the default file backend on a local named volume, glance-api runs **only on the first host of `glance-api`**.
+HAProxy members are built from `glance_api_hosts` too (`defaults/main.yml:69-70`), so glance has **no HA**. A glance-api
+restart is a full Image API outage. The docs confirm this: "By default when using file backend only one glance-api
+container can be running" (`doc/source/reference/shared-services/glance-guide.rst:27`).
 
-HAProxy: client and server timeouts are **6h** (`defaults/main.yml:110-111`). In TLS mode the HAProxy members always get `ssl verify required ca-file ...` and **ignore `kolla_verify_tls_backend`** (`defaults/main.yml:70`). Other services honour it in `haproxy-config/templates/haproxy_single_service_split.cfg.j2:83-89`.
+HAProxy: client and server timeouts are **6h** (`defaults/main.yml:110-111`). In TLS mode the HAProxy members always get
+`ssl verify required ca-file ...` and **ignore `kolla_verify_tls_backend`** (`defaults/main.yml:70`). Other services
+honour it in `haproxy-config/templates/haproxy_single_service_split.cfg.j2:83-89`.
 
 ### 1.3 Task flow per action
 
@@ -110,13 +125,24 @@ HAProxy: client and server timeouts are **6h** (`defaults/main.yml:110-111`). In
 | `glance-api/glance-swift.conf` | merge: template → `glance-swift.conf` → `glance/glance-swift.conf` → `glance/<host>/...` (:107-124) | `glance_backend_swift` | Restart glance-api |
 | `glance-tls-proxy/glance-tls-proxy.cfg` | first_found: `glance/<host>/glance-tls-proxy.cfg` → `glance/glance-tls-proxy.cfg` → role template (:141-157) | TLS proxy | Restart glance-tls-proxy |
 
-`glance-api.json.j2:41-52` has `"permissions": [{"path": "/var/lib/glance", "owner": "glance:glance", "recurse": true}]`. `/var/lib/glance` is the `glance_file_datadir_volume` mount (`defaults/main.yml:135`), which with the file backend is the **entire image store** (`filesystem_store_datadir = /var/lib/glance/images/`, `templates/glance-api.conf.j2:71`). kolla_set_configs walks it and calls `os.chown` on every directory and file, unconditionally (kolla `docker/base/set_configs.py:353-363,378-385`). It does this at every container start under the default `COPY_ALWAYS` (kolla `docker/base/start.sh:8`, `set_configs.py:391-393`; `ansible/group_vars/all.yml:43`), and only on a container's first start under `COPY_ONCE` (kolla `set_configs.py:394-402`); see [Kolla images §2](../../concepts/kolla-images.md#2-start-path-common-to-every-image). NOT AVAILABLE: how long this recursive chown takes at container start with a big NFS-backed `glance_file_datadir_volume`.
+`glance-api.json.j2:41-52` has
+`"permissions": [{"path": "/var/lib/glance", "owner": "glance:glance", "recurse": true}]`. `/var/lib/glance` is the
+`glance_file_datadir_volume` mount (`defaults/main.yml:135`), which with the file backend is the **entire image store**
+(`filesystem_store_datadir = /var/lib/glance/images/`, `templates/glance-api.conf.j2:71`). kolla_set_configs walks it
+and calls `os.chown` on every directory and file, unconditionally (kolla `docker/base/set_configs.py:353-363,378-385`).
+It does this at every container start under the default `COPY_ALWAYS` (kolla `docker/base/start.sh:8`,
+`set_configs.py:391-393`; `ansible/group_vars/all.yml:43`), and only on a container's first start under `COPY_ONCE`
+(kolla `set_configs.py:394-402`); see
+[Kolla images §2](../../concepts/kolla-images.md#2-start-path-common-to-every-image). NOT AVAILABLE: how long this
+recursive chown takes at container start with a big NFS-backed `glance_file_datadir_volume`.
 
 ### 1.5 Handlers (`ansible/roles/glance/handlers/main.yml`)
 
-- `Restart glance-api container` (:2-17): recreate_or_restart. It passes `privileged`, `environment` (the proxy), volumes and dimensions.
+- `Restart glance-api container` (:2-17): recreate_or_restart. It passes `privileged`, `environment` (the proxy),
+  volumes and dimensions.
 - `Restart glance-tls-proxy container` (:19-32): recreate_or_restart.
-- Neither has special logic beyond `kolla_action != "config"`. There is no rolling restart and no wait for the API to come back.
+- Neither has special logic beyond `kolla_action != "config"`. There is no rolling restart and no wait for the API to
+  come back.
 
 ### 1.6 Bootstrap
 
@@ -129,40 +155,85 @@ HAProxy: client and server timeouts are **6h** (`defaults/main.yml:110-111`). In
 | Set `log_bin_trust_function_creators=0` | `bootstrap_service.yml:38-52` | yes |
 | Keystone: service `glance`/`image`, 3 endpoints, user `glance` (admin in `service`) | `tasks/register.yml`; `defaults/main.yml:75-88` | yes (deploy/reconfigure); **not** on upgrade |
 
-**Oddity / risk:** the enable/db_sync/disable sequence is not wrapped in `block/always`. If the bootstrap container fails, the global MariaDB variable stays at `1`. Whether this leftover state has security consequences is NOT AVAILABLE. A related upstream fix for keystone appears in `releasenotes/notes/bug-1987982-fix-keystone-log_bin_trust_function_creators-variables-*.yaml`.
+**Oddity / risk:** the enable/db_sync/disable sequence is not wrapped in `block/always`. If the bootstrap container
+fails, the global MariaDB variable stays at `1`. Whether this leftover state has security consequences is NOT AVAILABLE.
+A related upstream fix for keystone appears in
+`releasenotes/notes/bug-1987982-fix-keystone-log_bin_trust_function_creators-variables-*.yaml`.
 
-**Reconfigure as uncontrolled upgrade:** if an operator bumps `openstack_tag`/`glance_tag` and runs `reconfigure`, the new image runs the `KOLLA_BOOTSTRAP` branch (`glance-manage db_sync` and `db_load_metadefs`, kolla `docker/glance/glance-api/extend_start.sh:5-9`) and the handler recreates glance-api on the new image. For the glance role that is the default legacy upgrade (`glance_enable_rolling_upgrade: "no"`, `all.yml:868`): `legacy_upgrade.yml:2-9` runs the same config, check-containers, `bootstrap_service.yml` and flush steps, and reconfigure only adds registration, DB/user creation, the dev-mode clone and the sanity check, off by default (`deploy.yml:2-17`).
+**Reconfigure as uncontrolled upgrade:** if an operator bumps `openstack_tag`/`glance_tag` and runs `reconfigure`, the
+new image runs the `KOLLA_BOOTSTRAP` branch (`glance-manage db_sync` and `db_load_metadefs`, kolla
+`docker/glance/glance-api/extend_start.sh:5-9`) and the handler recreates glance-api on the new image. For the glance
+role that is the default legacy upgrade (`glance_enable_rolling_upgrade: "no"`, `all.yml:868`): `legacy_upgrade.yml:2-9`
+runs the same config, check-containers, `bootstrap_service.yml` and flush steps, and reconfigure only adds registration,
+DB/user creation, the dev-mode clone and the sanity check, off by default (`deploy.yml:2-17`).
 
 ### 1.7 Dependencies (from `templates/glance-api.conf.j2`)
 
-- **MariaDB** via the VIP (:33-37); **RabbitMQ**: `transport_url = rpc_transport_url` (:26) and notifications (:111-118; topics only if ceilometer or searchlight, `defaults/main.yml:93-97`).
-- **Keystone**: `www_authenticate_uri = keystone_internal_url`, `auth_url = keystone_admin_url` (:39-49). **memcached**: all hosts (:51-53).
-- **Cinder**: `cinder_catalog_info = volume:cinder:internalURL` (:24), and `enabled_backends` contains `cinder:cinder` whenever `enable_cinder` (`defaults/main.yml:167-169`; template :16-18). **Oddity:** cinder registers only `cinderv2/volumev2` and `cinderv3/volumev3` (`roles/cinder/defaults/main.yml:201-215`). No `volume/cinder` catalog entry exists, and the template has no `[cinder]` store section, so the glance cinder store is enabled without a matching catalog entry or store section. Whether it works if used is NOT AVAILABLE. Nova, by contrast, uses `catalog_info = volumev3:cinderv3:internalURL` (`roles/nova-cell/templates/nova.conf.j2:113`).
-- **Ceph**: `[rbd] rbd_store_user/pool` (:74-79). `show_multiple_locations = True` is set when ceph is the backend (:20-22). It exposes image locations; it is needed for COW clones but it is security-sensitive.
-- **Swift**: `[swift]` section (:81-91) with **`swift_store_auth_insecure = True` hard-coded**. `glance-swift.conf` authenticates against `openstack_auth.auth_url/v3` (the keystone admin URL) as `service:glance` (`templates/glance-swift.conf.j2:1-8`).
+- **MariaDB** via the VIP (:33-37); **RabbitMQ**: `transport_url = rpc_transport_url` (:26) and notifications (:111-118;
+  topics only if ceilometer or searchlight, `defaults/main.yml:93-97`).
+- **Keystone**: `www_authenticate_uri = keystone_internal_url`, `auth_url = keystone_admin_url` (:39-49). **memcached**:
+  all hosts (:51-53).
+- **Cinder**: `cinder_catalog_info = volume:cinder:internalURL` (:24), and `enabled_backends` contains `cinder:cinder`
+  whenever `enable_cinder` (`defaults/main.yml:167-169`; template :16-18). **Oddity:** cinder registers only
+  `cinderv2/volumev2` and `cinderv3/volumev3` (`roles/cinder/defaults/main.yml:201-215`). No `volume/cinder` catalog
+  entry exists, and the template has no `[cinder]` store section, so the glance cinder store is enabled without a
+  matching catalog entry or store section. Whether it works if used is NOT AVAILABLE. Nova, by contrast, uses
+  `catalog_info = volumev3:cinderv3:internalURL` (`roles/nova-cell/templates/nova.conf.j2:113`).
+- **Ceph**: `[rbd] rbd_store_user/pool` (:74-79). `show_multiple_locations = True` is set when ceph is the backend
+  (:20-22). It exposes image locations; it is needed for COW clones but it is security-sensitive.
+- **Swift**: `[swift]` section (:81-91) with **`swift_store_auth_insecure = True` hard-coded**. `glance-swift.conf`
+  authenticates against `openstack_auth.auth_url/v3` (the keystone admin URL) as `service:glance`
+  (`templates/glance-swift.conf.j2:1-8`).
 - **Barbican** (:133-138), **osprofiler** (:125-131), **VMware** (:93-100).
-- Cinder iSCSI flag toggles glance-api `privileged`, `/dev` and `iscsi_info` (`defaults/main.yml:10,139-140`). The code comment says this is "to support Cinder iSCSI backends" (`defaults/main.yml:138`). How glance uses these mounts is NOT AVAILABLE.
+- Cinder iSCSI flag toggles glance-api `privileged`, `/dev` and `iscsi_info` (`defaults/main.yml:10,139-140`). The code
+  comment says this is "to support Cinder iSCSI backends" (`defaults/main.yml:138`). How glance uses these mounts is NOT
+  AVAILABLE.
 
 ### 1.8 Operational notes
 
-1. **Backend switch via unrelated flags:** `glance_backend_swift` defaults to `enable_swift` (`all.yml:866`), and `glance_backend_file` is the negation of ceph/swift/vmware (`all.yml:862`). Enabling Swift (or `glance_backend_ceph`) on a running cloud does three things:
-   - removes `file` from `enabled_backends` and drops the `[file]` section (`defaults/main.yml:155-157`; template :17,69-72);
+1. **Backend switch via unrelated flags:** `glance_backend_swift` defaults to `enable_swift` (`all.yml:866`), and
+   `glance_backend_file` is the negation of ceph/swift/vmware (`all.yml:862`). Enabling Swift (or `glance_backend_ceph`)
+   on a running cloud does three things:
+   - removes `file` from `enabled_backends` and drops the `[file]` section (`defaults/main.yml:155-157`; template
+     :17,69-72);
    - changes `default_backend` (:58-67);
    - expands `glance_api_hosts` to every `glance-api` host (`all.yml:869`).
 
    NOT AVAILABLE: whether existing images in the file store stay readable after the switch.
 
-   A related doc mismatch: the guide says ceph is enabled "automatically" (`glance-guide.rst:43`), but the default is `glance_backend_ceph: "no"` (`all.yml:863`).
-2. **Inventory order matters:** with the file backend, glance runs on `groups['glance-api']|first`. The INI parser reads the file line by line and adds each host in that order, and Ansible lists a group's hosts in the order they were added (ansible 2.9.27 `lib/ansible/plugins/inventory/ini.py:160,217`, `lib/ansible/plugins/inventory/__init__.py:201-202`, `lib/ansible/inventory/group.py:225-228,267-279`, `lib/ansible/inventory/data.py:273-281`), so reordering the inventory moves glance-api to another host, and the HAProxy members follow it (`all.yml:869`; `defaults/main.yml:69-70`). NOT AVAILABLE: what the `glance` volume on the new host contains.
-3. **Restart impact:** the HAProxy client and server timeouts are 6h (`defaults/main.yml:110-111`). Restarting glance-api stops it with the 10 s graceful timeout ([§0](#0-cross-cutting-facts-apply-to-all-five-roles)). With the file backend this is a total Image API outage, because glance-api is the only backend ([§1.2](#12-glance_services-ansiblerolesglancedefaultsmainyml2-64)). NOT AVAILABLE: what the restart does to in-flight uploads, downloads, nova snapshots and cinder upload-to-image operations, whether images are left in `saving`/`queued`, and whether nova boots that need an uncached image fail during the window.
+   A related doc mismatch: the guide says ceph is enabled "automatically" (`glance-guide.rst:43`), but the default is
+   `glance_backend_ceph: "no"` (`all.yml:863`).
+2. **Inventory order matters:** with the file backend, glance runs on `groups['glance-api']|first`. The INI parser reads
+   the file line by line and adds each host in that order, and Ansible lists a group's hosts in the order they were
+   added (ansible 2.9.27 `lib/ansible/plugins/inventory/ini.py:160,217`,
+   `lib/ansible/plugins/inventory/__init__.py:201-202`, `lib/ansible/inventory/group.py:225-228,267-279`,
+   `lib/ansible/inventory/data.py:273-281`), so reordering the inventory moves glance-api to another host, and the
+   HAProxy members follow it (`all.yml:869`; `defaults/main.yml:69-70`). NOT AVAILABLE: what the `glance` volume on the
+   new host contains.
+3. **Restart impact:** the HAProxy client and server timeouts are 6h (`defaults/main.yml:110-111`). Restarting
+   glance-api stops it with the 10 s graceful timeout ([§0](#0-cross-cutting-facts-apply-to-all-five-roles)). With the
+   file backend this is a total Image API outage, because glance-api is the only backend
+   ([§1.2](#12-glance_services-ansiblerolesglancedefaultsmainyml2-64)). NOT AVAILABLE: what the restart does to
+   in-flight uploads, downloads, nova snapshots and cinder upload-to-image operations, whether images are left in
+   `saving`/`queued`, and whether nova boots that need an uncached image fail during the window.
 4. **Rolling upgrade** (`tasks/rolling_upgrade.yml`):
-   - Sequence: config on host[0] (:7-8) → **stop glance-api on host[0]** (:10-11) → enable log_bin (:13-27) → `GLANCE_DB_EXPAND` (:29-48) → `GLANCE_DB_MIGRATE`, which notifies restart (:50-71) → config on the other hosts (:74-75) → check-containers (:77) → **flush handlers**, so all glance-api containers restart in the same handler run (:79-80) → `GLANCE_DB_CONTRACT` (:82-101) → disable log_bin (:103-117).
+   - Sequence: config on host[0] (:7-8) → **stop glance-api on host[0]** (:10-11) → enable log_bin (:13-27) →
+     `GLANCE_DB_EXPAND` (:29-48) → `GLANCE_DB_MIGRATE`, which notifies restart (:50-71) → config on the other hosts
+     (:74-75) → check-containers (:77) → **flush handlers**, so all glance-api containers restart in the same handler
+     run (:79-80) → `GLANCE_DB_CONTRACT` (:82-101) → disable log_bin (:103-117).
    - The `glance_upgrading` fact (:2-4, :119-121) is set but never read anywhere (dead code).
-   - With `kolla_serial` > 0, each batch re-runs the run_once expand/migrate/**contract** on `glance_api_hosts[0]` (:47-48, :68-69, :100-101), because Ansible runs the play once per batch and sends a `run_once` task to the first host of each batch ([§0](#0-cross-cutting-facts-apply-to-all-five-roles)). The contract therefore runs at the end of batch 1, while hosts in later batches still run the old glance-api containers.
-   - The docs warn that rolling upgrade with a non-shared file backend leads to "a corrupt state" (`glance-guide.rst:108`).
-5. **Image cache** is never pruned. The docs say "Glance caches are not cleaned up automatically" (`glance-guide.rst:145`); there is no cron/pruner container.
+   - With `kolla_serial` > 0, each batch re-runs the run_once expand/migrate/**contract** on `glance_api_hosts[0]`
+     (:47-48, :68-69, :100-101), because Ansible runs the play once per batch and sends a `run_once` task to the first
+     host of each batch ([§0](#0-cross-cutting-facts-apply-to-all-five-roles)). The contract therefore runs at the end
+     of batch 1, while hosts in later batches still run the old glance-api containers.
+   - The docs warn that rolling upgrade with a non-shared file backend leads to "a corrupt state"
+     (`glance-guide.rst:108`).
+5. **Image cache** is never pruned. The docs say "Glance caches are not cleaned up automatically"
+   (`glance-guide.rst:145`); there is no cron/pruner container.
 6. **Sanity check** (if enabled) creates and deletes an image on every deploy/reconfigure (`deploy.yml:17`).
-7. Glance does not touch compute hosts. Nova-compute reaches glance through `[glance] api_servers` = internal VIP (`roles/nova-cell/templates/nova.conf.j2:105-109`), and cinder through `glance_api_servers` (`roles/cinder/templates/cinder.conf.j2:19`).
+7. Glance does not touch compute hosts. Nova-compute reaches glance through `[glance] api_servers` = internal VIP
+   (`roles/nova-cell/templates/nova.conf.j2:105-109`), and cinder through `glance_api_servers`
+   (`roles/cinder/templates/cinder.conf.j2:19`).
 
 ---
 
@@ -178,7 +249,12 @@ HAProxy: client and server timeouts are **6h** (`defaults/main.yml:110-111`). In
   roles: [{ role: placement, tags: placement, when: enable_placement | bool }]
 ```
 - `enable_placement: "{{ enable_nova | bool or enable_zun | bool }}"` (`all.yml:689`).
-- **Oddity:** the LB include for placement **has no `when: enable_placement`** (`site.yml:289-292`), unlike every other service. When placement is disabled it still writes an (effectively empty) `services.d/placement-api.cfg`, because `placement-api.enabled: True` (`roles/placement/defaults/main.yml:7`) and the haproxy-config task checks only `service.enabled`, `service.haproxy` and `enable_haproxy` (`roles/haproxy-config/tasks/main.yml:15-18`). Only the inner haproxy entries carry `enable_placement` (`roles/placement/defaults/main.yml:12,19`), and the template skips disabled entries (`roles/haproxy-config/templates/haproxy_single_service_listen.cfg.j2:83,87`).
+- **Oddity:** the LB include for placement **has no `when: enable_placement`** (`site.yml:289-292`), unlike every other
+  service. When placement is disabled it still writes an (effectively empty) `services.d/placement-api.cfg`, because
+  `placement-api.enabled: True` (`roles/placement/defaults/main.yml:7`) and the haproxy-config task checks only
+  `service.enabled`, `service.haproxy` and `enable_haproxy` (`roles/haproxy-config/tasks/main.yml:15-18`). Only the
+  inner haproxy entries carry `enable_placement` (`roles/placement/defaults/main.yml:12,19`), and the template skips
+  disabled entries (`roles/haproxy-config/templates/haproxy_single_service_listen.cfg.j2:83,87`).
 - The play sits right before `import_playbook: nova.yml` (`site.yml:710`).
 
 ### 2.2 `placement_services` (`ansible/roles/placement/defaults/main.yml:2-24`)
@@ -210,7 +286,9 @@ HAProxy: client and server timeouts are **6h** (`defaults/main.yml:110-111`). In
 | policy | `{{node_custom_config}}/placement/` (:15-32, :103-115) | Restart |
 | certs | service-cert-copy (:34-36) | Restart |
 
-`migrate-db.rc` contains the **nova_api DB user and password** together with the placement DB creds (`templates/migrate-db.rc.j2:1-8`; vars at `defaults/main.yml:89-92`). It is a leftover from the Stein→Train extraction of placement from nova_api. It spreads a nova secret into the placement container and is notified on change.
+`migrate-db.rc` contains the **nova_api DB user and password** together with the placement DB creds
+(`templates/migrate-db.rc.j2:1-8`; vars at `defaults/main.yml:89-92`). It is a leftover from the Stein→Train extraction
+of placement from nova_api. It spreads a nova secret into the placement container and is notified on change.
 
 ### 2.5 Handlers
 
@@ -219,9 +297,14 @@ HAProxy: client and server timeouts are **6h** (`defaults/main.yml:110-111`). In
 ### 2.6 Bootstrap
 
 - `mysql_db placement` and `mysql_user` (`tasks/bootstrap.yml:2-34`) re-run on reconfigure.
-- `bootstrap_placement` with `KOLLA_BOOTSTRAP` (kolla image: `placement-manage db sync` then `placement-manage db online_data_migrations`, kolla `docker/placement/placement-api/extend_start.sh:5-9`) runs once, delegated to `groups['placement-api'][0]` (`bootstrap_service.yml:2-20`). **It re-runs on every reconfigure.**
-- Keystone registration (service `placement`, 3 endpoints, user `placement`) happens in deploy, reconfigure **and upgrade** (`upgrade.yml:2`), unlike glance/cinder/heat.
-- Online data migrations: the separate `KOLLA_OSM` container runs **only** in upgrade (`upgrade.yml:16-34`). Because the bootstrap container above also runs `db online_data_migrations`, placement OSM also runs on every deploy/reconfigure (`deploy.yml:11`, `reconfigure.yml:2`) and twice in upgrade (bootstrap at `upgrade.yml:11`, then `KOLLA_OSM`).
+- `bootstrap_placement` with `KOLLA_BOOTSTRAP` (kolla image: `placement-manage db sync` then
+  `placement-manage db online_data_migrations`, kolla `docker/placement/placement-api/extend_start.sh:5-9`) runs once,
+  delegated to `groups['placement-api'][0]` (`bootstrap_service.yml:2-20`). **It re-runs on every reconfigure.**
+- Keystone registration (service `placement`, 3 endpoints, user `placement`) happens in deploy, reconfigure **and
+  upgrade** (`upgrade.yml:2`), unlike glance/cinder/heat.
+- Online data migrations: the separate `KOLLA_OSM` container runs **only** in upgrade (`upgrade.yml:16-34`). Because the
+  bootstrap container above also runs `db online_data_migrations`, placement OSM also runs on every deploy/reconfigure
+  (`deploy.yml:11`, `reconfigure.yml:2`) and twice in upgrade (bootstrap at `upgrade.yml:11`, then `KOLLA_OSM`).
 
 ### 2.7 Dependencies (`templates/placement.conf.j2`)
 
@@ -229,13 +312,24 @@ HAProxy: client and server timeouts are **6h** (`defaults/main.yml:110-111`). In
 - memcached `[cache]` and `keystone_authtoken` (:31-51); Keystone (:37-47).
 - `transport_url = rpc_transport_url` (:13) is configured even though placement does no RPC.
 - Leftovers: `osapi_compute_listen`, `my_ip` (:8-11).
-- **Dead variables:** `placement_notification_topics` / `placement_enabled_notification_topics` (`defaults/main.yml:69-75`) are not referenced by any template. There is no `[oslo_messaging_notifications]` section.
+- **Dead variables:** `placement_notification_topics` / `placement_enabled_notification_topics`
+  (`defaults/main.yml:69-75`) are not referenced by any template. There is no `[oslo_messaging_notifications]` section.
 
 ### 2.8 Operational notes and the relation to nova
 
-- **Consumers authenticate as the placement user.** nova-api/conductor/scheduler (`roles/nova/templates/nova.conf.j2:169-179`) and **nova-compute on every compute host** (`roles/nova-cell/templates/nova.conf.j2:203-213`) use `username = {{ placement_keystone_user }}` / `password = {{ placement_keystone_password }}`, `valid_interfaces = internal`. Neutron does the same (`roles/neutron/templates/neutron.conf.j2:172-183`), as do zun and cyborg. Rotating `placement_keystone_password` therefore needs a reconfigure of placement **and** nova (all computes) **and** neutron. This dependency scales with the number of compute hosts.
-- NOT AVAILABLE (upstream nova): how scheduling and the nova-compute resource tracker periodic task behave during a placement-api outage or restart. With serial=0 every placement-api restarts in the same handler flush, up to `forks` hosts at once ([§0](#0-cross-cutting-facts-apply-to-all-five-roles)); whether and for how long no placement-api is serving is NOT AVAILABLE.
-- The upgrade db sync and online data migrations (bootstrap container) run while the old placement-api is still serving (no stop).
+- **Consumers authenticate as the placement user.** nova-api/conductor/scheduler
+  (`roles/nova/templates/nova.conf.j2:169-179`) and **nova-compute on every compute host**
+  (`roles/nova-cell/templates/nova.conf.j2:203-213`) use `username = {{ placement_keystone_user }}` /
+  `password = {{ placement_keystone_password }}`, `valid_interfaces = internal`. Neutron does the same
+  (`roles/neutron/templates/neutron.conf.j2:172-183`), as do zun and cyborg. Rotating `placement_keystone_password`
+  therefore needs a reconfigure of placement **and** nova (all computes) **and** neutron. This dependency scales with
+  the number of compute hosts.
+- NOT AVAILABLE (upstream nova): how scheduling and the nova-compute resource tracker periodic task behave during a
+  placement-api outage or restart. With serial=0 every placement-api restarts in the same handler flush, up to `forks`
+  hosts at once ([§0](#0-cross-cutting-facts-apply-to-all-five-roles)); whether and for how long no placement-api is
+  serving is NOT AVAILABLE.
+- The upgrade db sync and online data migrations (bootstrap container) run while the old placement-api is still serving
+  (no stop).
 
 ---
 
@@ -251,8 +345,11 @@ HAProxy: client and server timeouts are **6h** (`defaults/main.yml:110-111`). In
   roles: [{ role: cinder, tags: cinder, when: enable_cinder | bool }]
 ```
 - LB include: `site.yml:154-158`.
-- Defaults: `enable_cinder: "no"`, `enable_cinder_backup: "yes"`, `enable_cinder_backend_iscsi: "{{ enable_cinder_backend_lvm }}"`, `enable_cinder_backend_lvm: "no"` (`all.yml:598-604`). `cinder_backend_ceph: "no"`, `cinder_backup_driver: "ceph"` (`all.yml:901,909`).
-- Sample inventory: `cinder-api`/`cinder-scheduler` sit under `[cinder:children] control`. **`cinder-volume`/`cinder-backup` sit under `storage`** (`ansible/inventory/multinode:149-150,340-350`).
+- Defaults: `enable_cinder: "no"`, `enable_cinder_backup: "yes"`,
+  `enable_cinder_backend_iscsi: "{{ enable_cinder_backend_lvm }}"`, `enable_cinder_backend_lvm: "no"`
+  (`all.yml:598-604`). `cinder_backend_ceph: "no"`, `cinder_backup_driver: "ceph"` (`all.yml:901,909`).
+- Sample inventory: `cinder-api`/`cinder-scheduler` sit under `[cinder:children] control`.
+  **`cinder-volume`/`cinder-backup` sit under `storage`** (`ansible/inventory/multinode:149-150,340-350`).
 
 ### 3.2 `cinder_services` (`ansible/roles/cinder/defaults/main.yml:2-48`)
 
@@ -263,7 +360,9 @@ HAProxy: client and server timeouts are **6h** (`defaults/main.yml:110-111`). In
 | cinder-volume | `cinder_volume` | cinder-volume | true | **`privileged: True`, `ipc_mode: host`** (:37-38). Volumes (:107-118): **`/dev/:/dev/`, `/lib/modules:ro`, `/run/:/run/:shared`**, `cinder:/var/lib/cinder`, **`iscsi_info:/etc/iscsi`** (if `enable_iscsid`), **`target_config:/etc/target`** (LVM and `lioadm`). |
 | cinder-backup | `cinder_backup` | cinder-backup | `enable_cinder_backup` | **`privileged: True`** (no ipc host). Volumes (:90-100): `/dev/`, `/lib/modules`, `/run/:shared`, `cinder:/var/lib/cinder`, `iscsi_info`. |
 
-Related: `cinder_target_helper` is `lioadm` on RedHat and `tgtadm` otherwise (`all.yml:904`). With `tgtadm` the targets are served by a **separate `tgtd` container** from the `iscsi` role, which also deploys `iscsid` on `compute`, `cinder-volume` and `cinder-backup` hosts (`roles/iscsi/defaults/main.yml:2-20,67-78`; play `site.yml:512-522`).
+Related: `cinder_target_helper` is `lioadm` on RedHat and `tgtadm` otherwise (`all.yml:904`). With `tgtadm` the targets
+are served by a **separate `tgtd` container** from the `iscsi` role, which also deploys `iscsid` on `compute`,
+`cinder-volume` and `cinder-backup` hosts (`roles/iscsi/defaults/main.yml:2-20,67-78`; play `site.yml:512-522`).
 
 ### 3.3 Task flow
 
@@ -293,41 +392,81 @@ Related: `cinder_target_helper` is `lioadm` on RedHat and `tgtadm` otherwise (`a
 
 ### 3.5 Handlers (`ansible/roles/cinder/handlers/main.yml`)
 
-Four handlers (api :2-15, scheduler :17-30, volume :32-47, backup :49-63), all recreate_or_restart. The volume handler passes `privileged` and `ipc_mode`; the backup handler passes `privileged`. There is no drain or wait logic.
+Four handlers (api :2-15, scheduler :17-30, volume :32-47, backup :49-63), all recreate_or_restart. The volume handler
+passes `privileged` and `ipc_mode`; the backup handler passes `privileged`. There is no drain or wait logic.
 
 ### 3.6 Bootstrap
 
 - `mysql_db cinder` and `mysql_user` run every deploy/reconfigure (`bootstrap.yml:2-34`).
-- `bootstrap_cinder` (`KOLLA_BOOTSTRAP`: `cinder-manage db sync`, kolla `docker/cinder/cinder-api/extend_start.sh:6-9`), run_once on `groups['cinder-api'][0]` (`bootstrap_service.yml:2-20`). **It re-runs on every reconfigure.**
+- `bootstrap_cinder` (`KOLLA_BOOTSTRAP`: `cinder-manage db sync`, kolla `docker/cinder/cinder-api/extend_start.sh:6-9`),
+  run_once on `groups['cinder-api'][0]` (`bootstrap_service.yml:2-20`). **It re-runs on every reconfigure.**
 - Online data migrations (`KOLLA_OSM`) run only in upgrade.
-- Keystone: `cinderv2/volumev2` and `cinderv3/volumev3`, each with 3 `/vN/%(tenant_id)s` endpoints, plus user `cinder` (`defaults/main.yml:201-221`). Registered on deploy/reconfigure, not on upgrade.
+- Keystone: `cinderv2/volumev2` and `cinderv3/volumev3`, each with 3 `/vN/%(tenant_id)s` endpoints, plus user `cinder`
+  (`defaults/main.yml:201-221`). Registered on deploy/reconfigure, not on upgrade.
 
 ### 3.7 Dependencies (`templates/cinder.conf.j2`)
 
-- **Glance**: `glance_api_servers` = internal VIP:9292 (:19). **`glance_num_retries = {{ groups['glance-api'] | length }}`** (:21) scales with the number of glance hosts. With the glance file backend only one glance-api exists, yet retries equal the group size.
-- **Nova**: `[nova]` section authenticates with **`nova_keystone_user`/`nova_keystone_password`** (:83-93), so rotating the nova password needs a cinder reconfigure. In the other direction, nova-api and nova-compute use **`cinder_keystone_user/password`** (`roles/nova-cell/templates/nova.conf.j2:111-122`, `roles/nova/templates/nova.conf.j2:66-76`), so rotating the cinder password needs a reconfigure of all computes. Manila also uses the cinder creds (`roles/manila/templates/manila-share.conf.j2:29-30`).
-- MariaDB (:95-99); RabbitMQ RPC and notify (:64-73; topics for ceilometer/vitrage, `defaults/main.yml:165-171`); Keystone and memcached (:101-115); Barbican (:198-203); osprofiler (:190-196).
-- **Ceph**: `[rbd-1]` with `rbd_secret_uuid = cinder_rbd_secret_uuid` (:131-145). The same UUID is installed into libvirt on computes by `roles/nova-cell/tasks/external_ceph.yml:92,134`, so the two must stay in sync.
+- **Glance**: `glance_api_servers` = internal VIP:9292 (:19).
+  **`glance_num_retries = {{ groups['glance-api'] | length }}`** (:21) scales with the number of glance hosts. With the
+  glance file backend only one glance-api exists, yet retries equal the group size.
+- **Nova**: `[nova]` section authenticates with **`nova_keystone_user`/`nova_keystone_password`** (:83-93), so rotating
+  the nova password needs a cinder reconfigure. In the other direction, nova-api and nova-compute use
+  **`cinder_keystone_user/password`** (`roles/nova-cell/templates/nova.conf.j2:111-122`,
+  `roles/nova/templates/nova.conf.j2:66-76`), so rotating the cinder password needs a reconfigure of all computes.
+  Manila also uses the cinder creds (`roles/manila/templates/manila-share.conf.j2:29-30`).
+- MariaDB (:95-99); RabbitMQ RPC and notify (:64-73; topics for ceilometer/vitrage, `defaults/main.yml:165-171`);
+  Keystone and memcached (:101-115); Barbican (:198-203); osprofiler (:190-196).
+- **Ceph**: `[rbd-1]` with `rbd_secret_uuid = cinder_rbd_secret_uuid` (:131-145). The same UUID is installed into
+  libvirt on computes by `roles/nova-cell/tasks/external_ceph.yml:92,134`, so the two must stay in sync.
 - **Swift** backup: `backup_swift_url` internal (:47-53).
-- **Coordination**: redis or **etcd: only `groups['etcd'][0]`** (:205-214; the comment says multiple endpoints are not supported). The etcd lock service is therefore a single point of failure. Default `cinder_coordination_backend` is `''` unless redis or etcd is enabled (`all.yml:906`).
+- **Coordination**: redis or **etcd: only `groups['etcd'][0]`** (:205-214; the comment says multiple endpoints are not
+  supported). The etcd lock service is therefore a single point of failure. Default `cinder_coordination_backend` is
+  `''` unless redis or etcd is enabled (`all.yml:906`).
 - **LVM/iSCSI**: `target_helper`, `target_protocol = iscsi` (:122-129).
 
 ### 3.8 Operational notes
 
-1. **No `host`/`backend_host`/`cluster` set in cinder.conf** (`templates/cinder.conf.j2` has none; `grep backend_host ansible/roles/cinder` returns nothing). Because of `network_mode: host`, each cinder-volume container has the node hostname ([§0](#0-cross-cutting-facts-apply-to-all-five-roles)). Whether cinder then registers it as `<node-hostname>@<backend>` is upstream cinder behaviour and NOT AVAILABLE here.
-   - NOT AVAILABLE (upstream cinder): whether, with a shared backend (ceph `rbd-1`) on several cinder-volume hosts, every volume is owned by the host that created it.
-   - NOT AVAILABLE: whether, if that node is down, its volumes cannot be attached, detached, deleted or snapshotted until the node returns or `cinder-manage volume update_host` is run.
-   - The same question applies to renaming or replacing a storage node. The docs also note LVM issues in a multi-controller setup (`doc/source/reference/storage/cinder-guide.rst:52-55`).
+1. **No `host`/`backend_host`/`cluster` set in cinder.conf** (`templates/cinder.conf.j2` has none;
+   `grep backend_host ansible/roles/cinder` returns nothing). Because of `network_mode: host`, each cinder-volume
+   container has the node hostname ([§0](#0-cross-cutting-facts-apply-to-all-five-roles)). Whether cinder then registers
+   it as `<node-hostname>@<backend>` is upstream cinder behaviour and NOT AVAILABLE here.
+   - NOT AVAILABLE (upstream cinder): whether, with a shared backend (ceph `rbd-1`) on several cinder-volume hosts,
+     every volume is owned by the host that created it.
+   - NOT AVAILABLE: whether, if that node is down, its volumes cannot be attached, detached, deleted or snapshotted
+     until the node returns or `cinder-manage volume update_host` is run.
+   - The same question applies to renaming or replacing a storage node. The docs also note LVM issues in a
+     multi-controller setup (`doc/source/reference/storage/cinder-guide.rst:52-55`).
 2. **cinder-volume restart impact** (upstream cinder and os-brick behaviour, NOT AVAILABLE beyond the code facts):
-   - Code facts: with LVM, the LIO config is kept in the `target_config` volume (`defaults/main.yml:116`) or the targets are served by the separate `tgtd` container ([§3.2](#32-cinder_services-ansiblerolescinderdefaultsmainyml2-48)); with Ceph, the RBD secret is installed into libvirt on computes ([§3.7](#37-dependencies-templatescinderconfj2)). NOT AVAILABLE: whether the data path for attached volumes bypasses cinder-volume, and so whether existing attachments survive a cinder-volume restart.
-   - In-flight operations: the stop sends SIGKILL if cinder-volume is still running after the 10 s graceful timeout ([§0](#0-cross-cutting-facts-apply-to-all-five-roles)). NOT AVAILABLE: whether this kills `qemu-img`/`dd` copies (image→volume, volume→image, migrate, retype) and what state they leave.
-   - NOT AVAILABLE: what `init_host` does on start with resources left in `creating`, `downloading` or `uploading`, and whether it re-runs `ensure_export` for in-use volumes.
-3. **cinder-backup restart:** NOT AVAILABLE: whether backups and restores in progress are killed and marked `error` on the next start. Because of the `cinder_backup_driver` default, see oddity 5.
-4. **Upgrade restarts every cinder-volume and cinder-backup at once** (flush at `upgrade.yml:13-14`; serial 0 unless `ANSIBLE_SERIAL` is set). There is no `[upgrade_levels]` pinning in the template, and the role restarts the services only in that one flush. NOT AVAILABLE: whether cinder's automatic RPC version pinning needs one more restart of all services after the upgrade to unpin.
-5. **Oddity: backup driver vs. ceph files.** `cinder_backup_driver: "ceph"` is the default even when `cinder_backend_ceph` is `no`. cinder.conf then sets `backup_driver = ...CephBackupDriver`, `backup_ceph_conf=/etc/ceph/ceph.conf` (:31-40). But `cinder-backup.json.j2` only lists ceph.conf and the keyrings `{% if cinder_backend_ceph %}` (:15-36), and `external_ceph.yml` only runs for `cinder_backend_ceph`. With an LVM or NFS-only deployment and default backup settings, kolla-ansible therefore gives cinder-backup no ceph config. Whether its driver then fails is NOT AVAILABLE.
-6. **Multipath** is never configured: no `use_multipath_for_image_xfer` / `volume_use_multipath` in cinder or nova templates (`grep multipath` returns nothing). The `multipathd` container is off by default (`all.yml:666`).
-7. **Compute-host touchpoints:** the cinder role itself does not target computes. However, `iscsid` on computes (iscsi role) shares `iscsi_info`, nova-compute uses the cinder creds, and the RBD secret is shared with nova-libvirt. Enabling `enable_cinder_backend_iscsi`/LVM also flips glance-api to privileged with `/dev`, so **glance-api is recreated** (`roles/glance/defaults/main.yml:10,139-140`).
-8. External Ceph needs cinder-volume and cinder-backup hosts in the `storage` group, otherwise "Cinder and related services relying on this group [will] fail" (`doc/source/reference/storage/external-ceph-guide.rst:73-80`).
+   - Code facts: with LVM, the LIO config is kept in the `target_config` volume (`defaults/main.yml:116`) or the targets
+     are served by the separate `tgtd` container ([§3.2](#32-cinder_services-ansiblerolescinderdefaultsmainyml2-48));
+     with Ceph, the RBD secret is installed into libvirt on computes ([§3.7](#37-dependencies-templatescinderconfj2)).
+     NOT AVAILABLE: whether the data path for attached volumes bypasses cinder-volume, and so whether existing
+     attachments survive a cinder-volume restart.
+   - In-flight operations: the stop sends SIGKILL if cinder-volume is still running after the 10 s graceful timeout
+     ([§0](#0-cross-cutting-facts-apply-to-all-five-roles)). NOT AVAILABLE: whether this kills `qemu-img`/`dd` copies
+     (image→volume, volume→image, migrate, retype) and what state they leave.
+   - NOT AVAILABLE: what `init_host` does on start with resources left in `creating`, `downloading` or `uploading`, and
+     whether it re-runs `ensure_export` for in-use volumes.
+3. **cinder-backup restart:** NOT AVAILABLE: whether backups and restores in progress are killed and marked `error` on
+   the next start. Because of the `cinder_backup_driver` default, see oddity 5.
+4. **Upgrade restarts every cinder-volume and cinder-backup at once** (flush at `upgrade.yml:13-14`; serial 0 unless
+   `ANSIBLE_SERIAL` is set). There is no `[upgrade_levels]` pinning in the template, and the role restarts the services
+   only in that one flush. NOT AVAILABLE: whether cinder's automatic RPC version pinning needs one more restart of all
+   services after the upgrade to unpin.
+5. **Oddity: backup driver vs. ceph files.** `cinder_backup_driver: "ceph"` is the default even when
+   `cinder_backend_ceph` is `no`. cinder.conf then sets `backup_driver = ...CephBackupDriver`,
+   `backup_ceph_conf=/etc/ceph/ceph.conf` (:31-40). But `cinder-backup.json.j2` only lists ceph.conf and the keyrings
+   `{% if cinder_backend_ceph %}` (:15-36), and `external_ceph.yml` only runs for `cinder_backend_ceph`. With an LVM or
+   NFS-only deployment and default backup settings, kolla-ansible therefore gives cinder-backup no ceph config. Whether
+   its driver then fails is NOT AVAILABLE.
+6. **Multipath** is never configured: no `use_multipath_for_image_xfer` / `volume_use_multipath` in cinder or nova
+   templates (`grep multipath` returns nothing). The `multipathd` container is off by default (`all.yml:666`).
+7. **Compute-host touchpoints:** the cinder role itself does not target computes. However, `iscsid` on computes (iscsi
+   role) shares `iscsi_info`, nova-compute uses the cinder creds, and the RBD secret is shared with nova-libvirt.
+   Enabling `enable_cinder_backend_iscsi`/LVM also flips glance-api to privileged with `/dev`, so **glance-api is
+   recreated** (`roles/glance/defaults/main.yml:10,139-140`).
+8. External Ceph needs cinder-volume and cinder-backup hosts in the `storage` group, otherwise "Cinder and related
+   services relying on this group [will] fail" (`doc/source/reference/storage/external-ceph-guide.rst:73-80`).
 9. The sanity check (if enabled) creates a 1 GB volume on every deploy/reconfigure.
 
 ---
@@ -352,7 +491,10 @@ Four handlers (api :2-15, scheduler :17-30, volume :32-47, backup :49-63), all r
 |---|---|---|---|---|
 | horizon | `horizon` | horizon | true | **`environment`: 27 `ENABLE_<PLUGIN>` flags plus `FORCE_GENERATE`** (:8-36). **Host `/tmp:/tmp` bind** (:98). Settings use `LOCAL_PATH = '/tmp'` (`templates/local_settings.j2:154`). HAProxy uses `balance source` (:46-47, :61-62) and adds http→https redirect frontends when TLS is on (:49-54, :64-69). |
 
-Because the plugin flags live in the container environment, and `check-containers` compares `environment` (`tasks/check-containers.yml:11`), **enabling or disabling any service that has a horizon plugin** (designate, octavia, magnum, …) changes the env. The horizon container is then **recreated** on the next deploy/reconfigure even if no horizon config changed.
+Because the plugin flags live in the container environment, and `check-containers` compares `environment`
+(`tasks/check-containers.yml:11`), **enabling or disabling any service that has a horizon plugin** (designate, octavia,
+magnum, …) changes the env. The horizon container is then **recreated** on the next deploy/reconfigure even if no
+horizon config changed.
 
 ### 4.3 Task flow
 
@@ -377,26 +519,52 @@ Because the plugin flags live in the container environment, and `check-container
 
 ### 4.5 Handlers
 
-`Restart horizon container` (`handlers/main.yml:2-16`): recreate_or_restart. It passes `environment`; there is no other logic.
+`Restart horizon container` (`handlers/main.yml:2-16`): recreate_or_restart. It passes `environment`; there is no other
+logic.
 
 ### 4.6 Bootstrap
 
-- `horizon_backend_database: "{{ enable_murano | bool }}"` (`all.yml:982`). Only then does deploy/reconfigure create the DB and user and run `bootstrap_horizon` (`KOLLA_BOOTSTRAP`: Django `manage.py migrate --noinput`, then exits; kolla `docker/horizon/extend_start.sh:46-49`) (`tasks/bootstrap.yml`, `bootstrap_service.yml:2-20`). In that case **the bootstrap re-runs on every reconfigure**.
+- `horizon_backend_database: "{{ enable_murano | bool }}"` (`all.yml:982`). Only then does deploy/reconfigure create the
+  DB and user and run `bootstrap_horizon` (`KOLLA_BOOTSTRAP`: Django `manage.py migrate --noinput`, then exits; kolla
+  `docker/horizon/extend_start.sh:46-49`) (`tasks/bootstrap.yml`, `bootstrap_service.yml:2-20`). In that case **the
+  bootstrap re-runs on every reconfigure**.
 - There is no keystone registration at all.
 
 ### 4.7 Dependencies (`templates/local_settings.j2`)
 
-- **Keystone**: `OPENSTACK_KEYSTONE_URL = horizon_keystone_url` = `keystone_internal_url/v3` (`defaults/main.yml:106`; template :209). `OPENSTACK_HOST = kolla_internal_fqdn` (:207). `OPENSTACK_ENDPOINT_TYPE = "internalURL"` (:420), so Horizon talks to **every** service's internal endpoint from its own container.
-- **memcached**: `SESSION_ENGINE = cache` with all memcached hosts **unless** the DB backend is used (:177-185). With the DB backend: `SESSION_ENGINE = db` plus MariaDB (:32-44).
-- **Cinder**: `enable_backup` follows `enable_cinder_backup` (:310). **Murano + Barbican**: `KEY_MANAGER` with murano creds (:845-854).
+- **Keystone**: `OPENSTACK_KEYSTONE_URL = horizon_keystone_url` = `keystone_internal_url/v3` (`defaults/main.yml:106`;
+  template :209). `OPENSTACK_HOST = kolla_internal_fqdn` (:207). `OPENSTACK_ENDPOINT_TYPE = "internalURL"` (:420), so
+  Horizon talks to **every** service's internal endpoint from its own container.
+- **memcached**: `SESSION_ENGINE = cache` with all memcached hosts **unless** the DB backend is used (:177-185). With
+  the DB backend: `SESSION_ENGINE = db` plus MariaDB (:32-44).
+- **Cinder**: `enable_backup` follows `enable_cinder_backup` (:310). **Murano + Barbican**: `KEY_MANAGER` with murano
+  creds (:845-854).
 - `SECRET_KEY = horizon_secret_key` (:165), which is the same on all nodes.
 - Multi-region `AVAILABLE_REGIONS` (:198-205).
-- TLS: `SECURE_PROXY_SSL_HEADER` and secure cookies when either internal or external TLS is on (:58-62). `horizon.conf.j2:99-102` has a FIXME: "enabling of either tls will break the other if not enabled too".
+- TLS: `SECURE_PROXY_SSL_HEADER` and secure cookies when either internal or external TLS is on (:58-62).
+  `horizon.conf.j2:99-102` has a FIXME: "enabling of either tls will break the other if not enabled too".
 
 ### 4.8 Operational notes
 
-- Sessions live in memcached unless the DB backend is used (`local_settings.j2:177-185`), HAProxy uses `balance source` ([§4.2](#42-horizon_services-ansibleroleshorizondefaultsmainyml2-69)), and `LOCAL_PATH=/tmp` is the **host's** `/tmp` ([§4.2](#42-horizon_services-ansibleroleshorizondefaultsmainyml2-69)). NOT AVAILABLE: whether a horizon restart or a **memcached restart** logs users out, what restarting a node does to in-flight requests (including legacy image uploads that go through Horizon), and whether those uploads are staged in `LOCAL_PATH`.
-- Image side (kolla `docker/horizon/extend_start.sh`): every start syncs each `ENABLE_<PLUGIN>` dashboard file into `openstack_dashboard/local/enabled` (`:51-65,339-366`). `manage.py collectstatic --noinput --clear` and `compress --force` run **only** when `/var/lib/kolla/.settings.md5sum.txt` is missing, the md5 of `local_settings` + `custom_local_settings` + `local_settings.d` differs from it, a plugin file was just copied in or removed, or `FORCE_GENERATE=yes` (`:57-63,322-337,368-372`). kolla-ansible sets `FORCE_GENERATE=yes` only when `horizon_dev_mode` is on, and `no` otherwise (`defaults/main.yml:36,123`). The settings set `COMPRESS_OFFLINE = True` (`local_settings.j2:13`). `/var/lib/kolla` is not a volume (`defaults/main.yml:90-98`), so the hash file lives in the container layer. The handler restarts the container under `COPY_ALWAYS` (default, `all.yml:43`) and recreates it when image, env or volumes differ, or under `COPY_ONCE` (`kolla_docker.py:793-803`). Only this start script writes the hash file (`:6,371`; no other file under kolla `docker/` names it), so a new container starts without one. `collectstatic` and `compress` therefore run on the first start after a recreate (new image, plugin flag change, `COPY_ONCE`) or after a `local_settings`/`custom_local_settings` change, and not on a plain restart with unchanged settings and plugin flags. NOT AVAILABLE: how long they take. See [Kolla images §5](../../concepts/kolla-images.md#5-per-image-start-behaviour).
+- Sessions live in memcached unless the DB backend is used (`local_settings.j2:177-185`), HAProxy uses `balance source`
+  ([§4.2](#42-horizon_services-ansibleroleshorizondefaultsmainyml2-69)), and `LOCAL_PATH=/tmp` is the **host's** `/tmp`
+  ([§4.2](#42-horizon_services-ansibleroleshorizondefaultsmainyml2-69)). NOT AVAILABLE: whether a horizon restart or a
+  **memcached restart** logs users out, what restarting a node does to in-flight requests (including legacy image
+  uploads that go through Horizon), and whether those uploads are staged in `LOCAL_PATH`.
+- Image side (kolla `docker/horizon/extend_start.sh`): every start syncs each `ENABLE_<PLUGIN>` dashboard file into
+  `openstack_dashboard/local/enabled` (`:51-65,339-366`). `manage.py collectstatic --noinput --clear` and
+  `compress --force` run **only** when `/var/lib/kolla/.settings.md5sum.txt` is missing, the md5 of `local_settings` +
+  `custom_local_settings` + `local_settings.d` differs from it, a plugin file was just copied in or removed, or
+  `FORCE_GENERATE=yes` (`:57-63,322-337,368-372`). kolla-ansible sets `FORCE_GENERATE=yes` only when `horizon_dev_mode`
+  is on, and `no` otherwise (`defaults/main.yml:36,123`). The settings set `COMPRESS_OFFLINE = True`
+  (`local_settings.j2:13`). `/var/lib/kolla` is not a volume (`defaults/main.yml:90-98`), so the hash file lives in the
+  container layer. The handler restarts the container under `COPY_ALWAYS` (default, `all.yml:43`) and recreates it when
+  image, env or volumes differ, or under `COPY_ONCE` (`kolla_docker.py:793-803`). Only this start script writes the hash
+  file (`:6,371`; no other file under kolla `docker/` names it), so a new container starts without one. `collectstatic`
+  and `compress` therefore run on the first start after a recreate (new image, plugin flag change, `COPY_ONCE`) or after
+  a `local_settings`/`custom_local_settings` change, and not on a plain restart with unchanged settings and plugin
+  flags. NOT AVAILABLE: how long they take. See
+  [Kolla images §5](../../concepts/kolla-images.md#5-per-image-start-behaviour).
 - Horizon config is independent of host count except for the memcached list.
 
 ---
@@ -442,32 +610,69 @@ Because the plugin flags live in the container environment, and `check-container
 | `heat-api/wsgi-heat-api.conf`, `heat-api-cfn/wsgi-heat-api-cfn.conf` | `src: "{{ role_path }}/templates/..."` (:85-111). **No override path exists**, unlike cinder/placement wsgi. | Restart heat-api / heat-api-cfn |
 | certs | service-cert-copy (:34-36) | |
 
-**Oddity:** in `templates/wsgi-heat-api.conf.j2:2-6` (and in the cfn twin) `python_path` is `/usr/lib/python2.7/site-packages` for CentOS binary and `/usr/lib/python<ver>/site-packages` for source. That is **not** the venv path, which placement and cinder use (`roles/placement/templates/placement-api-wsgi.conf.j2:2-6`). `WSGIScriptAlias` points at the venv binary (:37), so the two settings are inconsistent. Whether this `python-path` (:35) has any effect at runtime is NOT AVAILABLE.
+**Oddity:** in `templates/wsgi-heat-api.conf.j2:2-6` (and in the cfn twin) `python_path` is
+`/usr/lib/python2.7/site-packages` for CentOS binary and `/usr/lib/python<ver>/site-packages` for source. That is
+**not** the venv path, which placement and cinder use (`roles/placement/templates/placement-api-wsgi.conf.j2:2-6`).
+`WSGIScriptAlias` points at the venv binary (:37), so the two settings are inconsistent. Whether this `python-path`
+(:35) has any effect at runtime is NOT AVAILABLE.
 
 ### 5.5 Handlers
 
-Three handlers: heat-api (:2-15), heat-api-cfn (:17-30), heat-engine (:32-45). All recreate_or_restart, with no special logic.
+Three handlers: heat-api (:2-15), heat-api-cfn (:17-30), heat-engine (:32-45). All recreate_or_restart, with no special
+logic.
 
 ### 5.6 Bootstrap
 
 - `mysql_db heat` and `mysql_user` (`tasks/bootstrap.yml:2-34`) run every deploy/reconfigure.
-- `bootstrap_heat` container (`bootstrap_service.yml:2-29`) gets `KOLLA_BOOTSTRAP` plus the **cloud admin credentials as env vars** (`OS_AUTH_URL`, `OS_USERNAME`, `OS_PASSWORD`, `OS_PROJECT_NAME`, …) and `HEAT_DOMAIN_ADMIN_PASSWORD`. The image runs `heat-manage db_sync`, then `openstack domain list`. Only if `heat_user_domain` is absent does it create the domain, the `heat_domain_admin` user (password `HEAT_DOMAIN_ADMIN_PASSWORD`) and that user's `admin` role on the domain (kolla `docker/heat/heat-api/extend_start.sh:5-17`). **It re-runs on every reconfigure** (and on upgrade, `tasks/upgrade.yml:6`), but once the domain exists it never touches the user. A changed `heat_domain_admin_password` (`etc/kolla/passwords.yml:117`) is therefore **not** pushed to Keystone, while `heat.conf` gets the new value (`templates/heat.conf.j2:12-13`). NOT AVAILABLE: whether stack-domain operations then fail authentication. The check looks only at the domain name, so if a run fails partway and leaves the domain without the user or its role, no later run repairs it. The container is removed on exit, after a failure too (`kolla_docker.py:837-845`), so the passwords do not linger in `docker inspect`. But `kolla_start` runs with xtrace: when the bootstrap creates the domain, the `openstack user create … --password` line goes to stderr with `HEAT_DOMAIN_ADMIN_PASSWORD` expanded. `kolla_docker` returns that stderr in the task result (`kolla_docker.py:832-836`), which Ansible prints on failure or with `-v` (ansible 2.9.27 `lib/ansible/plugins/callback/default.py:94-113,152-153`, `lib/ansible/plugins/callback/__init__.py:101-103`), and the task sets no `no_log` (kolla `docker/base/start.sh:3`, `docker/heat/heat-api/extend_start.sh:12`; [Kolla images §2.2](../../concepts/kolla-images.md#22-kolla_start-step-by-step)).
-- Keystone: services `heat/orchestration` (`/v1/%(tenant_id)s`) and `heat-cfn/cloudformation` (`/v1`); user `heat`; roles `heat_stack_owner` and `heat_stack_user`; **`heat_stack_owner` granted to the cloud admin user in the admin project** (`defaults/main.yml:148-177`; `tasks/register.yml:2-9`). This runs on deploy/reconfigure, not on upgrade.
+- `bootstrap_heat` container (`bootstrap_service.yml:2-29`) gets `KOLLA_BOOTSTRAP` plus the **cloud admin credentials as
+  env vars** (`OS_AUTH_URL`, `OS_USERNAME`, `OS_PASSWORD`, `OS_PROJECT_NAME`, …) and `HEAT_DOMAIN_ADMIN_PASSWORD`. The
+  image runs `heat-manage db_sync`, then `openstack domain list`. Only if `heat_user_domain` is absent does it create
+  the domain, the `heat_domain_admin` user (password `HEAT_DOMAIN_ADMIN_PASSWORD`) and that user's `admin` role on the
+  domain (kolla `docker/heat/heat-api/extend_start.sh:5-17`). **It re-runs on every reconfigure** (and on upgrade,
+  `tasks/upgrade.yml:6`), but once the domain exists it never touches the user. A changed `heat_domain_admin_password`
+  (`etc/kolla/passwords.yml:117`) is therefore **not** pushed to Keystone, while `heat.conf` gets the new value
+  (`templates/heat.conf.j2:12-13`). NOT AVAILABLE: whether stack-domain operations then fail authentication. The check
+  looks only at the domain name, so if a run fails partway and leaves the domain without the user or its role, no later
+  run repairs it. The container is removed on exit, after a failure too (`kolla_docker.py:837-845`), so the passwords do
+  not linger in `docker inspect`. But `kolla_start` runs with xtrace: when the bootstrap creates the domain, the
+  `openstack user create … --password` line goes to stderr with `HEAT_DOMAIN_ADMIN_PASSWORD` expanded. `kolla_docker`
+  returns that stderr in the task result (`kolla_docker.py:832-836`), which Ansible prints on failure or with `-v`
+  (ansible 2.9.27 `lib/ansible/plugins/callback/default.py:94-113,152-153`,
+  `lib/ansible/plugins/callback/__init__.py:101-103`), and the task sets no `no_log` (kolla `docker/base/start.sh:3`,
+  `docker/heat/heat-api/extend_start.sh:12`;
+  [Kolla images §2.2](../../concepts/kolla-images.md#22-kolla_start-step-by-step)).
+- Keystone: services `heat/orchestration` (`/v1/%(tenant_id)s`) and `heat-cfn/cloudformation` (`/v1`); user `heat`;
+  roles `heat_stack_owner` and `heat_stack_user`; **`heat_stack_owner` granted to the cloud admin user in the admin
+  project** (`defaults/main.yml:148-177`; `tasks/register.yml:2-9`). This runs on deploy/reconfigure, not on upgrade.
 
 ### 5.7 Dependencies (`templates/heat.conf.j2`)
 
-- **Public endpoints reached from inside VMs:** `heat_metadata_server_url` and `heat_waitcondition_server_url` use **`public_protocol` and `heat_cfn_external_fqdn`** (:7-8). `server_keystone_endpoint_type = public` (:24). Instances that use wait conditions or software deployments must be able to reach the **external** VIP on 8000 and the public keystone endpoint.
-- **All other services:** `[clients] endpoint_type = internalURL` (:94-96). heat-engine calls nova, neutron, cinder, glance, swift, etc. through their internal catalog endpoints. The real dependency set is whatever the users' templates use.
-- Keystone: `keystone_authtoken`, plus `[trustee]` with the heat service user (:69-75), plus `[ec2authtoken]` (:77-78). `stack_domain_admin` = `heat_domain_admin` / `heat_domain_admin_password` (:12-14).
-- MariaDB (:40-44); RabbitMQ RPC (:20) and notifications (ceilometer only, `defaults/main.yml:139-143`); memcached for authtoken and `[cache]` (:58-66).
+- **Public endpoints reached from inside VMs:** `heat_metadata_server_url` and `heat_waitcondition_server_url` use
+  **`public_protocol` and `heat_cfn_external_fqdn`** (:7-8). `server_keystone_endpoint_type = public` (:24). Instances
+  that use wait conditions or software deployments must be able to reach the **external** VIP on 8000 and the public
+  keystone endpoint.
+- **All other services:** `[clients] endpoint_type = internalURL` (:94-96). heat-engine calls nova, neutron, cinder,
+  glance, swift, etc. through their internal catalog endpoints. The real dependency set is whatever the users' templates
+  use.
+- Keystone: `keystone_authtoken`, plus `[trustee]` with the heat service user (:69-75), plus `[ec2authtoken]` (:77-78).
+  `stack_domain_admin` = `heat_domain_admin` / `heat_domain_admin_password` (:12-14).
+- MariaDB (:40-44); RabbitMQ RPC (:20) and notifications (ceilometer only, `defaults/main.yml:139-143`); memcached for
+  authtoken and `[cache]` (:58-66).
 - `num_engine_workers = openstack_service_workers` (≤5) per engine host (:16-18).
 
 ### 5.8 Operational notes
 
-- **heat-engine restarts with stacks in progress:** Docker sends SIGTERM, then SIGKILL if heat-engine is still running after 10 s (`kolla_docker.py:873-875`; [§0](#0-cross-cutting-facts-apply-to-all-five-roles)). NOT AVAILABLE (upstream heat): how that compares with the duration of long resource creates; whether stacks that a killed engine owned stay `*_IN_PROGRESS` until some engine starts again; whether heat-engine's `reset_stack_status` then marks them `FAILED` ("Engine went down during stack …"); and whether users must then run `stack update` or a check/resume.
-- With serial 0, **every heat-engine restarts in the same handler flush** on any heat.conf change. A memcached or rabbit membership change, a password rotation or an `openstack_service_workers` change is enough. Every in-progress stack in the cloud is therefore affected, not just a fraction.
+- **heat-engine restarts with stacks in progress:** Docker sends SIGTERM, then SIGKILL if heat-engine is still running
+  after 10 s (`kolla_docker.py:873-875`; [§0](#0-cross-cutting-facts-apply-to-all-five-roles)). NOT AVAILABLE (upstream
+  heat): how that compares with the duration of long resource creates; whether stacks that a killed engine owned stay
+  `*_IN_PROGRESS` until some engine starts again; whether heat-engine's `reset_stack_status` then marks them `FAILED`
+  ("Engine went down during stack …"); and whether users must then run `stack update` or a check/resume.
+- With serial 0, **every heat-engine restarts in the same handler flush** on any heat.conf change. A memcached or rabbit
+  membership change, a password rotation or an `openstack_service_workers` change is enough. Every in-progress stack in
+  the cloud is therefore affected, not just a fraction.
 - On upgrade the db sync runs while old engines are still active, and all engines restart together after it.
-- Heat does not touch compute hosts. Its dependency on instance reachability to the external VIP (above) is the main network coupling.
+- Heat does not touch compute hosts. Its dependency on instance reachability to the external VIP (above) is the main
+  network coupling.
 
 ---
 
@@ -481,28 +686,49 @@ Three handlers: heat-api (:2-15), heat-api-cfn (:17-30), heat-engine (:32-45). A
 | horizon | **no** | only if `horizon_backend_database` | only if `horizon_backend_database` | env-driven recreate when plugin flags change | all horizon |
 | heat | yes (also roles and a grant to admin) | yes | **yes** (with admin creds in env) | – | api, api-cfn, **all engines** |
 
-The separate online-data-migration container (`KOLLA_OSM`) runs **only on `upgrade`**, for placement (`upgrade.yml:16-34`) and cinder (`upgrade.yml:16-34`). Glance's expand/migrate/contract runs only in the rolling path. A reconfigure with a bumped image tag therefore runs cinder's `db sync` without its OSM step (kolla `docker/cinder/cinder-api/extend_start.sh:6-18`), while placement's bootstrap container runs both `db sync` and `db online_data_migrations` (kolla `docker/placement/placement-api/extend_start.sh:5-9`). Whether this leaves cinder in a partially upgraded state is NOT AVAILABLE. See [Kolla images §4](../../concepts/kolla-images.md#4-one-shot-containers-what-the-environment-variables-run).
+The separate online-data-migration container (`KOLLA_OSM`) runs **only on `upgrade`**, for placement
+(`upgrade.yml:16-34`) and cinder (`upgrade.yml:16-34`). Glance's expand/migrate/contract runs only in the rolling path.
+A reconfigure with a bumped image tag therefore runs cinder's `db sync` without its OSM step (kolla
+`docker/cinder/cinder-api/extend_start.sh:6-18`), while placement's bootstrap container runs both `db sync` and
+`db online_data_migrations` (kolla `docker/placement/placement-api/extend_start.sh:5-9`). Whether this leaves cinder in
+a partially upgraded state is NOT AVAILABLE. See
+[Kolla images §4](../../concepts/kolla-images.md#4-one-shot-containers-what-the-environment-variables-run).
 
 ## 7. Things that scale with host count
 
-- memcached and rabbit host lists in every config ([§0](#0-cross-cutting-facts-apply-to-all-five-roles)). Any membership change rewrites the config of all 5 services and restarts every container of every service.
+- memcached and rabbit host lists in every config ([§0](#0-cross-cutting-facts-apply-to-all-five-roles)). Any membership
+  change rewrites the config of all 5 services and restarts every container of every service.
 - `glance_num_retries = len(groups['glance-api'])` (`roles/cinder/templates/cinder.conf.j2:21`).
-- HAProxy backend lists: glance uses `glance_api_hosts` (`roles/glance/defaults/main.yml:69-70`); the others use `groups[service.group]` (`roles/haproxy-config/templates/haproxy_single_service_split.cfg.j2:92-97`).
-- Placement and cinder credentials are embedded in nova-compute config on **every compute**. Password rotation therefore needs a reconfigure of the whole compute fleet ([§2.8](#28-operational-notes-and-the-relation-to-nova), [§3.7](#37-dependencies-templatescinderconfj2)).
+- HAProxy backend lists: glance uses `glance_api_hosts` (`roles/glance/defaults/main.yml:69-70`); the others use
+  `groups[service.group]` (`roles/haproxy-config/templates/haproxy_single_service_split.cfg.j2:92-97`).
+- Placement and cinder credentials are embedded in nova-compute config on **every compute**. Password rotation therefore
+  needs a reconfigure of the whole compute fleet ([§2.8](#28-operational-notes-and-the-relation-to-nova),
+  [§3.7](#37-dependencies-templatescinderconfj2)).
 - `run_once` tasks repeat per batch when `ANSIBLE_SERIAL` is set ([§0](#0-cross-cutting-facts-apply-to-all-five-roles)).
 
 ## 8. NOT AVAILABLE list
 
-1. NOT AVAILABLE: whether an existing glance file-store image stays readable after `enable_swift: yes` or `glance_backend_ceph: yes` is applied by reconfigure.
-2. Answered from code: Glance rolling upgrade with `ANSIBLE_SERIAL=1` runs the contract at the end of batch 1, before later batches are upgraded ([§1.8](#18-operational-notes) note 4; [§0](#0-cross-cutting-facts-apply-to-all-five-roles) run_once + serial).
-3. NOT AVAILABLE: Glance-api start time with a large NFS `glance_file_datadir_volume` (recursive chown, `glance-api.json.j2:42-46`).
-4. NOT AVAILABLE: whether the glance cinder store works with `cinder_catalog_info = volume:cinder:internalURL` and no `[cinder]` store section.
-5. NOT AVAILABLE: whether cinder-backup works with default `cinder_backup_driver=ceph` and `cinder_backend_ceph=no` (kolla-ansible gives it no ceph config, [§3.8](#38-operational-notes) oddity 5).
-6. NOT AVAILABLE: whether the volumes owned by one of several RBD cinder-volume nodes (`host`) can still be managed while that node is down, and what state an in-flight create-from-image is in after a cinder-volume restart.
+1. NOT AVAILABLE: whether an existing glance file-store image stays readable after `enable_swift: yes` or
+   `glance_backend_ceph: yes` is applied by reconfigure.
+2. Answered from code: Glance rolling upgrade with `ANSIBLE_SERIAL=1` runs the contract at the end of batch 1, before
+   later batches are upgraded ([§1.8](#18-operational-notes) note 4;
+   [§0](#0-cross-cutting-facts-apply-to-all-five-roles) run_once + serial).
+3. NOT AVAILABLE: Glance-api start time with a large NFS `glance_file_datadir_volume` (recursive chown,
+   `glance-api.json.j2:42-46`).
+4. NOT AVAILABLE: whether the glance cinder store works with `cinder_catalog_info = volume:cinder:internalURL` and no
+   `[cinder]` store section.
+5. NOT AVAILABLE: whether cinder-backup works with default `cinder_backup_driver=ceph` and `cinder_backend_ceph=no`
+   (kolla-ansible gives it no ceph config, [§3.8](#38-operational-notes) oddity 5).
+6. NOT AVAILABLE: whether the volumes owned by one of several RBD cinder-volume nodes (`host`) can still be managed
+   while that node is down, and what state an in-flight create-from-image is in after a cinder-volume restart.
 7. NOT AVAILABLE: Cinder RPC pinning after `kolla-ansible upgrade` (is a second restart needed?).
 8. NOT AVAILABLE: Heat-engine restart with `CREATE_IN_PROGRESS` stacks: final state and recovery steps.
-9. NOT AVAILABLE: Horizon restart: session survival (memcached) and start-up duration. When collectstatic/compress run is answered from kolla source ([§4.8](#48-operational-notes)).
-10. Answered from kolla source: `bootstrap_heat` does **not** update the `heat_domain_admin` password once `heat_user_domain` exists (kolla `docker/heat/heat-api/extend_start.sh:10-14`; [§5.6](#56-bootstrap)). Remaining NOT AVAILABLE: how heat behaves after `heat_domain_admin_password` changes, when `heat.conf` gets the new value (`roles/heat/templates/heat.conf.j2:13`) but Keystone keeps the old one.
+9. NOT AVAILABLE: Horizon restart: session survival (memcached) and start-up duration. When collectstatic/compress run
+   is answered from kolla source ([§4.8](#48-operational-notes)).
+10. Answered from kolla source: `bootstrap_heat` does **not** update the `heat_domain_admin` password once
+    `heat_user_domain` exists (kolla `docker/heat/heat-api/extend_start.sh:10-14`; [§5.6](#56-bootstrap)). Remaining NOT
+    AVAILABLE: how heat behaves after `heat_domain_admin_password` changes, when `heat.conf` gets the new value
+    (`roles/heat/templates/heat.conf.j2:13`) but Keystone keeps the old one.
 
 ## Related
 

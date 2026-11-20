@@ -25,8 +25,10 @@ Real `kolla-ansible` (2024.1) invocations with what they select, their scope and
 > - **First 2024.1 run on a cloud deployed by 2023.1:** expect restarts whose operator config did not change: the
 >   systemd unit text changed ([F16](../reference/findings.md#f16)), RabbitMQ quorum queues are on by default
 >   ([F17](../reference/findings.md#f17)), and `nova_compute` and `cinder_volume` get a new `hostnqn` file. How to see
->   them before the run: [Predict and inspect a run §2](predict-a-run.md#2-the-first-20241-run-on-a-cloud-deployed-by-20231);
->   what to settle first: [Pre-execution checklist §2](pre-execution-checklist.md#2-first-20241-run-on-a-cloud-deployed-by-20231).
+>   them before the run:
+> [Predict and inspect a run §2](predict-a-run.md#2-the-first-20241-run-on-a-cloud-deployed-by-20231);
+>   what to settle first:
+> [Pre-execution checklist §2](pre-execution-checklist.md#2-first-20241-run-on-a-cloud-deployed-by-20231).
 > - **Recommended pattern:** `genconfig`, then `deploy-containers --limit` batch by batch, with its caveats [CODE]
 >   ([Write config first, apply in controlled batches
 >   §2](controlled-batches.md#2-separate-write-config-from-apply-recommended-pattern)). New in 2024.1: every play sets
@@ -35,7 +37,8 @@ Real `kolla-ansible` (2024.1) invocations with what they select, their scope and
 >   a large workload: [Why a small change creates a large workload](../risk/small-change-large-workload.md).
 > - **Leave HAProxy alone:** `--skip-tags haproxy` ([Reconfigure a single service
 >   §1.2](reconfigure-a-service.md#12-avoid-touching-haproxy-during-a-service-run)). **Push `common` changes:**
->   `-t common`, which runs the common play (`site.yml:88-103`); still in 2024.1, `-t chrony` selects nothing, as there is
+>   `-t common`, which runs the common play (`site.yml:88-103`); still in 2024.1, `-t chrony` selects nothing, as there
+> is
 >   no chrony role ([Apply `common` changes (fluentd, cron, kolla_toolbox)
 >   §1.1](apply-common-changes.md#11-apply-common-changes-fluentd-cron-kolla_toolbox)). New in 2024.1: the common
 >   play's config step can pull the fluentd image, `genconfig` included.
@@ -123,7 +126,8 @@ that establishes it:
 1. **Config drift ⇒ full container stop/start.** It is never a reload. Still holds in 2024.1: the stop timeout is
    `docker_graceful_timeout`, **60 s** by default (`group_vars/all.yml:139`), passed to the module as
    `graceful_timeout` in `docker_common_options` (`group_vars/all.yml:151`). Each container runs under a
-   `kolla-<name>-container.service` systemd unit, and a restart goes through that unit (`module_utils/kolla_docker_worker.py:439-459`,
+   `kolla-<name>-container.service` systemd unit, and a restart goes through that unit
+   (`module_utils/kolla_docker_worker.py:439-459`,
    `module_utils/kolla_podman_worker.py:602-617`, `module_utils/kolla_systemd_worker.py:106-113`). Changed in 2024.1:
    the unit names the engine, `ExecStop=/usr/bin/${engine} stop ${name} -t ${graceful_timeout}`
    (`module_utils/kolla_systemd_worker.py:32`) ([Repository architecture

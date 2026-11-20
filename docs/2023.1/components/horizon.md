@@ -10,7 +10,8 @@ This page is the starting point for Horizon, the `horizon` role: one container, 
 example inventory (`inventory/multinode:140-141`), selected by the tag `horizon` (`site.yml:643`). The role has no
 `register.yml`, so it is never registered in Keystone, and by default it runs no bootstrap: `bootstrap.yml` is included
 only when `horizon_backend_database` is true (`roles/horizon/tasks/deploy.yml:10-11`), and that defaults to
-`enable_murano` (`group_vars/all.yml:1052`) [CODE] ([Tags §3](../risk/tags.md#3-what-a-tag-really-executes-master-table)). The lists
+`enable_murano` (`group_vars/all.yml:1052`) [CODE]
+([Tags §3](../risk/tags.md#3-what-a-tag-really-executes-master-table)). The lists
 below say where the study covers how to operate it, its impact, its dependencies and the evidence, what to check around
 a run and what stays open; the service card follows them.
 
@@ -52,7 +53,8 @@ in 2023.1 `common` is its own play, tagged `common` only (`site.yml:86-97`) [COD
   default; batch with `ANSIBLE_SERIAL`. Prerequisites: MariaDB, RabbitMQ, memcached, Keystone (registration), HAProxy
   VIP.
 - [fact sheet C §4.2][sheet-c-42]: enabling or disabling any service that has a horizon plugin (designate, octavia,
-  magnum, …) changes the container environment (`ENABLE_<PLUGIN>`, `roles/horizon/defaults/main.yml:8-29`); the horizon container is then recreated on the next deploy/reconfigure
+  magnum, …) changes the container environment (`ENABLE_<PLUGIN>`, `roles/horizon/defaults/main.yml:8-29`); the horizon
+  container is then recreated on the next deploy/reconfigure
   even if no horizon config changed.
 - [Kolla images §5.2](../concepts/kolla-images.md#52-horizon-static-assets): a recreate (new image, changed parameters)
   or a settings change makes the next start regenerate the static assets; a plain restart with unchanged settings does

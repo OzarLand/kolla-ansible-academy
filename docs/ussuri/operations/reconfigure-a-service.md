@@ -78,7 +78,8 @@ kolla-ansible -i multinode -t keystone reconfigure
   - haproxy, on all haproxy hosts, only if the frontend changed;
   - per host (loop-notify): on each keystone host where any keystone container drifted, all keystone containers of
     that host restart (`keystone`, plus `keystone_ssh` and `keystone_fernet` with Fernet tokens). Hosts without drift
-    do not restart. Without `ANSIBLE_SERIAL`, drifted hosts restart in parallel, so a change common to all hosts (globals, `keystone.conf`, a
+    do not restart. Without `ANSIBLE_SERIAL`, drifted hosts restart in parallel, so a change common to all hosts
+    (globals, `keystone.conf`, a
     new image) restarts keystone on all keystone hosts at once.
 - **One-shot:** keystone db sync. Fernet keys are re-distributed.
 - **Impact:** if restarted, keystone restarts on all drifted hosts at once; [NOT AVAILABLE] whether authentication fails
@@ -132,7 +133,8 @@ For an API service such as keystone, glance, cinder, heat or placement:
    restarts on all haproxy hosts at once if that file changed ([R8](../risk/risk-register.md#r8)).
 3. Service play, on the service hosts: `common` → Keystone registration (`run_once`) → config → check-containers →
    DB/user creation and the DB-sync container on the first host → flush. Every drifted host restarts all of the
-   service's containers (loop-notify), all such hosts in parallel unless `ANSIBLE_SERIAL` batches the play. Keystone is the exception: it registers last
+   service's containers (loop-notify), all such hosts in parallel unless `ANSIBLE_SERIAL` batches the play. Keystone is
+   the exception: it registers last
    ([§1.1](#11-reconfigure-a-single-service)).
 
 - **Interruption:** the service API is unavailable while its containers restart (up to 10 s stop, then start) on all

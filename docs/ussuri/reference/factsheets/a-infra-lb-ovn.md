@@ -67,12 +67,14 @@ Common mechanics that apply to every role below (all verified in code):
 
 - **Pattern groups.** The `enable_*` pattern groups are created by `group_by` in `site.yml:21-95`:
   - chrony line 30, haproxy 43, memcached 59, openvswitch/ovs_dpdk 68, ovn 70.
-- **Play order matters.** It runs chrony (114) → haproxy (126) → … mariadb (473) → memcached (481) → … `nova.yml` (710) →
+- **Play order matters.** It runs chrony (114) → haproxy (126) → … mariadb (473) → memcached (481) → … `nova.yml` (710)
+  →
   openvswitch (712) → ovs-dpdk (723) → ovn (734) → … neutron (~761).
 - **Common dependency.** haproxy, chrony, ovn and ovs-dpdk carry the meta dependency `- { role: common }`
   (`ansible/roles/{haproxy,chrony,ovn,ovs-dpdk}/meta/main.yml`). **memcached has no `meta/` at all**, so it has no
   common dependency.
-  - The common role is guarded by `when: not common_run` and sets `common_run: True` (`ansible/roles/common/tasks/main.yml:2-10`).
+  - The common role is guarded by `when: not common_run` and sets `common_run: True`
+    (`ansible/roles/common/tasks/main.yml:2-10`).
   - It has `common_run: False` as a default (`ansible/roles/common/defaults/main.yml:4`).
 
 ---
@@ -81,7 +83,8 @@ Common mechanics that apply to every role below (all verified in code):
 
 ### 1.1 Play
 
-- **Play:** `site.yml:126-392`. Hosts `haproxy` ∩ `enable_haproxy_True`, `serial: kolla_serial`, play-level `tags: [haproxy]`.
+- **Play:** `site.yml:126-392`. Hosts `haproxy` ∩ `enable_haproxy_True`, `serial: kolla_serial`, play-level
+  `tags: [haproxy]`.
 - **Role entry:** `- { role: haproxy, when: enable_haproxy | bool }` (135-136).
 - **The loadbalancer block.** The play then has a `tasks:` block of 49 `include_role` statements (139-389) guarded by
   (390-392):
@@ -130,8 +133,10 @@ Common mechanics that apply to every role below (all verified in code):
     `set_sysctl` (554): `net.ipv4.ip_nonlocal_bind=1`, `net.ipv6.ip_nonlocal_bind=1`,
     `net.ipv4.tcp_retries2=<haproxy_host_ipv4_tcp_retries2>`, `net.unix.max_dgram_qlen=128`.
   - The value `KOLLA_UNSET` (the default, `defaults/main.yml:76-78`) means `state: absent` (`config-host.yml:4-9`).
-  - Then `module-load` with `ip_vs` (21-26). This is loaded even when `enable_keepalived` is false, because it has no `when`.
-- **`check-containers.yml:2-17`.** `compare_container` for each enabled service, notifying `"Restart {{ item.key }} container"`.
+  - Then `module-load` with `ip_vs` (21-26). This is loaded even when `enable_keepalived` is false, because it has no
+    `when`.
+- **`check-containers.yml:2-17`.** `compare_container` for each enabled service, notifying
+  `"Restart {{ item.key }} container"`.
 
 ### 1.4 Config files generated (`ansible/roles/haproxy/tasks/config.yml`)
 
@@ -164,7 +169,8 @@ Inside the container:
   - **`priority {{ groups['haproxy'].index(inventory_hostname) + 1 }}`** (13).
   - Unicast peers are built from `groups['haproxy']` (15-27). The VIP(s) are at 28-33. `track_interface` for the
     external VIP (34-38). `auth_type PASS` (39-42). `track_script check_alive` (43-45).
-  - `keepalived_virtual_router_id: "51"` (`group_vars/all.yml:186`). `keepalived_traffic_mode: "multicast"` (`defaults/main.yml:38`).
+  - `keepalived_virtual_router_id: "51"` (`group_vars/all.yml:186`). `keepalived_traffic_mode: "multicast"`
+    (`defaults/main.yml:38`).
 
 ### 1.5 Handlers (`ansible/roles/haproxy/handlers/main.yml`). Definition order = run order (see common mechanics)
 
@@ -176,7 +182,8 @@ Inside the container:
 3. **`Waiting for haproxy to start`** (42-45).
    - `wait_for host: api_interface_address port: haproxy_monitor_port` (default 300 s timeout).
    - It only proves that the haproxy process listens. It says nothing about the backends.
-4. **`Waiting for virtual IP to appear`** (47-50). `wait_for host: kolla_internal_vip_address port: haproxy_monitor_port`.
+4. **`Waiting for virtual IP to appear`** (47-50).
+   `wait_for host: kolla_internal_vip_address port: haproxy_monitor_port`.
 
 Other properties:
 - There is no `run_once`, `delegate_to`, `listen`, rolling or serial logic inside the handlers.
@@ -397,9 +404,11 @@ restart per run, at the end of the haproxy play (the fix for LP#1864810/LP#18752
   - Global extras: `haproxy_frontend_http_extra: [option httplog, option forwardfor]` and
     `haproxy_frontend_tcp_extra: [option tcplog]` (`defaults/main.yml:5-11`).
   - Health check: `check inter 2000 rise 2 fall 5`, or with `check-ssl` (13-14).
-- **Backend list.** From the listen template: `{% for host in groups[host_group] %} server {{ hostvars[host].ansible_facts.hostname }} {{ 'api'|kolla_address(host) }}:{{ listen_port }} …`
+- **Backend list.** From the listen template:
+  `{% for host in groups[host_group] %} server {{ hostvars[host].ansible_facts.hostname }} {{ 'api'|kolla_address(host) }}:{{ listen_port }} …`
   (`templates/haproxy_single_service_listen.cfg.j2:73-77`).
-  - `host_group` defaults to `service.group` (96). `custom_member_list` overrides it (57-60), as in memcached and mariadb.
+  - `host_group` defaults to `service.group` (96). `custom_member_list` overrides it (57-60), as in memcached and
+    mariadb.
 - **Binding and TLS.**
   - External entries bind `kolla_external_vip_address`; internal entries bind `kolla_internal_vip_address` (37-52).
   - External entries are dropped when `haproxy_enable_external_vip` is false (87).
@@ -463,7 +472,8 @@ They are never notified here, so this is harmless.
 - **deploy-containers** = check-containers.
 - **pull** = service-images-pull.
 - **stop** = service-stop.
-- **precheck** = `service-precheck` + free port on `api_interface_address:11211` when the container is absent (`precheck.yml:2-24`).
+- **precheck** = `service-precheck` + free port on `api_interface_address:11211` when the container is absent
+  (`precheck.yml:2-24`).
 - **check** = empty.
 - **config** = config.yml.
 - Loadbalancer part: `tasks/loadbalancer.yml:2-7`, through the haproxy play (`site.yml:259-263`, tag `memcached`).
@@ -489,9 +499,11 @@ None.
 - **Every service builds its memcache server list from `groups['memcached']`.**
   - 43 role files reference `groups['memcached']`; 48 templates set `memcache(d)_servers`.
   - Keystone example: `backend = oslo_cache.memcache_pool` and
-    `memcache_servers = {% for host in groups['memcached'] %}…` (`ansible/roles/keystone/templates/keystone.conf.j2:49-51`).
+    `memcache_servers = {% for host in groups['memcached'] %}…`
+    (`ansible/roles/keystone/templates/keystone.conf.j2:49-51`).
   - Horizon uses memcached as the **session store** when `horizon_backend_database` is false
-    (`SESSION_ENGINE = 'django.contrib.sessions.backends.cache'`, `ansible/roles/horizon/templates/local_settings.j2:177-185`).
+    (`SESSION_ENGINE = 'django.contrib.sessions.backends.cache'`,
+    `ansible/roles/horizon/templates/local_settings.j2:177-185`).
     `horizon_backend_database` defaults to `enable_murano` (`group_vars/all.yml:982`).
 
 ### 3.8 Operationally notable
@@ -505,7 +517,8 @@ None.
     upgrade.
 - **Adding or removing a memcached host is expensive.** It changes the `memcache_servers` of almost every service
   config, which means a restart of most API containers on the next full reconfigure. That cost sits outside this role.
-- **Tag aliases differ.** `-t memcache` reconfigures the container but not its haproxy file. Only `-t memcached` does both.
+- **Tag aliases differ.** `-t memcache` reconfigures the container but not its haproxy file. Only `-t memcached` does
+  both.
 - **memcached has no `common` dependency.** Unlike most roles, memcached does not pull in `common`.
 
 ---
@@ -554,7 +567,8 @@ None.
 
 ### 4.5 Handlers
 
-`Restart chrony container` (`handlers/main.yml:2-16`): `recreate_or_restart_container`, `when: kolla_action != "config"`.
+`Restart chrony container` (`handlers/main.yml:2-16`): `recreate_or_restart_container`,
+`when: kolla_action != "config"`.
 It is flushed inside the chrony play.
 
 ### 4.6 Bootstrap
@@ -568,7 +582,8 @@ None.
   - NOT AVAILABLE: whether, on a first deploy, chronyd on a non-VIP chrony-server host can bind the VIP before
     `ip_nonlocal_bind` is set, and whether it then serves before a later restart.
 - External NTP reachability.
-- On Ubuntu, `baremetal` removes the host chronyd AppArmor profile (`ansible/roles/baremetal/tasks/post-install.yml:195-209`).
+- On Ubuntu, `baremetal` removes the host chronyd AppArmor profile
+  (`ansible/roles/baremetal/tasks/post-install.yml:195-209`).
 
 ### 4.8 Operationally notable
 
@@ -619,7 +634,8 @@ None.
   group validation**.
 - **check** = empty. **config** = config.yml.
 
-**bootstrap.yml runs on every deploy, reconfigure and upgrade.** Each task is a `command: docker exec openvswitch_vswitchd ovs-vsctl …`
+**bootstrap.yml runs on every deploy, reconfigure and upgrade.** Each task is a
+`command: docker exec openvswitch_vswitchd ovs-vsctl …`
 with no `changed_when`, so each reports *changed* on every run:
 
 | task (lines) | hosts | effect |
@@ -800,11 +816,13 @@ role tag `ovs-dpdk`.
 
 1. `Restart ovsdpdk-db container` (2-22). It **notifies 6 handlers**: wait db, bridges indexed, **Restart vswitchd**,
    bridges named, wait tunnel ip, gather facts.
-2. `Waiting the ovs db service to be ready` (24-34). `docker exec ovsdpdk_db ovs-vsctl --no-wait show`, retries 30 delay 2.
+2. `Waiting the ovs db service to be ready` (24-34). `docker exec ovsdpdk_db ovs-vsctl --no-wait show`, retries 30 delay
+   2.
 3. `Ensuring ovsdpdk bridges are properly setup indexed` (36-52). `ovs-dpdkctl.sh init`, only if
    `ovs_physical_port_policy == 'indexed'`.
 4. `Restart ovsdpdk-vswitchd container` (54-68).
-5. `Ensuring ovsdpdk bridges are properly setup named` (70-86). `init`, when the policy is `named` (the default, line 54).
+5. `Ensuring ovsdpdk bridges are properly setup named` (70-86). `init`, when the policy is `named` (the default, line
+   54).
 6. **`wait for dpdk tunnel ip`** (88-92). `wait_for: host: <dpdk_tunnel_interface_address> timeout: 300 sleep: 5`, with
    **no port and no path**.
    - `wait_for` then just does `time.sleep(timeout)` (ansible 2.9.27
@@ -915,7 +933,8 @@ The loop is `with_dict: project_services | select_services_enabled_and_mapped_to
   `kolla_tls_backend_key` (`generate-backend.yml:16-21`).
   - If an operator pre-supplies `backend-key.pem`, keygen is skipped but the CSR step still needs `backend.key`.
 - **Distribution needs a separate run.** Certs only reach containers through `kolla-ansible -t haproxy reconfigure`
-  (pem files) or a per-service reconfigure (backend and CA). Each of those means a container restart (sections 1.4 and 7).
+  (pem files) or a per-service reconfigure (backend and CA). Each of those means a container restart (sections 1.4 and
+  7).
 
 ---
 

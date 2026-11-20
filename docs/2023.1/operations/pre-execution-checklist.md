@@ -74,7 +74,8 @@ What to check before running `kolla-ansible` against a production cloud. The che
    - On each container, `docker exec -u root <c> /usr/local/bin/kolla_set_configs --check` tells you whether it *will*
      be restarted (exit 1 = a listed file differs or is missing from the container, a new `optional` file included, a
      required source is missing or `config.json` is invalid; exit 2 = unexpected error, such as a missing
-     `config.json`, which fails the check-containers task on that host instead of restarting; see [Predict and inspect a run](predict-a-run.md) and [Kolla images
+     `config.json`, which fails the check-containers task on that host instead of restarting; see
+     [Predict and inspect a run](predict-a-run.md) and [Kolla images
      §3](../concepts/kolla-images.md#3-kolla_set_configs---check-what-it-compares-and-its-exit-codes)).
 2. **Know the restart set.** Remember loop-notify: if one container of a role changes on a host, every container of that
    role on that host restarts ([Tags

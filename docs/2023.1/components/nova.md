@@ -129,7 +129,8 @@ service cards follow them.
   [NOT AVAILABLE].
 - [Nova deep dive §5](nova-deep-dive.md#5-nova-libvirt-why-its-restart-is-special), "nova-libvirt: why its restart is
   special": what the code shows about the container is [CODE] (`pid_mode: host`, state on named volumes, a start path
-  that is passive towards running guests, the 60 s stop timeout of its systemd unit, the restart handler's retries); what happens to running
+  that is passive towards running guests, the 60 s stop timeout of its systemd unit, the restart handler's retries);
+  what happens to running
   VMs is [NOT AVAILABLE].
 - [Nova deep dive §6](nova-deep-dive.md#6-live-migration-resize-and-consoles), live migration, resize and consoles:
   whether a `nova_libvirt` or `nova_ssh` restart interrupts operations in progress is [NOT AVAILABLE].
@@ -174,7 +175,8 @@ service cards follow them.
 - Risk items whose VM impact refers to R1: [R12](../risk/risk-register.md#r12), changing `openstack_tag` / `*_tag` and
   running `deploy` instead of `upgrade` ("as R1 + R7 + R8 together"); [R13](../risk/risk-register.md#r13), a rebuilt
   image pushed under the same tag ("as R1"); [R14](../risk/risk-register.md#r14), a `bootstrap-servers` re-run on a live
-  host ("a Docker restart affects `nova_libvirt` and OVS"). [R15](../risk/risk-register.md#r15), `kolla-ansible stop`, stops
+  host ("a Docker restart affects `nova_libvirt` and OVS"). [R15](../risk/risk-register.md#r15), `kolla-ansible stop`,
+  stops
   the `nova_libvirt` and OVS containers on the targeted hosts.
 - [Kolla images §6](../concepts/kolla-images.md#6-day-2-consequences), items 5, 10, 11 and 18: Nova's online data
   migrations never run outside `upgrade` [CODE]; one `chown` per file of `/var/lib/nova` on computes on every

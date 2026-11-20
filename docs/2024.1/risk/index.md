@@ -24,7 +24,8 @@ change can create a large workload. Ratings are relative to a production cloud w
 
 <div class="grid cards" markdown>
 
-- **[Risk register](risk-register.md)** — the rated risks, with the IDs R1–R25 of 2023.1 kept and R26–R30 new, each with what actually
+- **[Risk register](risk-register.md)** — the rated risks, with the IDs R1–R25 of 2023.1 kept and R26–R30 new, each with
+  what actually
   happens, its blast radius, VM and API impact, likelihood, severity, precautions and evidence, and whether it still
   applies to 2024.1 (a risk that no longer applies stays listed with the reason).
 - **[What a tag really executes](tags.md)** — How tags actually select work in Kolla-Ansible 2024.1, and what each

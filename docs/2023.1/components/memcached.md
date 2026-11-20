@@ -9,7 +9,8 @@ tags: [memcached, kolla-set-configs, inventory, risk, dependencies, bugs, unknow
 This page is the starting point for memcached, the `memcached` role: one container, `memcached`, on the control nodes of
 the example inventory (`inventory/multinode:137-138`), selected by the tags `memcached` and `memcache`
 (`site.yml:387-395`). In 2023.1 no role has a `common` dependency: `common` is its own play, tagged `common` only
-(`site.yml:86-97`), so memcached is no longer an exception ([Tags §1](../risk/tags.md#1-where-tags-are-defined), row "Role-level tags") [CODE].
+(`site.yml:86-97`), so memcached is no longer an exception ([Tags §1](../risk/tags.md#1-where-tags-are-defined), row
+"Role-level tags") [CODE].
 The lists below say where the study covers how to operate it, its impact, its dependencies and the evidence, what to
 check around a run and what stays open; the service card follows them.
 

@@ -26,7 +26,8 @@ service card follows them.
 ### Impact and risk
 
 - **What the tag executes (`common`):** [Tags §3](../risk/tags.md#3-what-a-tag-really-executes-master-table) and [Tags
-  §3.1](../risk/tags.md#31-per-tag-answers-files-vms-apis-networkingstorage-safety-prerequisites), rows `common`; why the
+  §3.1](../risk/tags.md#31-per-tag-answers-files-vms-apis-networkingstorage-safety-prerequisites), rows `common`; why
+  the
   tag now reaches the included tasks: [Tags §2.1](../risk/tags.md#21-dynamic-include_tasks-and-tag-inheritance-code)
 - **Risks:** [R2](../risk/risk-register.md#r2); [R25](../risk/risk-register.md#r25) does not apply to 2023.1 (the
   risk register keeps the entry and says why)
@@ -80,7 +81,8 @@ service card follows them.
 - [Q10](../troubleshooting/open-questions.md#q10) compares Ansible 2.8.20 and 2.9.27 and does not cover
   ansible-core 2.14.18; for 2023.1, F1 and F2 are settled by the code cited in the two items above.
 - [F6](../reference/findings.md#f6), "Global inputs are rendered into per-host files": for `common`, the
-  `enable_*` flags of the OpenStack services (`fluentd_input_openstack_services`, `roles/common/defaults/main.yml:138-202`)
+  `enable_*` flags of the OpenStack services (`fluentd_input_openstack_services`,
+  `roles/common/defaults/main.yml:138-202`)
   and the logrotate services list end up in `td-agent.conf` and `logrotate.conf` on every common host [CODE].
 - [What is not known](../troubleshooting/what-is-not-known.md#running-vms-and-compute-hosts): the sources do not
   establish whether restarts that touch none of the containers the study traces to running VMs (the `common` containers,

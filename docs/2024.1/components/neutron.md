@@ -93,7 +93,8 @@ service card follows them.
   §3](../operations/reconfigure-neutron.md#3-what-restarts-code)).
 - **DNS domain, changed in 2024.1:** `neutron.conf` always renders `dns_domain = {{ neutron_dns_domain }}` (default
   `openstacklocal`), and `external_dns_driver = designate` only with `enable_designate` and `neutron_dns_integration`
-  (default `enable_designate`) (`roles/neutron/templates/neutron.conf.j2:64-76`, `roles/neutron/defaults/main.yml:956-958`)
+  (default `enable_designate`) (`roles/neutron/templates/neutron.conf.j2:64-76`,
+  `roles/neutron/defaults/main.yml:956-958`)
   [CODE]. 2023.1 wrote `dns_domain` only with Designate, from `designate_ns_record`. The new precheck fails when DNS
   integration is on and `neutron_dns_domain` is empty, lacks a final `.` or is `openstacklocal`
   (`roles/neutron/tasks/precheck.yml:57-68`); it runs only in `prechecks`, not in `reconfigure` [CODE].

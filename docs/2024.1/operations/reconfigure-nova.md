@@ -7,7 +7,8 @@ impact: [restarts-on-drift]
 
 # Reconfigure Nova
 
-What `kolla-ansible -t nova reconfigure` does on the loadbalancer hosts, on the controllers and on every compute, with the
+What `kolla-ansible -t nova reconfigure` does on the loadbalancer hosts, on the controllers and on every compute, with
+the
 two narrower commands `-t nova-api reconfigure` (only the Nova control plane, no compute impact) and
 `-t nova-cell reconfigure` (only the cell part: conductors, consoles, computes).
 
@@ -82,7 +83,8 @@ kolla-ansible -i multinode -t nova-cell reconfigure
 
 - **Scope:** the `nova-cell`-tagged plays (cell DB bootstrap, nova-cell role, and the cell reload and online-migration
   plays, which do nothing outside `upgrade`) (`nova.yml:67-100`, `nova.yml:124-147`, `nova.yml:203-229`,
-  `nova.yml:283-302`), plus the loadbalancer nova-cell include for the console proxies (`site.yml:259-265`). The nova-cell
+  `nova.yml:283-302`), plus the loadbalancer nova-cell include for the console proxies (`site.yml:259-265`). The
+  nova-cell
   play reaches every compute, as with `-t nova`.
 
 ## 2. Execution sequence (`kolla-ansible -t nova reconfigure`)

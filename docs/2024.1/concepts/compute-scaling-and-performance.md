@@ -405,7 +405,8 @@ What the code shows:
    - Use `-t nova-api` for API-only changes (no computes: the nova-cell play is not tagged `nova-api`,
      `nova.yml:110-114, :135-139`).
    - Use `--limit` for host-scoped changes.
-   - Use `--skip-tags haproxy` when frontends are not changing (it skips the whole loadbalancer play: `site.yml:105-118`).
+   - Use `--skip-tags haproxy` when frontends are not changing (it skips the whole loadbalancer play:
+     `site.yml:105-118`).
 2. **Separate config from apply.** `genconfig` once, then `deploy-containers --limit <batch>`. With `-t nova`, the
    apply step on a compute runs only `setup` and the `check-containers.yml` loop of nova-cell
    (4 invocations instead of 27 for `-t nova reconfigure`, [§2](#2-work-per-compute-host-read-from-the-task-files)), and

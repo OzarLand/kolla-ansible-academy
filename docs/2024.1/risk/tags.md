@@ -197,7 +197,8 @@ the included role's blocks get the `include_role` as parent (ansible-core 2.16.2
 (`lib/ansible/playbook/taggable.py:69-71`). For the work inside to run, 38 of the 39 `loadbalancer.yml` files wrap a
 single `import_role: loadbalancer-config` with `tags: always` (e.g. `roles/keystone/tasks/loadbalancer.yml:2-7`), and
 `loadbalancer-config` imports `haproxy-config` (when `haproxy_config_install`, true for every project except `mariadb`
-with ProxySQL) and `proxysql-config` (when `enable_proxysql`, default `no`) (`roles/loadbalancer-config/tasks/main.yml:2-8`,
+with ProxySQL) and `proxysql-config` (when `enable_proxysql`, default `no`)
+(`roles/loadbalancer-config/tasks/main.yml:2-8`,
 `roles/loadbalancer-config/defaults/main.yml:2`, `group_vars/all.yml:839`). nova-cell's file reaches the same role
 through `import_tasks: proxy_loadbalancer.yml`, a looped `include_tasks: cell_proxy_loadbalancer.yml` and then
 `import_role` (`roles/nova-cell/tasks/cell_proxy_loadbalancer.yml:3-12`), with `tags: always` at every level, so the
@@ -456,7 +457,8 @@ run](../operations/predict-a-run.md); [Kolla images
 5. **Tags do not change `kolla_action` logic.** For a given tag, `deploy` and `reconfigure` execute the same tasks (e.g.
    `-t nova deploy` and `-t nova reconfigure`; [Repository architecture
    §4.2](../concepts/repository-architecture.md#42-reconfigure-is-deploy)). Apart from swift and bifrost, whose
-   `reconfigure.yml` has its own logic, every role's `reconfigure.yml` imports or includes `deploy.yml` [CODE]. Neutron's
+   `reconfigure.yml` has its own logic, every role's `reconfigure.yml` imports or includes `deploy.yml` [CODE].
+   Neutron's
    `bootstrap_neutron` container runs on deploy and reconfigure alike (`roles/neutron/tasks/bootstrap_service.yml:2-21`,
    no `when`; `reconfigure.yml:2`). The other difference is the `kolla_serial` pass-through ([Repository architecture
    §2](../concepts/repository-architecture.md#2-from-cli-to-ansible-playbook)).

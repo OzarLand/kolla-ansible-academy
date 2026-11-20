@@ -111,7 +111,8 @@ The full per-play tag list is generated in [Generated inventory
 §1](../reference/generated-inventory.md#1-plays-executed-by-siteyml-in-order). Per-service cards (tags, task flow,
 handlers, node types) are in [Components](../components/index.md). The output of `ansible-playbook --list-tags` against
 the real `site.yml` is in [list-tags-site.txt](../reference/listings/list-tags-site.txt). Per play it shows the *task
-tags* after inheritance. Whether that listing has been regenerated from 2023.1 is tracked in the reference lot; in 2023.1
+tags* after inheritance. Whether that listing has been regenerated from 2023.1 is tracked in the reference lot; in
+2023.1
 `common` is a play tag of the common play only (`site.yml:86-97`).
 
 ---
@@ -171,7 +172,8 @@ as in [§2.1](#21-dynamic-include_tasks-and-tag-inheritance-code), while `tags: 
 (`lib/ansible/playbook/taggable.py:66-67`). For the work inside to run, 43 of the 44 `loadbalancer.yml` files wrap a
 single `import_role: loadbalancer-config` with `tags: always` (e.g. `roles/keystone/tasks/loadbalancer.yml:2-7`), and
 `loadbalancer-config` imports `haproxy-config` (when `haproxy_config_install`, true for every project except `mariadb`
-with ProxySQL) and `proxysql-config` (when `enable_proxysql`, default `no`) (`roles/loadbalancer-config/tasks/main.yml:2-8`,
+with ProxySQL) and `proxysql-config` (when `enable_proxysql`, default `no`)
+(`roles/loadbalancer-config/tasks/main.yml:2-8`,
 `roles/loadbalancer-config/defaults/main.yml:2`, `group_vars/all.yml:742`). nova-cell's file reaches the same role
 through `import_tasks: proxy_loadbalancer.yml`, a looped `include_tasks: cell_proxy_loadbalancer.yml` and then
 `import_role` (`roles/nova-cell/tasks/cell_proxy_loadbalancer.yml:3-12`), with `tags: always` at every level, so the
@@ -399,7 +401,8 @@ run](../operations/predict-a-run.md); [Kolla images
    `reconfigure.yml` has its own logic, every role's `reconfigure.yml` imports or includes `deploy.yml` [CODE]. The
    Ussuri exception of Neutron's `bootstrap_neutron` container is gone: it runs on deploy and reconfigure alike
    (`roles/neutron/tasks/bootstrap_service.yml:2-21`, no `when`; `reconfigure.yml:2`). The other difference is the
-   `kolla_serial` pass-through ([Repository architecture §2](../concepts/repository-architecture.md#2-from-cli-to-ansible-playbook)).
+   `kolla_serial` pass-through
+   ([Repository architecture §2](../concepts/repository-architecture.md#2-from-cli-to-ansible-playbook)).
 
 ---
 

@@ -10,7 +10,8 @@ This page is the starting point for OVN, used if `neutron_plugin_agent: ovn`. **
 role is split into two roles with their own plays: `ovn-controller` (container `ovn_controller`, tags `ovn` and
 `ovn-controller`, `site.yml:568-576`) and `ovn-db` (containers `ovn_northd`, `ovn_nb_db` and `ovn_sb_db`, tags `ovn` and
 `ovn-db`, `site.yml:578-588`). Together they run on the compute, control and network nodes of the example inventory;
-the tag `ovn` selects both plays, and `ovn-controller` or `ovn-db` selects one. The lists below say where the study covers how to operate it, its impact, its
+the tag `ovn` selects both plays, and `ovn-controller` or `ovn-db` selects one. The lists below say where the study
+covers how to operate it, its impact, its
 dependencies and the evidence, what to check around a run and what stays open; the service card follows them.
 
 ## Where to look
@@ -53,13 +54,15 @@ study says about running it is in the rows linked under [Impact and risk](#impac
 - [fact sheet A §5.8](../reference/factsheets/a-infra-lb-ovn.md#58-operationally-notable), item (A): any change to
   `ovn-nb-db`/`ovn-sb-db` restarts every member at once under serial 0: the handlers have no serialization
   (`roles/ovn-db/handlers/main.yml:2-45`) [CODE]. **Changed in 2023.1:** `ANSIBLE_SERIAL` or `--limit` is no longer a
-  mitigation on an existing cluster: when the current batch holds an NB (or SB) DB host that has its volume but not every
+  mitigation on an existing cluster: when the current batch holds an NB (or SB) DB host that has its volume but not
+  every
   `ovn-nb-db` (or `ovn-sb-db`) host, `lookup_cluster.yml` fails the play (`any_errors_fatal`); a `--limit` that holds
   no OVN DB host does not run the `ovn-db` play at all
   (`roles/ovn-db/tasks/lookup_cluster.yml:21-42, :79-95, :132`) [CODE]. It also fails when the cluster exists but no
   live member reports itself leader (`:73-77, :126-130`).
 - The `ovn-db` play runs, on every deploy, reconfigure and upgrade (`upgrade.yml` and `reconfigure.yml` import
-  `deploy.yml`): the volume and leader lookup, the bootstrap of members without a volume (a member whose IP is already in
+  `deploy.yml`): the volume and leader lookup, the bootstrap of members without a volume (a member whose IP is already
+  in
   the cluster is first kicked out with `cluster/kick`, then joins the leader), config, check-containers, flush, and on
   hosts in both `ovn-nb-db` and `ovn-sb-db` an `ovn_leader_election_pause` pause (default 5 s) when the cluster existed,
   then `set-connection` on the NB and SB leaders (`roles/ovn-db/tasks/deploy.yml:2-22`,
@@ -87,14 +90,17 @@ study says about running it is in the rows linked under [Impact and risk](#impac
   re-applied on every ovn-controller host on each run, through the `openvswitch_bridge`/`openvswitch_db` modules in
   `kolla_toolbox` instead of the Ussuri `docker exec openvswitch_vswitchd ovs-vsctl` commands
   (`roles/ovn-controller/tasks/setup-ovs.yml:2-40`), and whether those modules report changed on an unchanged host is
-  [NOT AVAILABLE]; gateway options are clobbered (above); security; with OVN and `enable_ovs_dpdk`, Kolla-Ansible deploys
+  [NOT AVAILABLE]; gateway options are clobbered (above); security; with OVN and `enable_ovs_dpdk`, Kolla-Ansible
+  deploys
   no Open vSwitch container at all: the openvswitch play is skipped (`site.yml:550`) and the ovs-dpdk containers are
   enabled only when `neutron_plugin_agent in ['openvswitch']` (`roles/ovs-dpdk/defaults/main.yml:10, :24`), while OVN
   needs `neutron_plugin_agent == 'ovn'` (`group_vars/all.yml:737`) [CODE]; whether OVN works with an OVSDB provided
-  outside Kolla-Ansible is [NOT AVAILABLE]; missing inventory groups are still not caught (the prechecks of both roles check
+  outside Kolla-Ansible is [NOT AVAILABLE]; missing inventory groups are still not caught (the prechecks of both roles
+  check
   only free ports, `roles/ovn-db/tasks/precheck.yml`, `roles/ovn-controller/tasks/precheck.yml` is empty) [CODE].
 - [fact sheet A §5.8](../reference/factsheets/a-infra-lb-ovn.md#58-operationally-notable), item (C): the OVN manifests
-  have no `config_files` (`roles/ovn-db/templates/*.json.j2`, `roles/ovn-controller/templates/ovn-controller.json.j2`), so `kolla_set_configs --check` always exits 0: a command-line change written by `genconfig` is
+  have no `config_files` (`roles/ovn-db/templates/*.json.j2`, `roles/ovn-controller/templates/ovn-controller.json.j2`),
+  so `kolla_set_configs --check` always exits 0: a command-line change written by `genconfig` is
   applied neither by `deploy-containers` nor by a later run, until the container restarts for another reason.
 - [Kolla images §7](../concepts/kolla-images.md#7-what-is-not-available-from-the-sources): not available from the
   sources: `ovn-ctl` schema creation and upgrade with Kolla-Ansible's direct call, and its hard-coded

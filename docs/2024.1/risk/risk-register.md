@@ -208,7 +208,8 @@ only, on the `cron`, `fluentd`, `kolla-logs` and `kolla-toolbox` groups. The lis
 
 ### R4 — Changing memcached membership
 
-**Still applies to 2024.1** [CODE]; 27 roles loop over the list instead of 33 (freezer, murano, sahara, senlin, solum and
+**Still applies to 2024.1** [CODE]; 27 roles loop over the list instead of 33 (freezer, murano, sahara, senlin, solum
+and
 vitrage are gone); a 28th, telegraf, names the group only to test whether its own host runs memcached
 (`roles/telegraf/templates/telegraf.conf.j2:54-57`).
 

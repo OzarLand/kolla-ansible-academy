@@ -56,7 +56,8 @@ And independently of restarts, **every run pays the per-host work** [CODE]. Ever
 Ussuri had 11 with chrony, a role that no longer exists), each one a `kolla_set_configs --check` exec once the
 container exists (`roles/common/tasks/check-containers.yml:2-17`, `roles/nova-cell/tasks/check-containers.yml`,
 `roles/openvswitch/tasks/check-containers.yml`, `roles/neutron/tasks/check-containers.yml`,
-`roles/iscsi/tasks/check-containers.yml`; `module_utils/kolla_container_worker.py:20, :59-66`, `module_utils/kolla_docker_worker.py:155-162`). The remote module invocations
+`roles/iscsi/tasks/check-containers.yml`; `module_utils/kolla_container_worker.py:20, :59-66`,
+`module_utils/kolla_docker_worker.py:155-162`). The remote module invocations
 of a no-change `-t nova` run are counted from the task files in [Compute scaling
 §2](../concepts/compute-scaling-and-performance.md#2-work-per-compute-host-read-from-the-task-files). The number of task
 results per compute is [NOT AVAILABLE].

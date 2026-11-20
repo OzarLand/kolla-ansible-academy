@@ -134,7 +134,8 @@ before `upgrade` (kolla-ansible `doc/source/user/operating-kolla.rst:174-179`).
 
   or use `--limit` batches.
 - **Upgrade without a prior pull:** hosts download lazily inside the handler phase (`recreate_or_restart_container`
-  pulls *before* stopping, `module_utils/kolla_docker_worker.py:374-382`), which lengthens and staggers the restart window.
+  pulls *before* stopping, `module_utils/kolla_docker_worker.py:374-382`), which lengthens and staggers the restart
+  window.
 
 ## 5. Verification
 

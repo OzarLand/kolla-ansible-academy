@@ -95,7 +95,8 @@ dependencies and the evidence, what to check around a run and what stays open; t
   §2.8](../reference/factsheets/b-mariadb-rabbitmq-keystone.md#28-operationally-notable-behaviour-risks-and-oddities),
   "Operationally notable behaviour, risks and oddities", eight items. Checked against 2023.1 [CODE]: reconfigure with a
   config change (now a drained restart in `serial: "33%"` batches, see R10 above); "upgrade = full outage of the
-  message bus" no longer holds: `roles/rabbitmq/tasks/upgrade.yml:2-10` has no cluster-wide stop ([R10](../risk/risk-register.md#r10));
+  message bus" no longer holds: `roles/rabbitmq/tasks/upgrade.yml:2-10` has no cluster-wide stop
+  ([R10](../risk/risk-register.md#r10));
   uncontrolled full stop (the brokers come back through the same batched restart play; which node starts first is
   [NOT AVAILABLE], `group_by` order); scaling the rabbitmq group changes `transport_url` (the templates of 30 roles
   reference `rpc_transport_url`, grep of `roles/*/templates`; `group_vars/all.yml:212,222`); password change; the
@@ -105,7 +106,8 @@ dependencies and the evidence, what to check around a run and what stays open; t
   (`roles/rabbitmq/tasks/precheck.yml:65-69,155-159`).
 - [Kolla images §6](../concepts/kolla-images.md#6-day-2-consequences), items 9 and 10: the RabbitMQ cookie is fixed at
   bootstrap [CODE; consequences NOT AVAILABLE]; `kolla_toolbox` gets the new cookie only when the `common` play runs
-  (an untagged run or `-t common`; `roles/common/templates/rabbitmq-erlang.cookie.j2:1`, `site.yml:86-97`); recursive chown on data volumes at every start, the RabbitMQ mnesia
+  (an untagged run or `-t common`; `roles/common/templates/rabbitmq-erlang.cookie.j2:1`, `site.yml:86-97`); recursive
+  chown on data volumes at every start, the RabbitMQ mnesia
   directory among them [CODE].
 
 ## Service card

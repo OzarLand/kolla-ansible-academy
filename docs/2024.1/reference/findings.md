@@ -56,7 +56,8 @@ The study consolidates three things. This page holds the first:
 >   60 s `docker_graceful_timeout` reaches `<engine> stop` through the systemd unit) and the `ml2_conf.ini` merge into
 >   `openvswitch_agent.ini` ([F11](#f11)).
 > - **New in 2024.1:** the changed systemd unit template makes the first 2024.1 check restart every checked container
->   whose unit was written by 2023.1 and not yet rewritten by a 2024.1 run ([F16](#f16)); RabbitMQ quorum queues are on by default, which changes every service's
+>   whose unit was written by 2023.1 and not yet rewritten by a 2024.1 run ([F16](#f16)); RabbitMQ quorum queues are on
+> by default, which changes every service's
 >   messaging config and fails `prechecks` while classic queues exist ([F17](#f17)).
 
 Evidence levels: **[CODE]** and **[NOT AVAILABLE]**, defined once, in [Evidence

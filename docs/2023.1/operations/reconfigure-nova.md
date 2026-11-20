@@ -7,7 +7,8 @@ impact: [restarts-on-drift]
 
 # Reconfigure Nova
 
-What `kolla-ansible -t nova reconfigure` does on the loadbalancer hosts, on the controllers and on every compute, with the
+What `kolla-ansible -t nova reconfigure` does on the loadbalancer hosts, on the controllers and on every compute, with
+the
 two narrower commands `-t nova-api reconfigure` (only the Nova control plane, no compute impact) and
 `-t nova-cell reconfigure` (only the cell part: conductors, consoles, computes).
 
@@ -120,7 +121,8 @@ sequenceDiagram
 - **libvirt goes with it.** Whenever nova-compute restarts because of config or image drift, **nova-libvirt and nova-ssh
   restart too** (loop-notify, [Tags
   §2.4](../risk/tags.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code)). Kolla's own handler
-  ordering restarts nova-ssh, then libvirt, *before* nova-compute [CODE] (`roles/nova-cell/handlers/main.yml:74-168`; handlers
+  ordering restarts nova-ssh, then libvirt, *before* nova-compute [CODE] (`roles/nova-cell/handlers/main.yml:74-168`;
+  handlers
   run in definition order: the iterator walks the play's handler list in order and runs each notified one, ansible-core
   2.14.18 `lib/ansible/executor/play_iterator.py:197, :430-453`). With `libvirt_enable_sasl`, the libvirt handler also
   notifies a readiness check and the SASL user creation, defined before the nova-compute handler

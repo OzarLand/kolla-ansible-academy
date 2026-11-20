@@ -16,7 +16,8 @@ The page uses the definition of [drift](index.md#drift) of the Operations hub.
 > [!NOTE]
 > **Key answers**
 >
-> - **`-t common reconfigure` reconfigures every common host** [CODE] ([§2](#2-the-tag-does-nothing)). `common` reaches a
+> - **`-t common reconfigure` reconfigures every common host** [CODE] ([§2](#2-the-tag-does-nothing)). `common` reaches
+>   a
 >   host only through the "Apply role common" play: a run without tags, or a run whose tags include `common`
 >   ([§3](#3-how-common-actually-reaches-hosts)). `-t nova` or `-t neutron` do not bring it along.
 > - **New in 2024.1: the config step can pull the fluentd image** [CODE]. With `enable_fluentd` on, every run of the
@@ -80,7 +81,8 @@ field, `lib/ansible/playbook/taggable.py:42`), and the included block is then fi
     `module_utils/kolla_podman_worker.py:675-677`). Its condition is `enable_fluentd` alone, so it runs on every host
     of the play. The labels `fluentd_binary` and `fluentd_user` are then read with `docker_image_info` or
     `podman_image_info` and set the facts `fluentd_cmd` and `fluentd_user`, `td-agent` when a label is missing
-    (`config.yml:53-91`). The 2024.1 kolla image sets both labels to `fluentd` (kolla `docker/fluentd/Dockerfile.j2:3,6`);
+    (`config.yml:53-91`). The 2024.1 kolla image sets both labels to `fluentd` (kolla
+    `docker/fluentd/Dockerfile.j2:3,6`);
   - `config.json` of the three containers (`config.yml:93-102`). fluentd's command is now
     `<fluentd_cmd> -c /etc/<fluentd_cmd>/<fluentd_cmd>.conf -o /var/log/kolla/fluentd/fluentd.log`, and `td-agent.conf`
     is copied to that path (`roles/common/templates/fluentd.json.j2:1-12`). kolla_toolbox's command is now
@@ -111,7 +113,8 @@ field, `lib/ansible/playbook/taggable.py:42`), and the included block is then fi
   `lib/ansible/plugins/strategy/__init__.py:648-673`;
   [Tags §2.4](../risk/tags.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code)). The
   `config.json` task is looped with the same `notify` (`roles/common/tasks/config.yml:93-102`).
-  - **First 2024.1 run after 2023.1:** a container that no 2024.1 run has recreated or restarted yet is reported as changed by its
+  - **First 2024.1 run after 2023.1:** a container that no 2024.1 run has recreated or restarted yet is reported as
+    changed by its
     unit file ([F16](../reference/findings.md#f16)); for fluentd, the new journal volume also makes the container
     differ (`roles/common/defaults/main.yml:124`), so it is recreated [CODE].
   - A change of `config.json`'s `command` alone (e.g. kolla_toolbox's) is not seen by `kolla_set_configs --check`

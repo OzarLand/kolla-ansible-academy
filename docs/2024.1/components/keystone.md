@@ -68,7 +68,8 @@ stays open; the service card follows them.
 - **Still holds in 2024.1** [CODE]: the handlers are the same five, in the same order, with the module renamed
   `kolla_container` (`roles/keystone/handlers/main.yml:5-98`); the play still takes `serial` from `kolla_serial`,
   default `0` (`site.yml:488`), and now also sets `max_fail_percentage`, default 100 (`site.yml:489-492`), which never
-  stops the play early ([Controlled batches §1.3](../operations/controlled-batches.md#13-stop-a-rolling-run-on-failures-max_fail_percentage)).
+  stops the play early
+  ([Controlled batches §1.3](../operations/controlled-batches.md#13-stop-a-rolling-run-on-failures-max_fail_percentage)).
 
 ## Where to look
 
@@ -184,7 +185,8 @@ stays open; the service card follows them.
   `keystone_ssh` change on every recreate, because `/etc/ssh` is on no volume
   (`roles/keystone/defaults/main.yml:36-41`);
   the keystone SSH client sets `StrictHostKeyChecking no` and `UserKnownHostsFile /dev/null`
-  (`roles/keystone/templates/ssh_config.j2:2-3`) [CODE]; whether the SSH client then accepts the new keys without failing is [NOT AVAILABLE: OpenSSH semantics].
+  (`roles/keystone/templates/ssh_config.j2:2-3`) [CODE]; whether the SSH client then accepts the new keys without
+  failing is [NOT AVAILABLE: OpenSSH semantics].
 - [Kolla images §7](../concepts/kolla-images.md#7-what-is-not-available-from-the-sources): not available from the
   sources: the upstream semantics of `keystone-manage bootstrap`, in particular whether it resets the admin password to
   `keystone_admin_password`.

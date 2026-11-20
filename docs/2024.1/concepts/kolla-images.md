@@ -71,7 +71,8 @@ matched against Kolla-Ansible `2024.1-eom` (`890396f`). The images were read, no
 > - **Day-2 consequences:** 19 items ([§6](#6-day-2-consequences)). **What is not available from the sources:**
 >   [§7](#7-what-is-not-available-from-the-sources).
 
-Citation convention: kolla image paths carry a `kolla` prefix (kolla `docker/base/start.sh:11`). Kolla-Ansible paths have
+Citation convention: kolla image paths carry a `kolla` prefix (kolla `docker/base/start.sh:11`). Kolla-Ansible paths
+have
 no prefix and are relative to its `ansible/` directory (`roles/nova/tasks/bootstrap_service.yml:11`,
 `module_utils/kolla_docker_worker.py:146-181`, `nova.yml:29-65`), except `tools/...`. Ansible source paths carry an
 `ansible-core 2.16.20` prefix. Evidence labels are those of [Conventions and evidence
@@ -98,7 +99,8 @@ labels](../start/conventions.md#evidence-labels): [CODE] (a kolla or Ansible pat
 - **Matched to Kolla-Ansible.** Each one-shot variable was traced to the task that sets it
   ([§4](#4-one-shot-containers-what-the-environment-variables-run)) [CODE]. Changed in 2024.1: every role calls the
   `kolla_container` module (`library/kolla_container.py`; `library/kolla_docker.py` no longer exists), which loads
-  `DockerWorker` when `container_engine` is `docker` and `PodmanWorker` otherwise (`library/kolla_container.py:410-420`).
+  `DockerWorker` when `container_engine` is `docker` and `PodmanWorker` otherwise
+  (`library/kolla_container.py:410-420`).
   The engine comes from `kolla_container_engine`, default `docker` (`group_vars/all.yml:92,153`). Both workers share
   `ContainerWorker` (`module_utils/kolla_container_worker.py`) and drive long-running containers through systemd units
   (`module_utils/kolla_systemd_worker.py:20-39`). This page cites the Docker worker first and gives the Podman
@@ -172,7 +174,8 @@ flowchart TB
    `docker/neutron/neutron-base/extend_start.sh:22`, `docker/horizon/extend_start.sh:5`) [CODE]. xtrace is on in that
    script, and in the `kolla_<service>_extend_start` it sources ([§2.5](#25-the-extend_start-chain)), where one-shots
    put a secret on a command line: heat's `--password ${HEAT_DOMAIN_ADMIN_PASSWORD}` (kolla
-   `docker/heat/heat-api/extend_start.sh:12`) and the MariaDB upgrade `mysql_upgrade ... --password="${DB_ROOT_PASSWORD}"`
+   `docker/heat/heat-api/extend_start.sh:12`) and the MariaDB upgrade
+   `mysql_upgrade ... --password="${DB_ROOT_PASSWORD}"`
    (kolla `docker/mariadb/mariadb-server/extend_start.sh:55`). Changed in 2024.1: that `mysql_upgrade` now pipes its
    output into `tee -a ${MARIADB_LOG_DIR}/mariadb-upgrade.log` (`:3,55`), so with `pipefail` its failure still ends
    the one-shot. The MariaDB bootstrap turns xtrace off around its root-password commands (`set +o xtrace` ...
@@ -263,7 +266,8 @@ as `Restart=always`, with `RestartSec` 11 s, `StartLimitInterval` 120 and `Start
 `group_vars/all.yml:105,120,149-152`) [CODE]. Changed in 2024.1: the unit names the engine in `ExecStart`/`ExecStop`
 and depends on `docker.service` for Docker or `network-online.target` otherwise, and the start-limit key is written
 `StartLimitInterval=` where 2023.1 wrote `StartLimitIntervalSec=` (`module_utils/kolla_systemd_worker.py:24-32,50-54`);
-with Docker the engine lines read as in 2023.1, whose template hard-coded `docker`, so only the start-limit line differs.
+with Docker the engine lines read as in 2023.1, whose template hard-coded `docker`, so only the start-limit line
+differs.
 [NOT AVAILABLE: systemd semantics] Whether the unit then restarts the container in a loop until the input is fixed, or
 stops after the start limit is reached, and whether the two key names behave the same.
 
@@ -320,7 +324,8 @@ Changed in 2024.1 [CODE]:
 - Some Kolla-Ansible commands are shell wrappers that do not `exec` the service, so dumb-init's child is bash:
   `neutron-l3-agent-wrapper.sh` (`roles/neutron/templates/neutron-l3-agent-wrapper.sh.j2:16-20`), `start-ovs` and
   `start-ovsdb-server` (`roles/openvswitch/templates/start-ovs.j2:2`, `start-ovsdb-server.j2:11`) and `haproxy_run.sh`,
-  which starts haproxy through a `find | xargs | xargs` pipeline (`roles/loadbalancer/templates/haproxy/haproxy_run.sh.j2:38-40`)
+  which starts haproxy through a `find | xargs | xargs` pipeline
+  (`roles/loadbalancer/templates/haproxy/haproxy_run.sh.j2:38-40`)
   [CODE]. [NOT AVAILABLE] Whether the service then gets any SIGTERM before the container stops.
 - New in 2024.1, three images ship signal-trapping wrappers: `ovs_wrapper` (traps TERM and QUIT and asks the daemon to
   exit with `ovs-appctl ... exit`, kolla `docker/openvswitch/openvswitch-base/ovs_wrapper.sh:3-19`), `socat_wrapper`
@@ -348,13 +353,15 @@ The base image installs `healthcheck_curl` (`curl --fail`, 10 s maximum), `healt
 
 Kolla-Ansible wires container healthchecks itself: `enable_container_healthchecks` defaults to `yes` with interval
 30 s, timeout 30 s, 3 retries and a 5 s start period (`group_vars/all.yml:206-212`); service definitions carry a
-`healthcheck` dict, e.g. memcached's `healthcheck_listen memcached <port>` (`roles/memcached/defaults/main.yml:10,32-43`)
+`healthcheck` dict, e.g. memcached's `healthcheck_listen memcached <port>`
+(`roles/memcached/defaults/main.yml:10,32-43`)
 and MariaDB's `/usr/bin/clustercheck` (`roles/mariadb/defaults/main.yml:96-107`). `kolla_container` passes it at
 container creation and compares it, so a changed healthcheck recreates the container
 (`module_utils/kolla_docker_worker.py:328-330`, `module_utils/kolla_podman_worker.py:101-105`,
 `module_utils/kolla_container_worker.py:88,348-370`) [CODE]. No Kolla-Ansible task or handler reads the resulting
 container health status (grep of `roles/*/tasks`, `roles/*/handlers`, `library/`, `module_utils/` for `healthy`: the
-only hits are the etcd tasks, which run `etcdctl endpoint health` in the container, `roles/etcd/tasks/restart_services.yml:27-39`)
+only hits are the etcd tasks, which run `etcdctl endpoint health` in the container,
+`roles/etcd/tasks/restart_services.yml:27-39`)
 [CODE]. [NOT AVAILABLE: Docker and Podman semantics] What the engine does with an unhealthy container beyond
 reporting it. The mariadb image's own `healthcheck_mariadb` exits 1 when the node is not synced (kolla
 `docker/mariadb/mariadb-server/healthcheck_mariadb:10-19`); Kolla-Ansible does not use it.
@@ -432,10 +439,12 @@ In an image with a service `USER` (e.g. `USER nova`, kolla `docker/nova/nova-com
 (`module_utils/kolla_docker_worker.py:148-152`, `module_utils/kolla_podman_worker.py:435-436`). By hand, use
 `docker exec -u root` (or `podman exec -u root`) as the swift reconfigure does, which now names the engine from
 `kolla_container_engine` (`roles/swift/tasks/reconfigure.yml:48`), or `sudo kolla_set_configs --check` inside the
-container ([§2.1](#21-image-wiring)). The bifrost reconfigure omits `-u root` (`roles/bifrost/tasks/reconfigure.yml:18`),
+container ([§2.1](#21-image-wiring)). The bifrost reconfigure omits `-u root`
+(`roles/bifrost/tasks/reconfigure.yml:18`),
 but its check cannot work anyway: it execs into `bifrost-deploy`, while the container is `bifrost_deploy`
 (`roles/bifrost/tasks/start.yml:8`), which runs `/sbin/init` and mounts no `config.json` ([§2.1](#21-image-wiring)). No
-`kolla-ansible` command runs that file: the bifrost role includes `<kolla_action>.yml` (`roles/bifrost/tasks/main.yml:2`)
+`kolla-ansible` command runs that file: the bifrost role includes `<kolla_action>.yml`
+(`roles/bifrost/tasks/main.yml:2`)
 and is reached only through `deploy-bifrost`, `deploy-servers` and `upgrade-bifrost`, which set `kolla_action` to
 `deploy`, `deploy-servers` and `upgrade` (`tools/kolla-ansible:494-507,524-528`).
 
@@ -474,7 +483,8 @@ and is reached only through `deploy-bifrost`, `deploy-servers` and `upgrade-bifr
   hand. [NOT AVAILABLE] Whether, once the last custom CA is removed there, the generated trust bundle keeps it
   ([§2.4](#24-kolla_copy_cacerts-and-kolla_httpd_setup)).
 - `COPY_ONCE`: `/configured` lives in the container layer, so only a recreate re-applies config. Both workers always
-  recreate under `COPY_ONCE` (`module_utils/kolla_docker_worker.py:341-363`, `module_utils/kolla_podman_worker.py:507-524`).
+  recreate under `COPY_ONCE` (`module_utils/kolla_docker_worker.py:341-363`,
+  `module_utils/kolla_podman_worker.py:507-524`).
 
 ---
 
@@ -700,7 +710,8 @@ bootstrap, upgrade and `--wsrep-recover` one-shots also run the recursive `/var/
    found on a volume when the container was created is restored rather than deleted
    ([§3.5](#35-what-a-restart-applies)). `--check` does not report them, so the removal waits for a restart. CA
    certificate files are purged and re-added on every start, but only from `/etc/kolla/<svc>/ca-certificates/`, where a
-   CA deleted from `kolla_certificates_dir/ca/` stays (the `copy` task never deletes, [§3.5](#35-what-a-restart-applies))
+   CA deleted from `kolla_certificates_dir/ca/` stays (the `copy` task never deletes,
+   [§3.5](#35-what-a-restart-applies))
    and is re-added; whether the generated bundle keeps the last custom CA once it is removed there by hand is not known
    ([§2.4](#24-kolla_copy_cacerts-and-kolla_httpd_setup)) [CODE; bundle and service effect NOT AVAILABLE] ([Repository
    architecture §7](repository-architecture.md#7-configuration-generation-and-overrides)).
@@ -767,7 +778,8 @@ bootstrap, upgrade and `--wsrep-recover` one-shots also run the recursive `/var/
     status is NOT AVAILABLE: bash semantics]. Kolla-Ansible puts there one script per enabled load-balancer service on
     the host, `check_alive_haproxy.sh` and `check_alive_proxysql.sh` (never one for keepalived or haproxy-ssh), each a
     `show info` on the service's socket, and deletes the scripts of disabled services
-    (`roles/loadbalancer/tasks/config.yml:74-111`, `roles/loadbalancer/templates/keepalived/check_alive_haproxy.sh.j2:6`,
+    (`roles/loadbalancer/tasks/config.yml:74-111`,
+    `roles/loadbalancer/templates/keepalived/check_alive_haproxy.sh.j2:6`,
     `check_alive_proxysql.sh.j2:6`, `keepalived.json.j2:10-15`); with `interval 2`, `fall 2`, `rise 10` when
     `keepalived_track_script_enabled` (default True) (`roles/loadbalancer/templates/keepalived/keepalived.conf.j2:1-8`,
     `roles/loadbalancer/defaults/main.yml:187`) [CODE]. [NOT AVAILABLE: keepalived semantics] Whether an HAProxy or

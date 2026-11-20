@@ -208,7 +208,8 @@ Facts about the structure [CODE, `ansible/site.yml`]:
      *post-configuration* plays have no `serial` key (all members in one batch), while their *restart* plays use a fixed
      `serial: "33%"` that `ANSIBLE_SERIAL` does not change (`mariadb.yml:14-40`, `rabbitmq.yml:26-41, :82-98`). The
      handlers only sort hosts into the `mariadb_restart`/`rabbitmq_restart` groups; the restart itself happens in
-     those plays ([fact sheet B §1–2](../reference/factsheets/b-mariadb-rabbitmq-keystone.md#1-mariadb-ansiblerolesmariadb);
+     those plays
+     ([fact sheet B §1–2](../reference/factsheets/b-mariadb-rabbitmq-keystone.md#1-mariadb-ansiblerolesmariadb);
      [Tags](../risk/tags.md)). The Ussuri `Check CentOS variant` play no longer exists.
    - **Bug: `cyborg` (`site.yml:784`)** uses `serial|default("0")`, not `kolla_serial`, so `ANSIBLE_SERIAL` has no
      effect on cyborg.
@@ -267,7 +268,8 @@ There is no `meta/main.yml` any more: no role in `ansible/roles/` has a `meta/` 
 
 - **`--list-tasks` is blind to role internals.** It shows only the `include_tasks` placeholder of every role: the
   listing walks the statically compiled play and does not load dynamically included files (ansible-core 2.14.18
-  `lib/ansible/cli/playbook.py:202-207`; dynamic includes are loaded at run time, `lib/ansible/plugins/strategy/linear.py:291`).
+  `lib/ansible/cli/playbook.py:202-207`; dynamic includes are loaded at run time,
+  `lib/ansible/plugins/strategy/linear.py:291`).
   You cannot use `--list-tasks` to see what a tag will do in Kolla-Ansible. The linked
   [list-tasks-nova.txt](../reference/listings/list-tasks-nova.txt) is the Ussuri parse; it shows the same placeholders.
 - **Tags reach the role's tasks only through inheritance.** The included tasks inherit the *role and play* tags (e.g.
@@ -344,7 +346,8 @@ sequenceDiagram
     security options, image ID or tag, ipc/pid/cgroupns mode, labels, privileged, tmpfs, volumes, environment, state,
     dimensions, command, healthcheck); or
   - **`kolla_set_configs --check`** inside the running container reports drift
-    (`module_utils/kolla_docker_worker.py:155-190`; a container that cannot be exec'd into counts as drifted, `:164-171`); or
+    (`module_utils/kolla_docker_worker.py:155-190`; a container that cannot be exec'd into counts as drifted,
+    `:164-171`); or
   - the container's systemd unit file is missing or differs from the one the module would write
     (`module_utils/kolla_systemd_worker.py:149-162`), for example after `docker_graceful_timeout`,
     `docker_restart_policy` or `docker_client_timeout` changed, since all three are written into the unit
@@ -428,7 +431,8 @@ No file in `ansible/` or `tools/` mentions `common_run`, and `roles/common/defau
   `-t common reconfigure` renders the common configs and restarts what changed [CODE]. The Ussuri behaviour, where it
   rendered and restarted nothing, is gone.
 - **Service tags no longer drag `common` in.** No role has a `meta/` directory, so `-t nova` (or any service tag)
-  skips the common play, which carries only `common` [CODE; [Tags §2.1](../risk/tags.md#21-dynamic-include_tasks-and-tag-inheritance-code)]. The Ussuri behaviour, where
+  skips the common play, which carries only `common`
+  [CODE; [Tags §2.1](../risk/tags.md#21-dynamic-include_tasks-and-tag-inheritance-code)]. The Ussuri behaviour, where
   `-t nova` ran the whole `common` role on every nova host, computes included, is gone.
 - **`fluentd` and `cron` configs are global.** `td-agent.conf` and `logrotate.conf` are rendered from the **global**
   `enable_*` flags (`roles/common/tasks/config.yml:76-209`). Enabling a service listed in
@@ -479,7 +483,8 @@ upgrade (ansible-collection-kolla `roles/docker/tasks/install.yml:44-72`) [CODE]
 
 <a id="how-kolla_docker-decides"></a>How `kolla_docker` decides [CODE]:
 
-- **`start_container`** pulls the image **only if it is absent locally** (`module_utils/kolla_docker_worker.py:386-388`).
+- **`start_container`** pulls the image **only if it is absent locally**
+  (`module_utils/kolla_docker_worker.py:386-388`).
   A rebuilt image pushed under the same tag is therefore *not* fetched by `deploy` or `reconfigure`. It takes an
   explicit `pull` (`kolla-ansible pull`) to download it, after which `compare_image` sees a new image ID and recreates
   the container (`kolla_docker_worker.py:116-131, :362-384`). It then creates the container and its unit if needed and
@@ -510,7 +515,8 @@ upgrade (ansible-collection-kolla `roles/docker/tasks/install.yml:44-72`) [CODE]
   (`kolla_docker_worker.py:286-321`); `docker_restart_policy: "unless-stopped"` (`group_vars/all.yml:117`) becomes
   `Restart=always` in the unit, with `StartLimitBurst` = `docker_restart_policy_retry` (`kolla_systemd_worker.py:26-34,
   :50-74`). The FIXME "restart_policy is *not* checked in the container" (`kolla_docker_worker.py:15`) remains, but a
-  changed policy changes the unit, which `compare_container` does detect ([§4.3](#43-the-config--check--handler-pattern)).
+  changed policy changes the unit, which `compare_container` does detect
+  ([§4.3](#43-the-config--check--handler-pattern)).
 - **`kolla_container_engine` is not an engine switch for the lifecycle.** It defaults to `"docker"`
   (`group_vars/all.yml:92`) and is substituted into CLI calls and passed to `kolla_toolbox` and the facts modules, but
   `kolla_docker` only drives Docker and no file under `ansible/` mentions `podman` [CODE].

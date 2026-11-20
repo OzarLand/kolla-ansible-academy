@@ -98,7 +98,8 @@ them.
   `KOLLA_BOOTSTRAP` and `KOLLA_UPGRADE` branches both migrate `neutron`, then each subproject passed in
   `NEUTRON_BOOTSTRAP_SERVICES` / `NEUTRON_ROLLING_UPGRADE_SERVICES`, which are the same enabled-subproject list (kolla
   `docker/neutron/neutron-server/extend_start.sh:5-34`; `roles/neutron/defaults/main.yml:705, :711`); neutron-fwaas is
-  no longer in the list. Agent, OVS and OVN images have no one-shot branch (no `KOLLA_BOOTSTRAP`/`KOLLA_UPGRADE` in kolla
+  no longer in the list. Agent, OVS and OVN images have no one-shot branch (no `KOLLA_BOOTSTRAP`/`KOLLA_UPGRADE` in
+  kolla
   `docker/neutron/*`, `docker/openvswitch/*`, `docker/ovn/*` other than neutron-server).
 - [What is not known](../troubleshooting/what-is-not-known.md#network-data-plane), group "Network data plane": what the
   sources do not establish about a restart of `neutron_openvswitch_agent`, `neutron_l3_agent`, `neutron_dhcp_agent`,
@@ -128,7 +129,8 @@ them.
   rendered only for neutron-server and neutron-infoblox-ipam-agent, so server-side ML2 changes no longer restart the
   OVS agents (`roles/neutron/tasks/config.yml:158-178, :197-212`) [CODE].
 - [F12](../reference/findings.md#f12), "The L3 agent wrapper runs `neutron-netns-cleanup --force --agent-type l3` at
-  start" when `enable_neutron_agent_ha: yes` (`roles/neutron/templates/neutron-l3-agent-wrapper.sh.j2:5-11`) [CODE]; [NOT AVAILABLE] whether an L3 agent restart interrupts router
+  start" when `enable_neutron_agent_ha: yes` (`roles/neutron/templates/neutron-l3-agent-wrapper.sh.j2:5-11`) [CODE];
+  [NOT AVAILABLE] whether an L3 agent restart interrupts router
   traffic on that node.
 - [F13](../reference/findings.md#f13), "The Nova deploy order" puts nova-compute before OVS and the Neutron agents on
   new computes (`site.yml:544` imports `nova.yml` before the openvswitch play at `:546` and the neutron play at `:590`)

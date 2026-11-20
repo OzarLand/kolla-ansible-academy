@@ -127,7 +127,8 @@ kolla-ansible -i multinode -t nova-cell deploy-containers --limit 'compute[10:19
   (Docker `module_utils/kolla_docker_worker.py:164-172`, Podman `module_utils/kolla_podman_worker.py:442-449`).
 - Each batch restarts only its hosts. No bootstrap containers and no Keystone registration run: the two bootstrap
   plays of `nova.yml` act only for `deploy` and `reconfigure` (`nova.yml:53-55`, `nova.yml:89-91`), and the role
-  runs `deploy-containers.yml` instead of `deploy.yml` (`roles/nova-cell/tasks/main.yml:2`). The service includes of the `loadbalancer` play are skipped too
+  runs `deploy-containers.yml` instead of `deploy.yml` (`roles/nova-cell/tasks/main.yml:2`). The service includes of the
+  `loadbalancer` play are skipped too
   (`site.yml:324-326`).
 - **Caveat:** `genconfig -t nova-cell` also renders the conductor and console config on controllers, because the
   nova-cell play targets `nova-conductor`, `nova-novncproxy`, `nova-serialproxy` and `nova-spicehtml5proxy` as well
@@ -153,7 +154,8 @@ ANSIBLE_SERIAL=10 kolla-ansible -i multinode -t nova reconfigure
   play, all nova plays and almost every service play (`gather-facts.yml:11`, `gather-facts.yml:40`, `site.yml:95`,
   `site.yml:110`, `nova.yml:140`).
 - **Not batched by it:**
-  - **mariadb and rabbitmq**, separate playbooks (imported at `site.yml:400` and `site.yml:468`) whose role plays have no
+  - **mariadb and rabbitmq**, separate playbooks (imported at `site.yml:400` and `site.yml:468`) whose role plays have
+    no
     `serial` (`mariadb.yml:3-16`, `rabbitmq.yml:3-28`). Their handlers only add hosts to restart groups, and the
     restart plays use a fixed `serial: "33%"` (`mariadb.yml:24`, `mariadb.yml:42`, `rabbitmq.yml:36`). ansible-core
     rounds the percentage down with a minimum of one host (`lib/ansible/utils/helpers.py:30-32`): with three nodes,
@@ -183,7 +185,8 @@ ANSIBLE_SERIAL=10 kolla-ansible -i multinode -t nova reconfigure
   (`roles/nova-cell/tasks/deploy.yml:19-37`, `roles/nova-cell/tasks/wait_discover_computes.yml:87-90`). With
   `kolla_serial=1` and the three `multinode` controllers (`ansible/inventory/multinode:3-7`, `nova-api` and
   `nova-conductor` are children of `nova`, `ansible/inventory/multinode:227-231`): `nova_api_bootstrap` ×3,
-  `nova_cell_bootstrap` ×1, discovery once per compute [CODE, [Tags §2.5](../risk/tags.md#25-run_once-with-serial-code)].
+  `nova_cell_bootstrap` ×1, discovery once per compute
+  [CODE, [Tags §2.5](../risk/tags.md#25-run_once-with-serial-code)].
 - Batches apply per play: the whole fleet passes the nova-cell play before the next play starts. ansible-core 2.16.20
   loops over the plays (`lib/ansible/executor/playbook_executor.py:126`) and, inside each play, over its batches,
   restricting the inventory to one batch per run (`lib/ansible/executor/playbook_executor.py:181-190`) [CODE;
@@ -240,7 +243,8 @@ New in 2024.1 [CODE]:
    it if absent (`roles/common/tasks/config.yml:42-51`): no container restarts, but an image pull is possible.
 2. `kolla-ansible -t nova deploy-containers --limit compute001` restarts only compute001's nova containers. Drift is
    detected by `kolla_set_configs --check` inside `compare_container` (`module_utils/kolla_container_worker.py:20`,
-   `module_utils/kolla_container_worker.py:58-65`). On compute001, with the default `nova_compute_virt_type: "kvm"` (`group_vars/all.yml:1127`, `group_vars/all.yml:827`), its tasks make 4
+   `module_utils/kolla_container_worker.py:58-65`). On compute001, with the default `nova_compute_virt_type: "kvm"`
+   (`group_vars/all.yml:1127`, `group_vars/all.yml:827`), its tasks make 4
    remote module invocations (`setup` and 3 `compare_container`: nova-libvirt, nova-ssh, nova-compute) plus the
    delegated fact loop (`gather-facts.yml:19-25`, `gather-facts.yml:49-61`;
    `roles/nova-cell/tasks/check-containers.yml:2-22`). **Still holds in 2024.1:** roles have no `meta` dependency and
@@ -253,7 +257,8 @@ New in 2024.1 [CODE]:
 Caveats:
 
 - **HAProxy frontends are not applied by this pattern.** `genconfig` also re-renders
-  `/etc/kolla/haproxy/services.d/` (the loadbalancer block runs for `config`, `site.yml:324-326`), while every loadbalancer
+  `/etc/kolla/haproxy/services.d/` (the loadbalancer block runs for `config`, `site.yml:324-326`), while every
+  loadbalancer
   handler is skipped under `config` (`roles/loadbalancer/handlers/main.yml:17`), and `deploy-containers` runs no
   haproxy work. A frontend change written this way reaches HAProxy only through `-t haproxy reconfigure` or a run
   without tags [CODE]; copy `services.d` before `genconfig` if you want to diff it.

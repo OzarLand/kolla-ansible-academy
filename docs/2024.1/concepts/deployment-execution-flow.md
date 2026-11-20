@@ -45,7 +45,8 @@ batching, and how `deploy`, `reconfigure`, `upgrade`, `deploy-containers`, `genc
 >   image when it is absent ([§4](#4-action-matrix-what-each-kolla_action-does)).
 > - **Batching:** a batch runs the complete play, handler restarts included, before the next batch starts, but each play
 >   is still traversed batch by batch for the whole fleet before the next play starts. MariaDB and RabbitMQ apply their
->   role to all hosts in one batch, then restart the notified hosts in separate plays with `serial: "33%"`; the etcd play
+>   role to all hosts in one batch, then restart the notified hosts in separate plays with `serial: "33%"`; the etcd
+> play
 >   has no `serial` any more. Every play now carries a `max_fail_percentage` that defaults to 100
 >   ([§5](#5-batching-serial-and-its-interaction-with-order)).
 > - **`reconfigure` on a running cloud still runs the DB sync containers** of keystone, glance, cinder, placement, nova,
@@ -228,7 +229,8 @@ sequenceDiagram
 
 The common steps are `roles/common/tasks/config.yml`, `check-containers.yml:2-17` and `bootstrap.yml:2-16`. New in
 2024.1: the common config step ensures the fluentd image is present (pulling it if absent) and reads its labels
-before rendering the fluentd files (`roles/common/tasks/config.yml:42-91`, `module_utils/kolla_docker_worker.py:501-503`).
+before rendering the fluentd files (`roles/common/tasks/config.yml:42-91`,
+`module_utils/kolla_docker_worker.py:501-503`).
 The iscsi play loads `configfs` first (`roles/iscsi/tasks/config-host.yml:2-10`). The openvswitch
 `post-config.yml:3-53` runs after the role's flush (`roles/openvswitch/tasks/deploy.yml:8-11`), so a vswitchd restart
 it notifies runs at the end of the play. The neutron module and sysctl steps are
@@ -268,7 +270,8 @@ flowchart TB
 ```
 
 [CODE `site.yml:611-707`; `inventory/multinode:105-108`; `roles/openvswitch/tasks/deploy.yml:2-11`,
-`post-config.yml:3-53`; `roles/ovn-controller/tasks/deploy.yml:2-9`, `setup-ovs.yml`; `roles/ovn-db/tasks/deploy.yml:2-22`;
+`post-config.yml:3-53`; `roles/ovn-controller/tasks/deploy.yml:2-9`, `setup-ovs.yml`;
+`roles/ovn-db/tasks/deploy.yml:2-22`;
 `roles/neutron/tasks/deploy.yml:2-23`, `bootstrap.yml:38`, `bootstrap_service.yml:2-21`]
 
 In 2024.1 the OVN controller play still runs *before* the OVN database play. The neutron play deploys the server and
@@ -343,9 +346,11 @@ after `genconfig`, and a later `deploy`/`reconfigure` does not either: the confi
 unchanged. Such changes take effect only at the next restart for another reason.
 
 An `optional` file that newly appears, and whose destination does not exist in the container yet, counts as drift:
-`--check` exits 1 and the restart copies the file [CODE kolla `docker/base/set_configs.py:36-39,165-171,220-242,576-578`,
+`--check` exits 1 and the restart copies the file [CODE kolla
+`docker/base/set_configs.py:36-39,165-171,220-242,576-578`,
 `module_utils/kolla_docker_worker.py:164-177`]. `set_configs.py` is unchanged since 2023.1. See [Write config first,
-apply in controlled batches §2](../operations/controlled-batches.md#2-separate-write-config-from-apply-recommended-pattern)
+apply in controlled batches
+§2](../operations/controlled-batches.md#2-separate-write-config-from-apply-recommended-pattern)
 and [Kolla images §3](kolla-images.md#3-kolla_set_configs---check-what-it-compares-and-its-exit-codes).
 
 ---
@@ -381,7 +386,8 @@ The bar lengths are illustrative only; no duration is known from the code.
   handlers only add the hosts to restart groups, and the next plays restart those groups with `serial: "33%"`
   (`mariadb.yml:18-52`, `rabbitmq.yml:30-49`). With three nodes that is one node per batch (ansible-core 2.16.20
   `lib/ansible/utils/helpers.py:30-32`). Each RabbitMQ node is put into maintenance mode before its restart
-  (`roles/rabbitmq/tasks/restart_services.yml:9-17`) ([fact sheet B](../reference/factsheets/b-mariadb-rabbitmq-keystone.md)).
+  (`roles/rabbitmq/tasks/restart_services.yml:9-17`)
+  ([fact sheet B](../reference/factsheets/b-mariadb-rabbitmq-keystone.md)).
 - **etcd is no longer batched by `kolla_serial` (changed in 2024.1).** Its play has no `serial` key
   (`site.yml:470-481`); its handlers stage the restarts instead ([§7](#7-dependencies-introduced-by-handlers) item 6).
   cyborg is not batched by `kolla_serial` either: its play reads `serial` instead (`site.yml:876`).
@@ -424,7 +430,8 @@ Handlers create ordering that is not visible in task files:
 1. **Within a role, restart order = handler definition order, not notification order.**
    - nova-cell restarts `nova_ssh` → `nova_libvirt` (→ libvirt ready check, SASL user) → `nova_compute`
      (`roles/nova-cell/handlers/main.yml:74-168`).
-   - openvswitch restarts `openvswitch_db` → waits → `openvswitch_vswitchd` (`roles/openvswitch/handlers/main.yml:2-44`).
+   - openvswitch restarts `openvswitch_db` → waits → `openvswitch_vswitchd`
+     (`roles/openvswitch/handlers/main.yml:2-44`).
    - [CODE] ansible-core 2.16.20 keeps the play's handler list in definition order, copies it into each host's state
      at each flush, and walks it in that order, running only the handlers notified for the host
      (`lib/ansible/executor/play_iterator.py:195-200,426-445`).

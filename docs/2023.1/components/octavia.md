@@ -7,7 +7,8 @@ tags: [octavia, upgrade, one-shot, dependencies, bugs, unknowns]
 # Octavia
 
 This page is the starting point for Octavia, the `octavia` role: the containers `octavia_api`, `octavia_health_manager`,
-`octavia_housekeeping` and `octavia_worker`, plus `octavia_driver_agent` when `enable_octavia_driver_agent` (default: only
+`octavia_housekeeping` and `octavia_worker`, plus `octavia_driver_agent` when `enable_octavia_driver_agent` (default:
+only
 with `neutron_plugin_agent: ovn`, `group_vars/all.yml:735`), on the control nodes of the example inventory, selected by
 the tag `octavia`. **Changed in 2023.1:** with `octavia_auto_configure` (default: true when `amphora` is in
 `octavia_provider_drivers`, which it is by default, `group_vars/all.yml:1228`, `roles/octavia/defaults/main.yml:361`),
@@ -83,7 +84,8 @@ study says about running it is in fact sheet D: the plays the tag selects
   BUG about `octavia_service_auth_project: admin` losing its role on every upgrade does not apply to 2023.1, since the
   removal task is gone (`roles/octavia/tasks/upgrade.yml:2-9`) [CODE].
 - [fact sheet D §2.6][sheet-d-26]: adding or removing a health-manager host changes octavia.conf on all octavia hosts
-  and restarts them (`controller_ip_port_list` loops over `octavia-health-manager`, `octavia.conf.j2:81`). NOT AVAILABLE: whether the controller list is written into an amphora at boot, so that existing
+  and restarts them (`controller_ip_port_list` loops over `octavia-health-manager`, `octavia.conf.j2:81`). NOT
+  AVAILABLE: whether the controller list is written into an amphora at boot, so that existing
   amphorae keep the old list until failover.
 - [fact sheet D
   §7](../reference/factsheets/d-barbican-octavia-swift-manila-compute-roles.md#7-consolidated-bugs-and-oddities), item

@@ -81,7 +81,8 @@ Conventions:
 ## Drift
 
 Drift means what `compare_container` detects: a changed image or container parameter, or `kolla_set_configs --check`
-exiting 1 or 137 (`module_utils/kolla_container_worker.py:59-90`, `module_utils/kolla_docker_worker.py:155-190`; [Kolla images
+exiting 1 or 137 (`module_utils/kolla_container_worker.py:59-90`, `module_utils/kolla_docker_worker.py:155-190`; [Kolla
+images
 §3](../concepts/kolla-images.md#3-kolla_set_configs---check-what-it-compares-and-its-exit-codes)).
 
 ## Code guarantees and environment dependence
@@ -107,7 +108,8 @@ that establishes it:
    **60 s** by default, passed through `docker_common_options` (`group_vars/all.yml:139, :152`); Ussuri's was
    effectively 10 s. In 2023.1 each container runs under a `kolla-<name>-container.service` systemd unit, and a
    restart goes through that unit, whose `ExecStop` is `docker stop -t <graceful_timeout>`
-   (`module_utils/kolla_docker_worker.py:460-479`, `module_utils/kolla_systemd_worker.py:33, :66-69`) ([Repository architecture
+   (`module_utils/kolla_docker_worker.py:460-479`, `module_utils/kolla_systemd_worker.py:33, :66-69`) ([Repository
+   architecture
    §6](../concepts/repository-architecture.md#6-custom-modules--container-lifecycle-via-kolla_docker)).
 2. **Loop-notify.** One changed container in a role's loop restarts *every* container of that role on that host ([Tags
    §2.4](../risk/tags.md#24-loop-notify-one-changed-item-notifies-the-handlers-of-all-items-code)).

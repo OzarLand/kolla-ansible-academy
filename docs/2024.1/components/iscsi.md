@@ -91,7 +91,8 @@ the study says about running it is in the rows linked under [Impact and risk](#i
   task notifies the restart handler (`roles/iscsi/tasks/config.yml:15-26`); after a separate `genconfig`,
   `deploy-containers` does not ([Kolla images §6](../concepts/kolla-images.md#6-day-2-consequences), item 1).
 - **First 2024.1 check of a container that 2023.1 created** [CODE]: the systemd unit text changed
-  ([F16](../reference/findings.md#f16)), so a container that no 2024.1 run has recreated or restarted yet is reported as changed and
+  ([F16](../reference/findings.md#f16)), so a container that no 2024.1 run has recreated or restarted yet is reported as
+  changed and
   restarted at its first 2024.1 `deploy`/`reconfigure` check.
 
 ### Known limits and open points

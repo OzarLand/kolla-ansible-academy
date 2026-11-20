@@ -86,7 +86,8 @@ a run and what stays open; the two service cards follow them.
 - **Command (`nova-cell`):** [Reconfigure Nova
   §1.3](../operations/reconfigure-nova.md#13-reconfigure-only-the-cell-part-conductors-consoles-computes), [Write config
   first, apply in controlled batches
-  §1.1](../operations/controlled-batches.md#11-compute-changes-in-controlled-batches-recommended-pattern); stop a rolling
+  §1.1](../operations/controlled-batches.md#11-compute-changes-in-controlled-batches-recommended-pattern); stop a
+  rolling
   run on failures with `nova_cell_max_fail_percentage` or `kolla_max_fail_percentage`: [Write config first, apply in
   controlled batches §1.3](../operations/controlled-batches.md#13-stop-a-rolling-run-on-failures-max_fail_percentage)
 - **Scenario (`nova-bootstrap`, `nova-reload`, `nova-online-data-migrations` (with their `-api-`/`-cell-` variants) and
@@ -106,7 +107,8 @@ a run and what stays open; the two service cards follow them.
   `nova-cell`
 - **Risks (`nova-cell`):** [R1](../risk/risk-register.md#r1)
 - **First 2024.1 run after 2023.1:** [F16](../reference/findings.md#f16) (changed systemd unit text) and
-  [F17](../reference/findings.md#f17) (quorum queues on by default), see [What changed in 2024.1](#what-changed-in-20241)
+  [F17](../reference/findings.md#f17) (quorum queues on by default), see
+  [What changed in 2024.1](#what-changed-in-20241)
 - **What the tag executes (`nova-bootstrap`, `nova-reload`, `nova-online-data-migrations` (with their `-api-`/`-cell-`
   variants) and `nova-refresh-scheduler-cell-cache`):** [Tags
   §3](../risk/tags.md#3-what-a-tag-really-executes-master-table), one row each; use as narrower play tags: [Tags
@@ -165,7 +167,8 @@ a run and what stays open; the two service cards follow them.
 - [R3](../risk/risk-register.md#r3), precautions for a change of RabbitMQ group membership, password or port: plan as a
   maintenance; batch with `--limit`; verify RabbitMQ cluster health first. The cell transport URLs list every host of
   the RPC and notification groups with user and password (`roles/nova-cell/defaults/main.yml:206-207`) and are written
-  into every cell `nova.conf` (`roles/nova-cell/templates/nova.conf.j2:37`, `roles/nova-cell/templates/nova.conf.j2:184`)
+  into every cell `nova.conf` (`roles/nova-cell/templates/nova.conf.j2:37`,
+  `roles/nova-cell/templates/nova.conf.j2:184`)
   [CODE].
 - [R24](../risk/risk-register.md#r24), container stop timeout: in 2024.1 the stop goes through the container's systemd
   unit, whose `ExecStop` is `/usr/bin/<engine> stop <name> -t <graceful_timeout>`

@@ -77,7 +77,8 @@ evidence.
 
 - [Find it fast](find-it-fast.md) — typical operator questions and the section that answers them
 - [Pre-execution checklist](../operations/pre-execution-checklist.md) — what to check before a run
-- [Risk register](../risk/risk-register.md) — the risks [R1–R25](../risk/risk-register.md#r1), with their precautions (R25 does not apply to 2023.1)
+- [Risk register](../risk/risk-register.md) — the risks [R1–R25](../risk/risk-register.md#r1), with their precautions
+  (R25 does not apply to 2023.1)
 - [Technical findings](../reference/findings.md) — the fifteen headline findings, each with its evidence
 - [Operations](../operations/index.md) — the operation pages, each with its commands
 

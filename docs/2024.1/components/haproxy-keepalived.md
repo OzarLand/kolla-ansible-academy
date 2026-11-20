@@ -11,7 +11,8 @@ role loadbalancer" play to the `loadbalancer` group (the network nodes of the ex
 `inventory/multinode:84-85`), restricted to `enable_loadbalancer_True`, with play tags `haproxy`, `keepalived` and
 `loadbalancer` and, new in 2024.1, a `max_fail_percentage` (`site.yml:105-120`). It runs the containers `haproxy`,
 `keepalived` (`enable_keepalived`, default: follows `enable_haproxy`), `proxysql` (`enable_proxysql`, default `no`) and,
-new in 2024.1, `haproxy_ssh` (only with `enable_letsencrypt`, default `no`) (`roles/loadbalancer/defaults/main.yml:2-36`,
+new in 2024.1, `haproxy_ssh` (only with `enable_letsencrypt`, default `no`)
+(`roles/loadbalancer/defaults/main.yml:2-36`,
 `group_vars/all.yml:723-725, :796, :839`). The same play holds 39 per-service `include_role … tasks_from: loadbalancer`
 tasks (44 in 2023.1), run only for `deploy`, `reconfigure`, `upgrade` and `config` (`site.yml:121-326`); each of them
 also carries its service tag. A service's `loadbalancer.yml` imports `loadbalancer-config`, which renders the HAProxy

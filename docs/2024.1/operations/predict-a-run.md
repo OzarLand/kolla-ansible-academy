@@ -64,7 +64,8 @@ quiz:
 # Predict and inspect a run
 
 The commands that show what a run would target, render and restart before it runs, read in Kolla-Ansible `2024.1-eom`.
-Each row of the table gives one command, what it shows and its limits. [§2](#2-the-first-20241-run-on-a-cloud-deployed-by-20231)
+Each row of the table gives one command, what it shows and its limits.
+[§2](#2-the-first-20241-run-on-a-cloud-deployed-by-20231)
 adds what the first 2024.1 run on a cloud deployed by 2023.1 restarts, and how to see it beforehand.
 
 > [!NOTE]

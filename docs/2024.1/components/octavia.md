@@ -37,7 +37,8 @@ check around a run and what stays open; the service card follows them.
     `roles/octavia/defaults/main.yml:80-82`).
 - **A precheck requires Redis for the jobboard** [CODE]. `prechecks` fails with "Redis must be enabled when using
   octavia jobboard" when `enable_octavia_jobboard` is true and `enable_redis` is not
-  (`roles/octavia/tasks/precheck.yml:67-73`), and `enable_redis` defaults to `no` (`group_vars/all.yml:840`). A default Octavia configuration therefore fails
+  (`roles/octavia/tasks/precheck.yml:67-73`), and `enable_redis` defaults to `no` (`group_vars/all.yml:840`). A default
+  Octavia configuration therefore fails
   `prechecks` until the operator sets `enable_redis: yes` or `enable_octavia_jobboard: no` (both listed, commented, in
   `etc/kolla/globals.yml:403`, `etc/kolla/globals.yml:414`). The assert runs only in the precheck action: the role
   includes `<kolla_action>.yml` (`roles/octavia/tasks/main.yml:2`) and `prechecks` sets `kolla_action=precheck`

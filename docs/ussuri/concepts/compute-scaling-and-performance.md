@@ -288,7 +288,8 @@ What the code shows:
      (ansible 2.9.27 `lib/ansible/executor/task_queue_manager.py:257-258`) [CODE].
 2. **The compute-wide plays grow with C.**
    - The plays that run on every compute include chrony (with common), nova-cell, openvswitch and neutron
-     (`docs/ussuri/reference/listings/list-tasks-nova.txt:127, :226, :268, :280`; `compute` is in the chrony and openvswitch
+     (`docs/ussuri/reference/listings/list-tasks-nova.txt:127, :226, :268, :280`; `compute` is in the chrony and
+     openvswitch
      groups: `inventory/multinode:50-55, :144-147`) [CODE]. The share of run time they take as C grows is
      [NOT AVAILABLE].
 3. **forks and the deploy host's CPU.**

@@ -60,11 +60,13 @@ the section that gives the evidence; the main citations are repeated here.
    nodes), and each RabbitMQ node is drained first (`roles/rabbitmq/tasks/restart_services.yml:9-17`). Changed in
    2024.1: the etcd play has no `serial` (`site.yml:470-481`), and every play sets `max_fail_percentage`, 100 by
    default (`site.yml:96-99`): a failed host only drops out, unless every host of a batch fails, which stops the
-   playbook (ansible-core 2.16.20 `lib/ansible/executor/playbook_executor.py:204-208`); with `ANSIBLE_SERIAL=1` or in the
+   playbook (ansible-core 2.16.20 `lib/ansible/executor/playbook_executor.py:204-208`); with `ANSIBLE_SERIAL=1` or in
+   the
    33% restart plays of three nodes, one failure ends the run ([Execution flow
    §5](../concepts/deployment-execution-flow.md#5-batching-serial-and-its-interaction-with-order)) [CODE].
 5. **A service tag is never just that service.** For a service with a frontend it also renders the haproxy frontend
-   config on every loadbalancer host and, if that file changed, restarts HAProxy (`roles/haproxy-config/tasks/main.yml:22-23`),
+   config on every loadbalancer host and, if that file changed, restarts HAProxy
+   (`roles/haproxy-config/tasks/main.yml:22-23`),
    backups first and the VIP holder last (`roles/loadbalancer/handlers/main.yml:54-68, :179-193`). For API services it
    runs Keystone registration and DB sync. It does not run `common` ([Tags
    §3](../risk/tags.md#3-what-a-tag-really-executes-master-table), [Reconfigure a single service
@@ -91,10 +93,13 @@ the section that gives the evidence; the main citations are repeated here.
      2024.1 check of a container whose unit 2023.1 wrote reports drift;
    - **the new `hostnqn` file** of `nova_compute` and `cinder_volume` (`roles/nova-cell/tasks/config.yml:203-216`).
 
-   In addition, every service that `kolla-ansible upgrade` has not reached still runs a 2023.1 image: `openstack_release`
+   In addition, every service that `kolla-ansible upgrade` has not reached still runs a 2023.1 image:
+   `openstack_release`
    defaults to `2024.1` (`group_vars/all.yml:679-681`) and the check task compares the image
-   (`module_utils/kolla_container_worker.py:75`), so a `deploy` or `reconfigure` recreates it on the 2024.1 image without
-   the role's upgrade tasks. Upgrade first, settle the queue type and list the affected containers ([Pre-execution checklist
+   (`module_utils/kolla_container_worker.py:75`), so a `deploy` or `reconfigure` recreates it on the 2024.1 image
+   without
+   the role's upgrade tasks. Upgrade first, settle the queue type and list the affected containers ([Pre-execution
+   checklist
    §2](../operations/pre-execution-checklist.md#2-first-20241-run-on-a-cloud-deployed-by-20231)).
 8. **`deploy` never pulls an image that is already present.** Rebuilt images under the same tag need `pull`
    (`module_utils/kolla_docker_worker.py:365-367`; Podman `module_utils/kolla_podman_worker.py:675-677`). A tag
@@ -126,7 +131,8 @@ the section that gives the evidence; the main citations are repeated here.
 - [Find it fast](find-it-fast.md) — typical operator questions and the section that answers them
 - [Pre-execution checklist](../operations/pre-execution-checklist.md) — what to check before a run, and before the first
   2024.1 run on a cloud deployed by 2023.1
-- [Risk register](../risk/risk-register.md) — the risks [R1–R30](../risk/risk-register.md#r1), with their precautions (R25 does not apply to 2024.1)
+- [Risk register](../risk/risk-register.md) — the risks [R1–R30](../risk/risk-register.md#r1), with their precautions
+  (R25 does not apply to 2024.1)
 - [Technical findings](../reference/findings.md) — the seventeen headline findings, each with its evidence
   ([F16](../reference/findings.md#f16) and [F17](../reference/findings.md#f17) are new in 2024.1)
 - [Operations](../operations/index.md) — the operation pages, each with its commands
