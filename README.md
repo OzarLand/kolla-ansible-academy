@@ -11,9 +11,6 @@ of the study](docs/2023.1/reference/method-and-limits.md)).
 The repository is organised by release of OpenStack and Kolla-Ansible. Each release is a separate study, with its own
 pages under `docs/<release>/` and its own site in the portal. Three releases are studied today, Ussuri, 2023.1 and 2024.1.
 
-This repository was named `kolla-ansible-day2` until 2026-11. GitHub redirects the old repository address; the old site
-address `https://ozarland.github.io/kolla-ansible-day2/` is not redirected by GitHub.
-
 ## Releases
 
 | Release | OpenStack | Kolla-Ansible | Sources | Portal |
