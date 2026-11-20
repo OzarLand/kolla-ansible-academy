@@ -48,7 +48,7 @@ quiz:
     answer: 1
     explain: "A tag never restricts which hosts a play targets; use <code>--limit</code> for that."
     see: "4-practical-consequences"
-  - q: "Does the <code>nova-api</code> tag touch compute hosts?"
+  - q: "Does any play of the <code>nova-api</code> tag target compute hosts?"
     options: ["Yes", "No"]
     answer: 1
     explain: "<code>nova</code> and <code>nova-cell</code> target the computes; <code>nova-api</code> does not."
