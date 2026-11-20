@@ -1,6 +1,6 @@
 ---
 title: HAProxy + Keepalived
-description: "Where the 2024.1 study covers HAProxy, keepalived, ProxySQL and the new haproxy_ssh container (role loadbalancer): what the tags run, the restart order, the VIP unknowns and known bugs."
+description: "Where the 2024.1 study covers HAProxy, keepalived, ProxySQL and haproxy_ssh: what the tags run, the restart order, the VIP unknowns, known bugs."
 tags: [haproxy, keepalived, loadbalancer, proxysql, letsencrypt, tags, handlers, serial, inventory, risk, dependencies, bugs, unknowns]
 ---
 

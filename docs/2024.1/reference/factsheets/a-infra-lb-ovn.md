@@ -1,6 +1,6 @@
 ---
 title: Fact sheet A
-description: Fact sheet for the loadbalancer, haproxy-config, memcached, ovn-controller, ovn-db, ovs-dpdk and service-cert-copy roles and the certificates playbook in Kolla-Ansible 2024.1.
+description: "Fact sheet for the loadbalancer, haproxy-config, memcached, OVN, ovs-dpdk and service-cert-copy roles and the certificates playbook, 2024.1."
 tags: [haproxy, keepalived, memcached, chrony, ovn, handlers, tags, serial]
 ---
 

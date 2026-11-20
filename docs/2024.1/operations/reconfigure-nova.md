@@ -1,6 +1,6 @@
 ---
 title: Reconfigure Nova
-description: What -t nova reconfigure runs in 2024.1 on controllers and on every compute, which changes restart nova_compute, nova_libvirt and nova_ssh, the risks and the checks.
+description: "What -t nova reconfigure runs in 2024.1 on controllers and every compute, which changes restart nova_compute, nova_libvirt, nova_ssh, risks, checks."
 tags: [nova, libvirt, reconfigure, genconfig, loop-notify, serial, one-shot, kolla-set-configs, max-fail-percentage]
 impact: [restarts-on-drift]
 ---

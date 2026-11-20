@@ -1,6 +1,6 @@
 ---
 title: Nova deep dive
-description: Nova in 2024.1 in depth, with its two roles and ten plays, its dependencies, what restarts what, the new hostnqn file, quorum queues in nova.conf, the nova_libvirt restart, live migration, consoles and the upgrade path.
+description: "Nova in 2024.1 in depth: two roles, ten plays, dependencies, what restarts what, hostnqn, quorum queues, nova_libvirt, live migration, upgrade."
 tags: [nova, libvirt, dependencies, loop-notify, one-shot, upgrade, quorum-queues, unknowns]
 remember:
   - "Any change of nova-compute's <code>nova.conf</code>, <code>config.json</code>, <code>hostnqn</code> file or image restarts <code>nova_compute</code> and, through loop-notify, <code>nova_libvirt</code> and <code>nova_ssh</code>. <span class=\"ev ev-code\">CODE</span>"

@@ -1,6 +1,6 @@
 ---
 title: RabbitMQ
-description: "Where the 2024.1 study covers RabbitMQ (three plays in rabbitmq.yml): quorum queues by default, prechecks, the upgrade version check, tag impact, membership and upgrade risks, dependencies, known bugs and open points."
+description: "Where the 2024.1 study covers RabbitMQ: quorum queues by default, prechecks, the upgrade version check, tag impact, membership and upgrade risks."
 tags: [rabbitmq, serial, upgrade, inventory, risk, dependencies, bugs, unknowns]
 ---
 

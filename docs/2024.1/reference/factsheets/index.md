@@ -1,6 +1,6 @@
 ---
 title: Per-role fact sheets
-description: Five per-role fact sheets, first read from ussuri-eol, re-studied against 2023.1-eol and then against 2024.1-eom, how they were checked, and the eleven corrections with their 2024.1 status.
+description: "Five per-role fact sheets, re-studied against 2024.1-eom, how they were checked, and the eleven corrections with their 2024.1 status."
 tags: [evidence, haproxy, keepalived, loadbalancer, letsencrypt, memcached, chrony, ovn, mariadb, rabbitmq, keystone, glance, placement, cinder, horizon, heat, barbican, octavia, swift, manila, bootstrap-servers, prechecks, destroy]
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: Write config first, apply in controlled batches
-description: In 2024.1, write the configuration with genconfig, then apply it batch by batch with deploy-containers --limit, or roll a reconfigure with ANSIBLE_SERIAL and stop it on failures with max_fail_percentage.
+description: "In 2024.1, write the config with genconfig and apply it batch by batch with deploy-containers --limit, or roll a reconfigure with ANSIBLE_SERIAL."
 tags: [nova, genconfig, deploy-containers, reconfigure, serial, limit, loop-notify, kolla-set-configs, max-fail-percentage]
 remember:
   - "<code>genconfig</code> (zero restarts), a review of the diff, then <code>deploy-containers --limit &lt;batch&gt;</code>: each batch restarts only its hosts. <code>genconfig -t nova-cell</code> also renders the conductor and console config on controllers: give them a batch too. <span class=\"ev ev-code\">CODE</span>"

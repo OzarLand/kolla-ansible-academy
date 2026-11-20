@@ -1,6 +1,6 @@
 ---
 title: "Common: fluentd, cron, kolla_toolbox"
-description: "Where the 2024.1 study covers the common role (fluentd, cron, kolla_toolbox): its own play, the -t common tag, how its changes reach hosts, risks and open points."
+description: "Where the 2024.1 study covers the common role (fluentd, cron, kolla_toolbox): its own play, the -t common tag, how changes reach hosts, risks."
 tags: [fluentd, cron, kolla-toolbox, tags, loop-notify, kolla-set-configs, risk, dependencies, bugs, unknowns]
 ---
 

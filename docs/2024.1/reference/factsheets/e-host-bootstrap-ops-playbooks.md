@@ -1,6 +1,6 @@
 ---
 title: Fact sheet E
-description: "Fact sheet for host bootstrap and operational playbooks in 2024.1: bootstrap-servers with the Docker or Podman engine roles, prechecks, destroy, prune-images, fact gathering, CLI, tuning docs."
+description: "Fact sheet for host bootstrap and operational playbooks in 2024.1: bootstrap-servers with Docker or Podman, prechecks, destroy, prune-images, CLI."
 tags: [bootstrap-servers, prechecks, destroy, mariadb-backup, mariadb-recovery, facts, docker, podman, serial, limit]
 ---
 
