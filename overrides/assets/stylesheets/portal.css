@@ -3319,3 +3319,73 @@ a.portal-cta:focus-visible {
 .md-typeset table:not([class]) code.cite {
   font-size: 0.82em;
 }
+
+/* ---------------------------------------------------------------------------
+ * 24. Wide tables as cards on a phone (tools/site/portal_mdx/labels.py marks
+ * tables of four columns or more and puts the column name on every cell).
+ * Each row becomes a card; each cell shows its column name above its value.
+ * Wide screens are not concerned.
+ * ------------------------------------------------------------------------- */
+@media screen and (max-width: 44.9375em) {
+  .md-typeset__scrollwrap:has(table[data-portal-cards]),
+  .md-typeset__table:has(table[data-portal-cards]) {
+    overflow: visible;
+  }
+
+  .md-typeset table:not([class])[data-portal-cards][data-portal-cards] {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    font-size: 0.68rem;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .md-typeset table:not([class])[data-portal-cards][data-portal-cards] thead {
+    display: none;
+  }
+
+  .md-typeset table:not([class])[data-portal-cards][data-portal-cards] tbody {
+    display: block;
+  }
+
+  .md-typeset table:not([class])[data-portal-cards][data-portal-cards] tr {
+    display: block;
+    padding: 0.4rem 0.6rem;
+    margin: 0 0 0.6rem;
+    background-color: var(--portal-bg);
+    border: 0.05rem solid var(--portal-border);
+    border-left: 0.2rem solid var(--oz-wood);
+    border-radius: 0.4rem;
+  }
+
+  .md-typeset table:not([class])[data-portal-cards][data-portal-cards] td {
+    display: block;
+    min-width: 0;
+    max-width: none;
+    padding: 0.25rem 0;
+    border: 0;
+  }
+
+  .md-typeset table:not([class])[data-portal-cards][data-portal-cards] td + td {
+    border-top: 0.05rem dashed var(--portal-border);
+  }
+
+  .md-typeset table:not([class])[data-portal-cards][data-portal-cards] td[data-label]::before {
+    display: block;
+    margin-bottom: 0.1rem;
+    font-size: 0.85em;
+    font-weight: 700;
+    color: var(--portal-text-muted);
+    content: attr(data-label);
+  }
+
+  /* The first cell names the row: it reads as the card title. */
+  .md-typeset table:not([class])[data-portal-cards][data-portal-cards] td:first-child {
+    font-weight: 700;
+  }
+
+  .md-typeset table:not([class])[data-portal-cards][data-portal-cards] td:first-child::before {
+    font-weight: 700;
+  }
+}

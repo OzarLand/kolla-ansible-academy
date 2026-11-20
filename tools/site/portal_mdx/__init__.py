@@ -4,7 +4,7 @@ r"""Markdown helpers of the Kolla-Ansible Academy portal.
 (``portal_mdx``) and uses :func:`portal_mdx.slug.gh_slugify` for heading ids.
 The build runs with ``PYTHONPATH=tools/site`` so the package is importable.
 
-The extension bundles nine small, independent features; each can be turned
+The extension bundles ten small, independent features; each can be turned
 off with an option of the same name:
 
 ``lists``
@@ -33,6 +33,9 @@ off with an option of the same name:
 ``cites``
     a code span that is a source citation (``path:line``) gets a class, so
     that citations read more quietly than commands (:mod:`portal_mdx.cites`).
+``labels``
+    the cells of a table of four columns or more carry their column name, so
+    that a phone shows each row as a card (:mod:`portal_mdx.labels`).
 
 None of them changes the text of a page: the Markdown source stays the single
 source of truth and renders the same way on github.com.
@@ -45,6 +48,7 @@ from markdown import Extension, Markdown
 from .anchors import AnchorsExtension
 from .breaks import TableBreaksExtension
 from .cites import CitesExtension
+from .labels import LabelsExtension
 from .evidence import EvidenceExtension
 from .impact import ImpactExtension
 from .lists import GithubListsExtension
@@ -74,6 +78,7 @@ class PortalExtension(Extension):
             "severity": [True, "Add a class to severity cells of risk tables"],
             "impact": [True, "Add a class to code spans that name an impact class"],
             "cites": [True, "Add a class to code spans that are path:line citations"],
+            "labels": [True, "Copy column names onto the cells of wide tables"],
         }
         super().__init__(**kwargs)
 
@@ -97,6 +102,8 @@ class PortalExtension(Extension):
             ImpactExtension().extendMarkdown(md)
         if self.getConfig("cites"):
             CitesExtension().extendMarkdown(md)
+        if self.getConfig("labels"):
+            LabelsExtension().extendMarkdown(md)
 
 
 def makeExtension(**kwargs: object) -> PortalExtension:

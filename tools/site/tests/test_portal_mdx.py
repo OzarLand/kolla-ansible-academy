@@ -643,6 +643,23 @@ class CitesTest(unittest.TestCase):
         self.assertIn("<code>site.yml:1</code>", render("`site.yml:1`", cites=False))
 
 
+class LabelsTest(unittest.TestCase):
+    def test_wide_table_cells_get_labels(self) -> None:
+        html = render("| Tag | Hosts | Restarts | Risk |\n|---|---|---|---|\n| `nova` | computes | libvirt | R1 |\n")
+        self.assertIn('<table data-portal-cards="">', html)
+        self.assertIn('<td data-label="Tag"><code>nova</code></td>', html)
+        self.assertIn('<td data-label="Risk">R1</td>', html)
+
+    def test_narrow_tables_are_left_alone(self) -> None:
+        html = render("| a | b | c |\n|---|---|---|\n| 1 | 2 | 3 |\n")
+        self.assertNotIn("data-label", html)
+        self.assertNotIn("data-portal-cards", html)
+
+    def test_option_turns_it_off(self) -> None:
+        html = render("| a | b | c | d |\n|---|---|---|---|\n| 1 | 2 | 3 | 4 |\n", labels=False)
+        self.assertNotIn("data-label", html)
+
+
 class SeverityTest(unittest.TestCase):
     SUMMARY = (
         "| # | Likelihood | Severity |\n|---|---|---|\n"
