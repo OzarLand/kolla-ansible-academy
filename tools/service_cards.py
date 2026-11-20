@@ -184,10 +184,11 @@ for title, role, keyvars in core:
         for g in gs:
             chosts |= hosts_of(g)
     if not sv:
-        # Old-style roles (swift) start containers with explicit kolla_docker tasks.
+        # Old-style roles (swift) start containers with explicit container
+        # module tasks: kolla_docker up to 2023.1, kolla_container from 2024.1.
         for tf in sorted(glob.glob(os.path.join(rd, 'tasks', '*.yml'))):
             for t in yaml.safe_load(open(tf)) or []:
-                kd = t.get('kolla_docker') if isinstance(t, dict) else None
+                kd = (t.get('kolla_docker') or t.get('kolla_container')) if isinstance(t, dict) else None
                 if not kd or kd.get('action') != 'start_container' or '{{' in str(kd.get('name')):
                     continue
                 if kd['name'] not in cnames:
